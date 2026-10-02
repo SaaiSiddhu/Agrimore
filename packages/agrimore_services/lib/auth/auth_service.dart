@@ -75,6 +75,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   int _restoreRead = 0;
+  bool _signInInFlight = false;
 
   // Lazily create GoogleSignIn only on native platforms. Constructing it with
   // serverClientId on web crashes google_sign_in_web during app startup.
@@ -143,58 +144,64 @@ class AuthService {
     required String name,
     String? phone,
   }) async {
-    try {
-      debugPrint('🔥 Starting registration for: $email');
-
-      final UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
-        password: password,
-      );
-
-      final User? user = result.user;
-      if (user == null) throw AuthException('Registration failed');
-
-      debugPrint('✅ Firebase Auth user created: ${user.uid}');
-
-      // Update display name
-      await user.updateDisplayName(name.trim());
-
-      final userModel = UserModel(
-        uid: user.uid,
-        email: email.trim().toLowerCase(),
-        name: name.trim(),
-        phone: phone?.trim(),
-        role: 'user',
-        createdAt: DateTime.now(),
-        lastLogin: DateTime.now(),
-      );
-
-      debugPrint('🔥 Attempting to save user to Firestore...');
-
+    return _runOwnedSignIn((session) async {
       try {
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .set(userModel.toMap());
-        debugPrint('✅ User saved to Firestore successfully!');
-      } catch (firestoreError) {
-        debugPrint('❌ Firestore error: $firestoreError');
-        throw AuthException(
-            'Failed to save user data: ${firestoreError.toString()}');
+
+        session.allowSignIn();
+        final UserCredential result =
+            await _auth.createUserWithEmailAndPassword(
+          email: email.trim().toLowerCase(),
+          password: password,
+        );
+
+        final User? user = result.user;
+        if (user == null) throw AuthException('Registration failed');
+        session.bindResult(user.uid);
+
+
+        // Update display name
+        await user.updateDisplayName(name.trim());
+        _requireCurrentSession(session.isCurrent);
+
+        final userModel = UserModel(
+          uid: user.uid,
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          phone: phone?.trim(),
+          role: 'user',
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+        );
+
+        debugPrint('🔥 Attempting to save user to Firestore...');
+
+        try {
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(userModel.toMap());
+          _requireCurrentSession(session.isCurrent);
+          debugPrint('✅ User saved to Firestore successfully!');
+        } catch (firestoreError) {
+          _requireCurrentSession(session.isCurrent);
+            throw AuthException('Could not save your profile. Please try again.');
+        }
+
+        final synced = await _readOwnedUserData(user.uid, session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+        await _savePersistentSession(synced,
+            isSessionCurrent: session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+
+        debugPrint('✅ Registration complete!');
+        return synced;
+      } on FirebaseAuthException catch (e) {
+        throw _handleSignInException(e);
+      } catch (e) {
+        if (e is AuthException) rethrow;
+        throw AuthException('Registration failed. Please try again.');
       }
-
-      final synced = await getUserData(user.uid);
-      await _savePersistentSession(synced);
-
-      debugPrint('✅ Registration complete!');
-      return synced;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
-      throw _handleAuthException(e);
-    } catch (e) {
-      debugPrint('❌ General error: $e');
-      throw AuthException('Registration failed: ${e.toString()}');
-    }
+    });
   }
 
   // ✅ Sign in with email and password
@@ -202,69 +209,76 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    try {
-      debugPrint('🔥 Attempting login for: $email');
-
-      final UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
-        password: password,
-      );
-
-      final User? user = result.user;
-      if (user == null) throw AuthException('Sign in failed');
-
-      debugPrint('✅ Firebase Auth login successful: ${user.uid}');
-
+    return _runOwnedSignIn((session) async {
       try {
-        await _firestore.collection('users').doc(user.uid).update({
-          'lastLogin': FieldValue.serverTimestamp(),
-          'loginCount': FieldValue.increment(1),
-        }).timeout(const Duration(seconds: 4));
-        debugPrint('✅ Last login updated');
-      } catch (e) {
-        debugPrint('⚠️ Could not update last login: $e');
-      }
 
-      debugPrint('🔥 Fetching user data from Firestore...');
-      UserModel userModel;
-      try {
-        userModel = await getUserData(user.uid).timeout(const Duration(seconds: 6));
-      } catch (e) {
-        if (e is UserNotFoundException ||
-            e.toString().contains('User not found')) {
-          debugPrint('📝 User document missing, creating new one...');
-          // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
-          // Privileged roles are provisioned by server/admin tools.
-          userModel = UserModel(
-            uid: user.uid,
-            email: user.email ?? email,
-            name: user.displayName ?? 'User',
-            role: 'user', // ✅ FIXED: Default to 'user', not 'admin'
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-          );
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .set(userModel.toMap())
-              .timeout(const Duration(seconds: 4));
-        } else {
-          rethrow;
+        session.allowSignIn();
+        final UserCredential result = await _auth.signInWithEmailAndPassword(
+          email: email.trim().toLowerCase(),
+          password: password,
+        );
+
+        final User? user = result.user;
+        if (user == null) throw AuthException('Sign in failed');
+        session.bindResult(user.uid);
+
+
+        try {
+          await _firestore.collection('users').doc(user.uid).update({
+            'lastLogin': FieldValue.serverTimestamp(),
+            'loginCount': FieldValue.increment(1),
+          }).timeout(const Duration(seconds: 4));
+          _requireCurrentSession(session.isCurrent);
+          debugPrint('✅ Last login updated');
+        } catch (e) {
+          _requireCurrentSession(session.isCurrent);
+          }
+
+        debugPrint('🔥 Fetching user data from Firestore...');
+        UserModel userModel;
+        try {
+          userModel =
+              await _readOwnedUserData(user.uid, session.isCurrent).timeout(const Duration(seconds: 6));
+          _requireCurrentSession(session.isCurrent);
+        } catch (e) {
+          _requireCurrentSession(session.isCurrent);
+          if (e is UserNotFoundException ||
+              e.toString().contains('User not found')) {
+            debugPrint('📝 User document missing, creating new one...');
+            // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
+            // Privileged roles are provisioned by server/admin tools.
+            userModel = UserModel(
+              uid: user.uid,
+              email: user.email ?? email,
+              name: user.displayName ?? 'User',
+              role: 'user', // ✅ FIXED: Default to 'user', not 'admin'
+              createdAt: DateTime.now(),
+              lastLogin: DateTime.now(),
+            );
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .set(userModel.toMap())
+                .timeout(const Duration(seconds: 4));
+            _requireCurrentSession(session.isCurrent);
+          } else {
+            rethrow;
+          }
         }
+
+        await _savePersistentSession(userModel,
+            isSessionCurrent: session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+
+        debugPrint('✅ Login complete!');
+        return userModel;
+      } on FirebaseAuthException catch (e) {
+        throw _handleSignInException(e);
+      } catch (e) {
+        if (e is AuthException) rethrow;
+        throw AuthException('Sign in failed. Please try again.');
       }
-      debugPrint('✅ User data fetched: ${userModel.email}');
-
-      await _savePersistentSession(userModel);
-
-      debugPrint('✅ Login complete!');
-      return userModel;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
-      throw _handleAuthException(e);
-    } catch (e) {
-      debugPrint('❌ Login error: $e');
-      throw AuthException('Sign in failed: ${e.toString()}');
-    }
+    });
   }
 
   // ============================================
@@ -273,99 +287,111 @@ class AuthService {
   // Mobile: Uses google_sign_in package
   // ============================================
   Future<UserModel> signInWithGoogle() async {
-    try {
-      debugPrint(
-          '🔥 Starting Google sign in (platform: ${kIsWeb ? "web" : "mobile"})...');
+    return _runOwnedSignIn((session) async {
+      try {
+        debugPrint('Starting Google sign in');
 
-      UserCredential result;
+        UserCredential result;
 
-      if (kIsWeb) {
-        // ✅ WEB: Use Firebase Auth's built-in popup — no OAuth client ID required
-        final googleProvider = GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.addScope('profile');
-        googleProvider.setCustomParameters({'prompt': 'select_account'});
+        if (kIsWeb) {
+          // ✅ WEB: Use Firebase Auth's built-in popup — no OAuth client ID required
+          final googleProvider = GoogleAuthProvider();
+          googleProvider.addScope('email');
+          googleProvider.addScope('profile');
+          googleProvider.setCustomParameters({'prompt': 'select_account'});
 
-        result = await _auth.signInWithPopup(googleProvider);
-        debugPrint('✅ Firebase Web popup sign-in successful');
-      } else {
-        // ✅ MOBILE: Use google_sign_in package (works with google-services.json)
-        final GoogleSignInAccount? googleUser =
-            await _mobileGoogleSignIn.signIn();
-        if (googleUser == null) throw AuthException('Google sign in cancelled');
+          session.allowSignIn();
+          result = await _auth.signInWithPopup(googleProvider);
+          debugPrint('✅ Firebase Web popup sign-in successful');
+        } else {
+          // ✅ MOBILE: Use google_sign_in package (works with google-services.json)
+          final GoogleSignInAccount? googleUser =
+              await _mobileGoogleSignIn.signIn();
+          _requireCurrentSession(session.isCurrent);
+          if (googleUser == null) {
+            throw AuthException('Google sign in cancelled');
+          }
 
-        debugPrint('✅ Google user selected: ${googleUser.email}');
 
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+          final GoogleSignInAuthentication googleAuth =
+              await googleUser.authentication;
+          _requireCurrentSession(session.isCurrent);
+          if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+            throw AuthException(
+              'Google sign in could not complete. Please try again.',
+            );
+          }
 
-        if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
-          throw AuthException(
-            'Google sign in failed: missing ID token. Check Firebase SHA keys.',
+          final credential = GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
           );
+
+          session.allowSignIn();
+          result = await _auth.signInWithCredential(credential);
         }
 
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
+        final User? user = result.user;
+        if (user == null) throw AuthException('Google sign in failed');
+        session.bindResult(user.uid);
 
-        result = await _auth.signInWithCredential(credential);
-      }
 
-      final User? user = result.user;
-      if (user == null) throw AuthException('Google sign in failed');
+        // Check if user document exists in Firestore
+        final userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
+        _requireCurrentSession(session.isCurrent);
 
-      debugPrint('✅ Firebase Auth successful: ${user.uid}');
+        if (!userDoc.exists) {
+          debugPrint('📝 Creating new user document...');
 
-      // Check if user document exists in Firestore
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+          final userModel = UserModel(
+            uid: user.uid,
+            email: user.email!,
+            name: user.displayName ?? 'User',
+            phone: user.phoneNumber,
+            photoUrl: user.photoURL,
+            role: 'user',
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+          );
 
-      if (!userDoc.exists) {
-        debugPrint('📝 Creating new user document...');
+          try {
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .set(userModel.toMap());
+            _requireCurrentSession(session.isCurrent);
+            debugPrint('✅ User document created!');
+          } catch (e) {
+            _requireCurrentSession(session.isCurrent);
+                throw AuthException(
+                'Could not save your profile. Please try again.');
+          }
+        } else {
+          debugPrint('✅ User document exists, updating last login...');
 
-        final userModel = UserModel(
-          uid: user.uid,
-          email: user.email!,
-          name: user.displayName ?? 'User',
-          phone: user.phoneNumber,
-          photoUrl: user.photoURL,
-          role: 'user',
-          createdAt: DateTime.now(),
-          lastLogin: DateTime.now(),
-        );
-
-        try {
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .set(userModel.toMap());
-          debugPrint('✅ User document created!');
-        } catch (e) {
-          debugPrint('❌ Firestore error: $e');
-          throw AuthException('Failed to save user data: ${e.toString()}');
+          await _firestore.collection('users').doc(user.uid).update({
+            'lastLogin': FieldValue.serverTimestamp(),
+            'loginCount': FieldValue.increment(1),
+          });
+          _requireCurrentSession(session.isCurrent);
         }
-      } else {
-        debugPrint('✅ User document exists, updating last login...');
 
-        await _firestore.collection('users').doc(user.uid).update({
-          'lastLogin': FieldValue.serverTimestamp(),
-          'loginCount': FieldValue.increment(1),
-        });
+        final synced = await _readOwnedUserData(user.uid, session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+        await _savePersistentSession(synced,
+            isSessionCurrent: session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+
+        debugPrint('✅ Google sign in complete!');
+        return synced;
+      } on FirebaseAuthException catch (e) {
+        throw _handleSignInException(e);
+      } catch (e) {
+        if (e is AuthException) rethrow;
+        throw AuthException('Google sign in failed. Please try again.');
       }
-
-      final synced = await getUserData(user.uid);
-      await _savePersistentSession(synced);
-
-      debugPrint('✅ Google sign in complete!');
-      return synced;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
-      throw _handleAuthException(e);
-    } catch (e) {
-      debugPrint('❌ Google sign in error: $e');
-      throw AuthException('Google sign in failed: ${e.toString()}');
-    }
+    });
   }
 
   // ============================================
@@ -497,35 +523,46 @@ class AuthService {
     PendingGoogleIdentity pending, {
     String? expectedUid,
   }) async {
-    try {
-      final result = await _auth.signInWithCredential(pending.credential);
-      final user = result.user;
-      if (user == null) throw AuthException('Google sign in failed');
+    return _runOwnedSignIn((session) async {
+      try {
+        session.allowSignIn();
+        final result = await _auth.signInWithCredential(pending.credential);
+        final user = result.user;
+        if (user == null) throw AuthException('Google sign in failed');
+        session.bindResult(user.uid);
 
-      if (expectedUid != null && user.uid != expectedUid) {
-        // Firebase resolved this credential to a different uid than the
-        // resolver predicted — a race between the two calls. Fail safely
-        // rather than trust either side blindly.
-        throw AuthException('Google account details changed. Please try again.');
+        if (expectedUid != null && user.uid != expectedUid) {
+          // Firebase resolved this credential to a different uid than the
+          // resolver predicted — a race between the two calls. Fail safely
+          // rather than trust either side blindly.
+          throw AuthException(
+              'Google account details changed. Please try again.');
+        }
+
+        final userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
+        _requireCurrentSession(session.isCurrent);
+        if (userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).update({
+            'lastLogin': FieldValue.serverTimestamp(),
+            'loginCount': FieldValue.increment(1),
+          });
+          _requireCurrentSession(session.isCurrent);
+        }
+
+        final synced = await _readOwnedUserData(user.uid, session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+        await _savePersistentSession(synced,
+            isSessionCurrent: session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+        return synced;
+      } on FirebaseAuthException catch (e) {
+        throw _handleSignInException(e);
+      } catch (e) {
+        if (e is AuthException) rethrow;
+        throw AuthException('Google sign in failed. Please try again.');
       }
-
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      if (userDoc.exists) {
-        await _firestore.collection('users').doc(user.uid).update({
-          'lastLogin': FieldValue.serverTimestamp(),
-          'loginCount': FieldValue.increment(1),
-        });
-      }
-
-      final synced = await getUserData(user.uid);
-      await _savePersistentSession(synced);
-      return synced;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    } catch (e) {
-      if (e is AuthException) rethrow;
-      throw AuthException('Google sign in failed: ${e.toString()}');
-    }
+    });
   }
 
   /// Scenario B (first-time, called only after phone verification has
@@ -650,54 +687,61 @@ class AuthService {
     required String otp,
     String? name,
   }) async {
-    try {
-      debugPrint('🔥 Verifying phone OTP for: $phone');
+    return _runOwnedSignIn((session) async {
+      try {
 
-      final response = await http
-          .post(
-            Uri.parse('$_functionsBaseUrl/verifyPhoneOTP'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'phone': phone,
-              'otp': otp,
-              if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
-              if (kDebugMode) 'debugMock': true,
-            }),
-          )
-          .timeout(_phoneVerifyTimeout);
+        final response = await http
+            .post(
+              Uri.parse('$_functionsBaseUrl/verifyPhoneOTP'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'phone': phone,
+                'otp': otp,
+                if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+                if (kDebugMode) 'debugMock': true,
+              }),
+            )
+            .timeout(_phoneVerifyTimeout);
+        _requireCurrentSession(session.isCurrent);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (response.statusCode != 200 || data['success'] != true) {
+          throw AuthException('Invalid OTP. Please try again.');
+        }
 
-      if (response.statusCode != 200 || data['success'] != true) {
-        throw AuthException(data['error']?.toString() ?? 'Invalid OTP. Please try again.');
+        final token = data['token'] as String;
+        final isNewUser = data['isNewUser'] == true;
+
+        session.allowSignIn();
+        final result = await _auth
+            .signInWithCustomToken(token)
+            .timeout(_phoneVerifyTimeout);
+        final user = result.user;
+        if (user == null) throw AuthException('Sign in failed');
+        session.bindResult(user.uid);
+
+
+        final userModel =
+            await _readOwnedUserData(user.uid, session.isCurrent).timeout(_phoneVerifyTimeout);
+        _requireCurrentSession(session.isCurrent);
+        await _savePersistentSession(userModel,
+            isSessionCurrent: session.isCurrent);
+        _requireCurrentSession(session.isCurrent);
+
+        debugPrint('✅ Phone login complete!');
+        return PhoneAuthResult(user: userModel, isNewUser: isNewUser);
+      } on AuthException {
+        rethrow;
+      } on TimeoutException {
+        debugPrint('❌ Timed out verifying phone OTP');
+        throw AuthException(
+          'Still verifying — this is taking longer than usual. Please wait a moment.',
+          code: 'TIMEOUT',
+        );
+      } catch (e) {
+        throw AuthException('Failed to verify OTP. Please try again.');
       }
-
-      final token = data['token'] as String;
-      final isNewUser = data['isNewUser'] == true;
-
-      final result = await _auth.signInWithCustomToken(token).timeout(_phoneVerifyTimeout);
-      final user = result.user;
-      if (user == null) throw AuthException('Sign in failed');
-
-      debugPrint('✅ Firebase Auth sign-in via phone successful: ${user.uid}');
-
-      final userModel = await getUserData(user.uid).timeout(_phoneVerifyTimeout);
-      await _savePersistentSession(userModel);
-
-      debugPrint('✅ Phone login complete!');
-      return PhoneAuthResult(user: userModel, isNewUser: isNewUser);
-    } on AuthException {
-      rethrow;
-    } on TimeoutException {
-      debugPrint('❌ Timed out verifying phone OTP');
-      throw AuthException(
-        'Still verifying — this is taking longer than usual. Please wait a moment.',
-        code: 'TIMEOUT',
-      );
-    } catch (e) {
-      debugPrint('❌ Error verifying phone OTP: $e');
-      throw AuthException('Failed to verify OTP: ${e.toString()}');
-    }
+    });
   }
 
   // ============================================
@@ -927,6 +971,51 @@ class AuthService {
     );
   }
 
+  Future<T> _runOwnedSignIn<T>(
+    Future<T> Function(_OwnedAuthSignIn session) command,
+  ) async {
+    if (_signInInFlight) {
+      throw AuthException(
+          'A sign-in request is already in progress. Please wait.',
+          code: 'sign-in-in-progress');
+    }
+    _signInInFlight = true;
+    _OwnedAuthSignIn? session;
+    try {
+      session = _OwnedAuthSignIn(_auth);
+      // Deliver the initial SDK snapshot/stream failure before acquiring credentials.
+      await Future<void>.delayed(Duration.zero);
+      _requireCurrentSession(session.isCurrent);
+      return await command(session);
+    } finally {
+      await session?.cancel();
+      _signInInFlight = false;
+    }
+  }
+
+  AuthException _handleSignInException(FirebaseAuthException error) {
+    const mapped = {
+      'weak-password',
+      'email-already-in-use',
+      'user-not-found',
+      'wrong-password',
+      'invalid-email',
+      'user-disabled',
+      'too-many-requests',
+      'operation-not-allowed',
+      'requires-recent-login',
+      'invalid-credential',
+      'account-exists-with-different-credential',
+      'popup-closed-by-user',
+      'cancelled-popup-request',
+      'popup-blocked',
+      'network-request-failed',
+    };
+    return mapped.contains(error.code)
+        ? _handleAuthException(error)
+        : AuthException('Sign in failed. Please try again.');
+  }
+
   // ✅ Save persistent session
   void _requireCurrentSession(bool Function() current) {
     if (!current()) {
@@ -968,10 +1057,19 @@ class AuthService {
   // ✅ Get user data from Firestore
   Future<UserModel> getUserData(String uid) async {
     final session = _OwnedAuthSession(_auth);
-    bool current() => session.owner == uid && session.isCurrent();
+    try {
+      return await _readOwnedUserData(
+          uid, () => session.owner == uid && session.isCurrent());
+    } finally {
+      await session.cancel();
+    }
+  }
+
+  Future<UserModel> _readOwnedUserData(
+      String uid, bool Function() current) async {
     try {
       _requireCurrentSession(current);
-      debugPrint('🔥 Getting user data for: $uid');
+      debugPrint('Loading owned account profile');
 
       // Role is read from the owned server record. Email/build-time hints
       // cannot grant or revoke a role, and profile reads never write roles.
@@ -991,10 +1089,10 @@ class AuthService {
     } catch (e) {
       _requireCurrentSession(current);
       if (e is AuthException && e.code == 'session-changed') rethrow;
-      debugPrint('❌ Error getting user data: $e');
-      throw DatabaseException('Failed to get user: ${e.toString()}');
-    } finally {
-      await session.cancel();
+      debugPrint('Owned account profile could not be loaded');
+      throw DatabaseException(e is UserNotFoundException
+          ? 'Failed to get user: User not found'
+          : 'Could not load your profile. Please try again.');
     }
   }
 
@@ -1364,6 +1462,90 @@ class _OwnedAuthSession {
       await subscription?.cancel();
     } catch (e) {
       debugPrint('Auth session listener cancellation failed: $e');
+    }
+  }
+}
+
+/// Owns a sign-in episode, allowing exactly one intended SDK transition after
+/// credential acquisition. Profile reads and persistence share this same ticket.
+class _OwnedAuthSignIn {
+  _OwnedAuthSignIn(this._auth) : _openingOwner = _auth.currentUser?.uid {
+    final subscription = _auth.authStateChanges().listen((user) {
+      if (_closed || !_healthy) return;
+      final uid = user?.uid;
+      if (_first && uid == _openingOwner) {
+        _first = false;
+        return;
+      }
+      _first = false;
+      // A queued snapshot of an older SDK owner is not the current episode.
+      if (uid != _auth.currentUser?.uid) return;
+      if (!_allowed ||
+          _transitionSeen ||
+          uid == null ||
+          (_bound && uid != _owner)) {
+        _revoke();
+        return;
+      }
+      _transitionSeen = true;
+      _owner = uid;
+    }, onError: (Object error) => _revoke(), onDone: _revoke);
+    _subscription = subscription;
+    if (!_healthy) unawaited(cancel());
+  }
+
+  final FirebaseAuth _auth;
+  final String? _openingOwner;
+  StreamSubscription<User?>? _subscription;
+  String? _owner;
+  bool _first = true, _healthy = true, _closed = false;
+  bool _allowed = false, _transitionSeen = false, _bound = false;
+
+  bool isCurrent() =>
+      !_closed &&
+      _healthy &&
+      _auth.currentUser?.uid ==
+          (_bound || _transitionSeen ? _owner : _openingOwner);
+
+  void _requireCurrent() {
+    if (!isCurrent()) {
+      throw AuthException('Your account session changed. Please try again.',
+          code: 'session-changed');
+    }
+  }
+
+  void allowSignIn() {
+    _requireCurrent();
+    _allowed = true;
+  }
+
+  void bindResult(String uid) {
+    if (!_healthy ||
+        _closed ||
+        !_allowed ||
+        _auth.currentUser?.uid != uid ||
+        (_transitionSeen && _owner != uid)) {
+      _revoke();
+      throw AuthException('Your account session changed. Please try again.',
+          code: 'session-changed');
+    }
+    _owner = uid;
+    _bound = true;
+  }
+
+  void _revoke() {
+    _healthy = false;
+    unawaited(cancel());
+  }
+
+  Future<void> cancel() async {
+    _closed = true;
+    final subscription = _subscription;
+    _subscription = null;
+    try {
+      await subscription?.cancel();
+    } catch (_) {
+      debugPrint('Sign-in listener could not be released');
     }
   }
 }
