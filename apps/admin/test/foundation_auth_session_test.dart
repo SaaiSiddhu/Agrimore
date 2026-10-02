@@ -31,6 +31,8 @@ class _WriteRequestCodec extends StandardMessageCodec {
         return fs.PigeonFirebaseSettings.decode(readValue(buffer)!);
       case 187:
         return 'fixture_server_timestamp';
+      case 188:
+        return fs.Timestamp(buffer.getInt64(), buffer.getInt32());
       case 190:
         return readValue(buffer);
       case 192:
@@ -83,6 +85,15 @@ class _Stream extends Stream<User?> {
 
 class _Auth implements AuthService {
   String? uid = 'owner_a';
+  final passwordReply = Completer<void>();
+  final passwordOwners = <String?>[];
+  @override
+  Future<void> changePassword(
+      {required String currentPassword, required String newPassword}) {
+    passwordOwners.add(uid);
+    return passwordReply.future;
+  }
+
   final stream = _Stream();
   final reads = <String>[];
   int restores = 0;
@@ -161,6 +172,13 @@ void main() {
   late AuthProvider auth;
   late List<String> writes;
   var disposed = false;
+  final audits = <Map<String, Object?>>[];
+  Completer<void>? pendingProfile;
+  Completer<void>? pendingAudit;
+  const auditChannel = BasicMessageChannel<Object?>(
+    'dev.flutter.pigeon.cloud_firestore_platform_interface.FirebaseFirestoreHostApi.documentReferenceSet',
+    fs.FirebaseFirestoreHostApi.codec,
+  );
   Future<void> drain() async {
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
@@ -192,9 +210,30 @@ void main() {
         () async => service.uid == null ? null : _profile(service.uid!);
     firebase = _Firebase(service);
     writes = [];
+    audits.clear();
+    pendingProfile = null;
+    pendingAudit = null;
+    messenger.setMockMessageHandler(auditChannel.name, (message) async {
+      final args = const _WriteRequestCodec().decodeMessage(message) as List;
+      final request = args[1] as fs.DocumentReferenceRequest;
+      if (request.path.startsWith('auth_logs/')) {
+        audits.add(Map<String, Object?>.from(request.data!));
+        await pendingAudit?.future;
+      }
+      return fs.FirebaseFirestoreHostApi.codec.encodeMessage([null]);
+    });
     messenger.setMockMessageHandler(updates.name, (message) async {
       final args = const _WriteRequestCodec().decodeMessage(message) as List;
-      writes.add((args[1] as fs.DocumentReferenceRequest).path);
+      final request = args[1] as fs.DocumentReferenceRequest;
+      writes.add(request.path);
+      if (request.data?.containsKey('name') == true) {
+        try {
+          await pendingProfile?.future;
+        } catch (_) {
+          return fs.FirebaseFirestoreHostApi.codec
+              .encodeMessage(['fixture-code', 'PRIVATE', null]);
+        }
+      }
       return fs.FirebaseFirestoreHostApi.codec.encodeMessage([null]);
     });
     auth = AuthProvider(authService: service, firebaseAuth: firebase);
@@ -203,6 +242,7 @@ void main() {
     if (!disposed) auth.dispose();
     await drain();
     messenger.setMockMessageHandler(updates.name, null);
+    messenger.setMockMessageHandler(auditChannel.name, null);
   });
   test('owned admin initial profile and native lastLogin remain usable',
       () async {
@@ -559,5 +599,227 @@ void main() {
     await auth.refreshUserData();
     expect(service.stream.subscriptions, hasLength(before + 1));
     expect(auth.isAdmin, isTrue);
+  });
+
+  Future<bool> command(String kind) => kind == 'password'
+      ? auth.changePassword(
+          currentPassword: 'fixture_old', newPassword: 'fixture_new')
+      : auth.updateUserProfile(name: 'Updated');
+  Future<void> startCurrent() async {
+    service.emit('owner_a');
+    await drain();
+    writes.clear();
+    audits.clear();
+  }
+
+  for (final kind in ['profile', 'password']) {
+    test('admin $kind current owner completes and audits own identity',
+        () async {
+      await startCurrent();
+      final result = command(kind);
+      await drain();
+      if (kind == 'password') {
+        service.passwordReply.complete();
+      }
+      expect(await result, isTrue);
+      expect(audits, hasLength(1));
+      expect(audits.single['uid'], 'owner_a');
+      expect(audits.single['success'], isTrue);
+      expect(auth.isLoading, isFalse);
+      if (kind == 'profile') {
+        expect(auth.userName, 'Updated');
+        expect(writes, ['users/owner_a']);
+      } else {
+        expect(service.passwordOwners, ['owner_a']);
+      }
+    });
+    for (final owner in <String?>['owner_b', null, 'owner_a']) {
+      test('admin $kind stale success $owner has no audit or publication',
+          () async {
+        await startCurrent();
+        pendingProfile = Completer<void>();
+        final result = command(kind);
+        await drain();
+        service.emit(owner);
+        await drain();
+        if (kind == 'password') {
+          service.passwordReply.complete();
+        } else {
+          pendingProfile!.complete();
+        }
+        expect(await result, isFalse);
+        expect(audits, isEmpty);
+        expect(auth.userUid, owner);
+        expect(auth.userName, owner == null ? null : 'Current');
+        expect(auth.error, isNull);
+      });
+      test('admin $kind stale failure $owner leaves new owner clean', () async {
+        await startCurrent();
+        pendingProfile = Completer<void>();
+        final result = command(kind);
+        await drain();
+        service.emit(owner);
+        await drain();
+        if (kind == 'password') {
+          service.passwordReply.completeError(StateError('PRIVATE'));
+        } else {
+          pendingProfile!.completeError(StateError('PRIVATE'));
+        }
+        expect(await result, isFalse);
+        expect(audits, isEmpty);
+        expect(auth.error, isNull);
+      });
+    }
+    test('admin $kind disposed entry does not dispatch', () async {
+      await startCurrent();
+      auth.dispose();
+      disposed = true;
+      service.passwordReply.complete();
+      expect(await command(kind), isFalse);
+      expect(service.passwordOwners, isEmpty);
+      expect(writes, isEmpty);
+      expect(audits, isEmpty);
+    });
+    test('admin $kind disposed continuation emits no audit', () async {
+      await startCurrent();
+      pendingProfile = Completer<void>();
+      final result = command(kind);
+      await drain();
+      auth.dispose();
+      disposed = true;
+      if (kind == 'password') {
+        service.passwordReply.complete();
+      } else {
+        pendingProfile!.complete();
+      }
+      expect(await result, isFalse);
+      expect(audits, isEmpty);
+    });
+    test('admin $kind reentrant account change prevents dispatch', () async {
+      await startCurrent();
+      auth.addListener(() {
+        if (auth.isLoading) service.uid = 'owner_b';
+      });
+      final result = command(kind);
+      await drain();
+      service.passwordReply.complete();
+      expect(await result, isFalse);
+      expect(service.passwordOwners, isEmpty);
+      expect(writes, isEmpty);
+      expect(audits, isEmpty);
+    });
+    test('admin $kind audit await cannot publish to renewed account', () async {
+      await startCurrent();
+      pendingAudit = Completer<void>();
+      final result = command(kind);
+      if (kind == 'password') {
+        service.passwordReply.complete();
+      }
+      await drain();
+      expect(audits, hasLength(1));
+      expect(audits.single['uid'], 'owner_a');
+      service.emit('owner_b');
+      await drain();
+      pendingAudit!.complete();
+      expect(await result, isFalse);
+      expect(auth.userUid, 'owner_b');
+      expect(auth.userName, 'Current');
+      expect(auth.error, isNull);
+    });
+    test('admin $kind lost observer prevents command', () async {
+      await startCurrent();
+      service.stream.subscriptions.last.done?.call();
+      await drain();
+      service.passwordReply.complete();
+      expect(await command(kind), isFalse);
+      expect(writes, isEmpty);
+      expect(service.passwordOwners, isEmpty);
+      expect(audits, isEmpty);
+    });
+  }
+  test('admin password unexpected failure has static UI and audit detail',
+      () async {
+    await startCurrent();
+    final result = command('password');
+    service.passwordReply.completeError(StateError('PRIVATE'));
+    expect(await result, isFalse);
+    expect(auth.error, isNot(contains('PRIVATE')));
+    expect(audits.single['error'], isNot(contains('PRIVATE')));
+  });
+  test('admin profile refresh supersedes pending profile command', () async {
+    await startCurrent();
+    pendingProfile = Completer<void>();
+    final result = command('profile');
+    await drain();
+    await auth.refreshUserData();
+    pendingProfile!.complete();
+    expect(await result, isFalse);
+    expect(auth.userName, 'Current');
+    expect(audits, isEmpty);
+  });
+
+  for (final kind in ['profile', 'password']) {
+    test('admin $kind signedout entry does not dispatch', () async {
+      service.emit(null);
+      await drain();
+      service.passwordReply.complete();
+      expect(await command(kind), isFalse);
+      expect(writes, isEmpty);
+      expect(audits, isEmpty);
+      expect(service.passwordOwners, isEmpty);
+    });
+    test('admin $kind SDK drift before stream does not dispatch', () async {
+      await startCurrent();
+      service.uid = 'owner_b';
+      service.passwordReply.complete();
+      expect(await command(kind), isFalse);
+      expect(writes, isEmpty);
+      expect(audits, isEmpty);
+      expect(service.passwordOwners, isEmpty);
+    });
+    test('admin $kind stream close invalidates pending continuation', () async {
+      await startCurrent();
+      pendingProfile = Completer<void>();
+      final result = command(kind);
+      await drain();
+      service.stream.subscriptions.last.done?.call();
+      await drain();
+      if (kind == 'password') {
+        service.passwordReply.complete();
+      } else {
+        pendingProfile!.complete();
+      }
+      expect(await result, isFalse);
+      expect(audits, isEmpty);
+      expect(auth.currentUser, isNull);
+    });
+    test('admin $kind later command supersedes older reply', () async {
+      await startCurrent();
+      pendingProfile = Completer<void>();
+      final first = command(kind);
+      final second = command(kind);
+      await drain();
+      if (kind == 'password') {
+        service.passwordReply.complete();
+      } else {
+        pendingProfile!.complete();
+      }
+      expect(await first, isFalse);
+      expect(await second, isTrue);
+      expect(audits, hasLength(1));
+      expect(audits.single['uid'], 'owner_a');
+    });
+  }
+  test('admin profile unexpected failure has static UI and audit detail',
+      () async {
+    await startCurrent();
+    pendingProfile = Completer<void>();
+    final result = command('profile');
+    await drain();
+    pendingProfile!.completeError(StateError('PRIVATE'));
+    expect(await result, isFalse);
+    expect(auth.error, isNot(contains('PRIVATE')));
+    expect(auth.isLoading, isFalse);
+    expect(audits.single['error'], isNot(contains('PRIVATE')));
   });
 }
