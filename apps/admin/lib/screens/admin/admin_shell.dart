@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:agrimore_ui/agrimore_ui.dart' show SnackbarHelper;
 import '../../app/themes/admin_colors.dart';
 import '../../app/app_router.dart';
 import '../../providers/auth_provider.dart';
@@ -23,6 +24,8 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isCollapsed = false;
+  bool _logoutInFlight = false;
+  bool _refusalQueued = false;
 
   // Navigation items with routes
   final List<_NavItem> _navItems = [
@@ -178,14 +181,40 @@ class _AdminShellState extends State<AdminShell> {
     final authProvider = Provider.of<AuthProvider>(context);
     final isMobile = MediaQuery.of(context).size.width < 900;
 
-    // Redirect if not admin
+    // A queued refusal must not act on a provider or account that changed
+    // between build and the frame callback, or while sign-out was pending.
     if (!authProvider.isLoggedIn || !authProvider.isAdmin) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (authProvider.isLoggedIn && !authProvider.isAdmin) {
-          await authProvider.signOut();
-        }
-        if (context.mounted) context.go(AdminRoutes.auth);
-      });
+      if (!_refusalQueued) {
+        _refusalQueued = true;
+        final version = authProvider.sessionVersion;
+        final owner = authProvider.currentUser?.uid;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            if (!context.mounted || !mounted || !identical(context.read<AuthProvider>(), authProvider) ||
+                authProvider.sessionVersion != version || authProvider.isAdmin ||
+                authProvider.isInitializing) {
+              return;
+            }
+            if (owner != null && authProvider.isSessionCurrent(owner, version)) {
+              await authProvider.signOut();
+            }
+            if (!context.mounted || !mounted || !identical(context.read<AuthProvider>(), authProvider) ||
+                authProvider.isAdmin || authProvider.isInitializing) {
+              return;
+            }
+            if (authProvider.sessionVersion == version ||
+                authProvider.hasSignedOutSession &&
+                    authProvider.sessionVersion == version + 1) {
+              context.go(AdminRoutes.auth);
+            }
+          } catch (_) {
+            // The global router still refuses non-admin access. A stale frame
+            // never publishes provider errors into a different account.
+          } finally {
+            _refusalQueued = false;
+          }
+        });
+      }
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -661,7 +690,8 @@ class _AdminShellState extends State<AdminShell> {
 
   Widget _buildBottomNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    return InkWell(
+    return Expanded(
+      child: InkWell(
       onTap: () {
         HapticFeedback.lightImpact();
         context.go(_navItems[index].route);
@@ -669,7 +699,7 @@ class _AdminShellState extends State<AdminShell> {
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? AdminColors.primary.withOpacity(0.1)
@@ -695,6 +725,7 @@ class _AdminShellState extends State<AdminShell> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -738,7 +769,8 @@ class _AdminShellState extends State<AdminShell> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Column(
+                  Expanded(
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
@@ -751,12 +783,15 @@ class _AdminShellState extends State<AdminShell> {
                       ),
                       Text(
                         authProvider.currentUser?.email ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.6),
                           fontSize: 12,
                         ),
                       ),
                     ],
+                    ),
                   ),
                 ],
               ),
@@ -826,30 +861,54 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   Future<void> _logout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      await context.read<AuthProvider>().signOut();
-      if (mounted) context.go(AdminRoutes.auth);
+    final auth = context.read<AuthProvider>();
+    final owner = auth.currentUser?.uid;
+    final version = auth.sessionVersion;
+    final route = ModalRoute.of(context);
+    bool ownsPage() => mounted && owner != null &&
+        identical(context.read<AuthProvider>(), auth) &&
+        auth.isSessionCurrent(owner, version) && route?.isCurrent == true;
+    if (_logoutInFlight || !ownsPage()) {
+      return;
+    }
+    _logoutInFlight = true;
+    try {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Logout')),
+          ],
+        ),
+      );
+      if (!mounted || confirm != true || !ownsPage()) {
+        return;
+      }
+      await auth.signOut();
+      if (!mounted || !identical(context.read<AuthProvider>(), auth) ||
+          route?.isCurrent != true) {
+        return;
+      }
+      if (auth.hasSignedOutSession && auth.sessionVersion == version + 1) {
+        context.go(AdminRoutes.auth);
+      } else if (ownsPage()) {
+        SnackbarHelper.showError(context, 'Unable to sign out. Please try again.');
+      }
+    } catch (_) {
+      if (mounted && ownsPage()) {
+        SnackbarHelper.showError(context, 'Unable to sign out. Please try again.');
+      }
+    } finally {
+      _logoutInFlight = false;
     }
   }
+
 }
 
 class _NavItem {
