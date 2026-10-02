@@ -122,6 +122,9 @@ class _Auth implements AuthService {
 class _Preferences extends SharedPreferencesStorePlatform {
   Completer<void>? readHold;
   Completer<void>? writeHold;
+  Completer<void>? removeHold;
+  Map<String, Object> initial = {};
+  final removals = <String>[];
   final entered = Completer<void>();
   final writes = <String>[];
   @override
@@ -130,7 +133,7 @@ class _Preferences extends SharedPreferencesStorePlatform {
       entered.complete();
       await readHold!.future;
     }
-    return {};
+    return initial;
   }
 
   @override
@@ -146,7 +149,14 @@ class _Preferences extends SharedPreferencesStorePlatform {
   @override
   Future<bool> clear() async => true;
   @override
-  Future<bool> remove(String key) async => true;
+  Future<bool> remove(String key) async {
+    removals.add(key);
+    if (removeHold != null) {
+      entered.complete();
+      await removeHold!.future;
+    }
+    return true;
+  }
 }
 
 class _FirebaseAuth implements FirebaseAuth {
@@ -518,4 +528,168 @@ void main() {
     expect((await SharedPreferences.getInstance()).getString('remember_email'),
         'owner_a@example.invalid');
   });
+  Future<bool> confirmEmail() async {
+    final result = login('email');
+    service.emit('owner_a');
+    service.replies.single.complete(_profile('owner_a'));
+    return result;
+  }
+
+  for (final remember in [false, true]) {
+    test('confirmed email persists explicit remember choice $remember',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'remember_email': 'previous@example.invalid',
+        'remember_me': !remember,
+      });
+      auth.setRememberMe(remember);
+      expect(await confirmEmail(), isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('remember_me'), remember);
+      expect(prefs.getString('remember_email'),
+          remember ? 'owner_a@example.invalid' : isNull);
+      expect(prefs.getKeys().where((k) => k.contains('password')), isEmpty);
+    });
+    test('explicit remember $remember wins delayed constructor cache read',
+        () async {
+      auth.dispose();
+      final previous = SharedPreferencesStorePlatform.instance;
+      final store = _Preferences()
+        ..readHold = Completer<void>()
+        ..initial = {'flutter.remember_me': !remember};
+      SharedPreferences.setMockInitialValues({});
+      SharedPreferencesStorePlatform.instance = store;
+      try {
+        auth = AuthProvider(authService: service, firebaseAuth: firebase);
+        service.emit(null);
+        await store.entered.future.timeout(const Duration(seconds: 2));
+        auth.setRememberMe(remember);
+        store.readHold!.complete();
+        await drain();
+        expect(auth.rememberMe, remember);
+      } finally {
+        if (!store.readHold!.isCompleted) store.readHold!.complete();
+        SharedPreferencesStorePlatform.instance = previous;
+      }
+    });
+    test('untouched remember cache still loads $remember', () async {
+      auth.dispose();
+      SharedPreferences.setMockInitialValues({'remember_me': remember});
+      auth = AuthProvider(authService: service, firebaseAuth: firebase);
+      service.emit(null);
+      await drain();
+      expect(auth.rememberMe, remember);
+    });
+    test('latest remember $remember while audit pending is persisted',
+        () async {
+      auth.setRememberMe(!remember);
+      auditHold = Completer<void>();
+      final result = login('email');
+      service.emit('owner_a');
+      service.replies.single.complete(_profile('owner_a'));
+      await drain();
+      expect(audits.length, 1);
+      auth.setRememberMe(remember);
+      auditHold!.complete();
+      expect(await result, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('remember_me'), remember);
+      expect(prefs.getString('remember_email'),
+          remember ? 'owner_a@example.invalid' : isNull);
+    });
+  }
+
+  test('disposed remember setter does not notify or change intent', () async {
+    auth.setRememberMe(true);
+    auth.dispose();
+    disposed = true;
+    expect(() => auth.setRememberMe(false), returnsNormally);
+    expect(auth.rememberMe, isTrue);
+  });
+
+  test('Google login preserves remembered email and preference', () async {
+    SharedPreferences.setMockInitialValues({
+      'remember_email': 'previous@example.invalid',
+      'remember_me': true,
+    });
+    auth.setRememberMe(false);
+    final result = login('google');
+    service.emit('owner_a');
+    service.replies.single.complete(_profile('owner_a'));
+    expect(await result, isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('remember_email'), 'previous@example.invalid');
+    expect(prefs.getBool('remember_me'), isTrue);
+  });
+
+  for (final stage in ['read', 'remove']) {
+    for (final scenario in ['switch', 'renew', 'dispose', 'paused', 'intent']) {
+      test(
+          'unchecked email $stage $scenario stops stale preference continuation',
+          () async {
+        final previous = SharedPreferencesStorePlatform.instance;
+        final store = _Preferences();
+        final hold = Completer<void>();
+        if (stage == 'read') {
+          SharedPreferences.setMockInitialValues({});
+          store.readHold = hold;
+        } else {
+          store.removeHold = hold;
+        }
+        SharedPreferencesStorePlatform.instance = store;
+        try {
+          auth.setRememberMe(false);
+          final result = login('email');
+          service.emit('owner_a');
+          service.replies.single.complete(_profile('owner_a'));
+          await store.entered.future.timeout(const Duration(seconds: 2));
+          if (scenario == 'intent') {
+            auth.setRememberMe(true);
+          } else {
+            invalidate(scenario);
+          }
+          await drain();
+          hold.complete();
+          expect(await result, scenario == 'intent');
+          expect(store.writes, isEmpty);
+          expect(store.removals,
+              stage == 'read' ? isEmpty : ['flutter.remember_email']);
+        } finally {
+          if (!hold.isCompleted) hold.complete();
+          SharedPreferencesStorePlatform.instance = previous;
+        }
+      });
+    }
+  }
+
+  for (final stage in ['read', 'write']) {
+    test('checked email $stage changed intent cannot persist old choice',
+        () async {
+      final previous = SharedPreferencesStorePlatform.instance;
+      final store = _Preferences();
+      final hold = Completer<void>();
+      if (stage == 'read') {
+        SharedPreferences.setMockInitialValues({});
+        store.readHold = hold;
+      } else {
+        store.writeHold = hold;
+      }
+      SharedPreferencesStorePlatform.instance = store;
+      try {
+        auth.setRememberMe(true);
+        final result = login('email');
+        service.emit('owner_a');
+        service.replies.single.complete(_profile('owner_a'));
+        await store.entered.future.timeout(const Duration(seconds: 2));
+        auth.setRememberMe(false);
+        hold.complete();
+        expect(await result, isTrue);
+        expect(store.writes,
+            stage == 'read' ? isEmpty : ['flutter.remember_email']);
+      } finally {
+        if (!hold.isCompleted) hold.complete();
+        SharedPreferencesStorePlatform.instance = previous;
+      }
+    });
+  }
 }
