@@ -9,7 +9,7 @@
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1169,
+    "collection_accesses": 1163,
     "filter_order_cursor_sites": 895,
     "source_files": 822
   },
@@ -15266,12 +15266,12 @@
         {
           "chain": [
             {
-              "line": 60,
+              "line": 37,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 61,
+              "line": 38,
               "literal": "userId",
               "method": "where",
               "operators": [
@@ -15279,7 +15279,7 @@
               ]
             },
             {
-              "line": 62,
+              "line": 39,
               "method": "snapshots"
             }
           ],
@@ -15299,7 +15299,7 @@
             52,
             53
           ],
-          "line": 60,
+          "line": 37,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -15310,16 +15310,16 @@
         {
           "chain": [
             {
-              "line": 111,
+              "line": 44,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 112,
+              "line": 44,
               "method": "doc"
             },
             {
-              "line": 113,
+              "line": 44,
               "method": "get"
             }
           ],
@@ -15339,7 +15339,7 @@
             52,
             53
           ],
-          "line": 111,
+          "line": 44,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -15350,12 +15350,12 @@
         {
           "chain": [
             {
-              "line": 142,
+              "line": 51,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 143,
+              "line": 52,
               "method": "doc"
             }
           ],
@@ -15375,7 +15375,7 @@
             52,
             53
           ],
-          "line": 142,
+          "line": 51,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -15386,18 +15386,18 @@
         {
           "chain": [
             {
-              "line": 144,
+              "line": 53,
               "literal": "timeline",
               "method": "collection"
             },
             {
               "direction": "DESCENDING",
-              "line": 145,
+              "line": 54,
               "literal": "timestamp",
               "method": "orderBy"
             },
             {
-              "line": 146,
+              "line": 55,
               "method": "get"
             }
           ],
@@ -15406,7 +15406,7 @@
             "classification": "SINGLE_FIELD_SOURCE_PATTERN_LIVE_DEFAULTS_UNVERIFIED"
           },
           "index_candidate_ids": [],
-          "line": 144,
+          "line": 53,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             19
@@ -15417,16 +15417,16 @@
         {
           "chain": [
             {
-              "line": 234,
+              "line": 61,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 234,
+              "line": 61,
               "method": "doc"
             },
             {
-              "line": 234,
+              "line": 61,
               "method": "update"
             }
           ],
@@ -15446,7 +15446,7 @@
             52,
             53
           ],
-          "line": 234,
+          "line": 61,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -15457,12 +15457,12 @@
         {
           "chain": [
             {
-              "line": 242,
+              "line": 65,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 243,
+              "line": 66,
               "method": "doc"
             }
           ],
@@ -15482,7 +15482,7 @@
             52,
             53
           ],
-          "line": 242,
+          "line": 65,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -15493,12 +15493,12 @@
         {
           "chain": [
             {
-              "line": 244,
+              "line": 67,
               "literal": "timeline",
               "method": "collection"
             },
             {
-              "line": 245,
+              "line": 68,
               "method": "add"
             }
           ],
@@ -15507,209 +15507,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 244,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            19
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 284,
-              "literal": "orders",
-              "method": "collection"
-            },
-            {
-              "line": 284,
-              "method": "doc"
-            },
-            {
-              "line": 284,
-              "method": "update"
-            }
-          ],
-          "collection": "orders",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            50,
-            51,
-            52,
-            53
-          ],
-          "line": 284,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            18
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 298,
-              "literal": "orders",
-              "method": "collection"
-            },
-            {
-              "line": 299,
-              "method": "doc"
-            }
-          ],
-          "collection": "orders",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            50,
-            51,
-            52,
-            53
-          ],
-          "line": 298,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            18
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 300,
-              "literal": "timeline",
-              "method": "collection"
-            },
-            {
-              "line": 301,
-              "method": "add"
-            }
-          ],
-          "collection": "timeline",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [],
-          "line": 300,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            19
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 378,
-              "literal": "orders",
-              "method": "collection"
-            },
-            {
-              "line": 378,
-              "method": "doc"
-            },
-            {
-              "line": 378,
-              "method": "update"
-            }
-          ],
-          "collection": "orders",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            50,
-            51,
-            52,
-            53
-          ],
-          "line": 378,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            18
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 387,
-              "literal": "orders",
-              "method": "collection"
-            },
-            {
-              "line": 388,
-              "method": "doc"
-            }
-          ],
-          "collection": "orders",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            50,
-            51,
-            52,
-            53
-          ],
-          "line": 387,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            18
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 389,
-              "literal": "timeline",
-              "method": "collection"
-            },
-            {
-              "line": 390,
-              "method": "add"
-            }
-          ],
-          "collection": "timeline",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [],
-          "line": 389,
+          "line": 67,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             19
@@ -15720,7 +15518,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 61,
+          "line": 38,
           "literal": "userId",
           "method": "where",
           "operators": [
@@ -15729,55 +15527,55 @@
         },
         {
           "direction": "DESCENDING",
-          "line": 145,
+          "line": 54,
           "literal": "timestamp",
           "method": "orderBy"
         },
         {
-          "line": 168,
+          "line": 309,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 177,
+          "line": 312,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 189,
+          "line": 316,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 201,
+          "line": 320,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 212,
+          "line": 323,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 220,
+          "line": 325,
           "literal": null,
           "method": "where",
           "operators": []
         },
         {
-          "line": 418,
+          "line": 329,
           "literal": null,
           "method": "where",
           "operators": []
         }
       ],
       "path": "apps/marketplace/lib/providers/order_provider.dart",
-      "sha256": "5d63a90db87f96172d1ea17d61e046aed856ba8d2acd78152b6a672819d904eb"
+      "sha256": "d6dff2a76d50c6a6732e2056f01000c3d70fbef914d381a25ba835595480fb45"
     },
     {
       "callable_sites": [],
@@ -19996,7 +19794,7 @@
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
       "path": "apps/marketplace/lib/screens/user/orders/order_tracking_screen.dart",
-      "sha256": "5902f52f3b17b94e8019741fb4bc8f9944b65518b087e8d21f0013ae655b6a88"
+      "sha256": "f17766bc69c68219a9b68b12c9d6f65fb2c11964a4483387cedf12ee82027c15"
     },
     {
       "callable_sites": [],

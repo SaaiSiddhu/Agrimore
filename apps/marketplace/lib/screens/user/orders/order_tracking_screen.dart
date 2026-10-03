@@ -2,32 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/order_provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final OrderModel order;
 
-  const OrderTrackingScreen({Key? key, required this.order}) : super(key: key);
+  const OrderTrackingScreen({super.key, required this.order});
 
   @override
   State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+  late final AuthProvider _openingAuth;
+  late final OrderProvider _openingOrders;
+  late final String? _openingOwner;
+  late final int _openingVersion;
+  late final String _openingOrderId;
+  bool get _ownsScreen =>
+      mounted &&
+      _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingAuth) &&
+      identical(context.read<OrderProvider>(), _openingOrders) &&
+      _openingAuth.isSessionCurrent(_openingOwner, _openingVersion) &&
+      widget.order.userId == _openingOwner &&
+      widget.order.id == _openingOrderId;
+
   @override
   void initState() {
     super.initState();
+    _openingAuth = context.read<AuthProvider>();
+    _openingOrders = context.read<OrderProvider>();
+    _openingOwner = _openingAuth.currentUser?.uid;
+    _openingVersion = _openingAuth.sessionVersion;
+    _openingOrderId = widget.order.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderProvider>(context, listen: false)
-          .loadOrderById(widget.order.id);
+      if (_ownsScreen) _openingOrders.loadOrderById(_openingOrderId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -40,13 +58,23 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
+          if (!_ownsScreen) {
+            return const Center(
+                child: Text(
+                    'Your session changed. Reopen this order to continue.'));
+          }
           if (orderProvider.isLoadingTimeline) {
             return Center(
                 child: CircularProgressIndicator(color: AppColors.primary));
           }
 
-          final timeline = orderProvider.selectedOrderTimeline;
-          final order = orderProvider.selectedOrder ?? widget.order;
+          final selected = orderProvider.selectedOrder;
+          final matchesRoute = selected?.id == _openingOrderId &&
+              selected?.userId == _openingOwner;
+          final timeline = matchesRoute
+              ? orderProvider.selectedOrderTimeline
+              : <OrderTimelineModel>[];
+          final order = matchesRoute ? selected! : widget.order;
 
           return SingleChildScrollView(
             child: Column(
@@ -200,7 +228,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isCompleted || isActive ? AppColors.primary : Colors.grey[300],
+                color: isCompleted || isActive
+                    ? AppColors.primary
+                    : Colors.grey[300],
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isCompleted || isActive
@@ -240,7 +270,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             fontSize: 11,
             fontWeight:
                 isActive || isCompleted ? FontWeight.w700 : FontWeight.w500,
-            color: isActive || isCompleted ? AppColors.primary : Colors.grey[600],
+            color:
+                isActive || isCompleted ? AppColors.primary : Colors.grey[600],
           ),
           textAlign: TextAlign.center,
         ),
@@ -330,8 +361,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(height: 12),
               Text(
                 'No tracking information yet',
-                style:
-                    TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(height: 4),
               Text(
