@@ -1,19 +1,15 @@
 // lib/screens/user/orders/order_details_screen.dart
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/cart_provider.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
+import '../../../providers/auth_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/theme_provider.dart';
-import 'order_tracking_screen.dart';
 import 'live_tracking_screen.dart';
 import '../cart/cart_screen.dart';
 import '../help/help_screen.dart';
@@ -26,7 +22,7 @@ import '../../../providers/order_provider.dart';
 class OrderDetailsScreen extends StatefulWidget {
   final String orderId;
 
-  const OrderDetailsScreen({Key? key, required this.orderId}) : super(key: key);
+  const OrderDetailsScreen({super.key, required this.orderId});
 
   @override
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
@@ -34,6 +30,21 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     with TickerProviderStateMixin {
+  late final AuthProvider _openingAuth;
+  late final OrderProvider _openingOrders;
+  late final String? _openingOwner;
+  late final int _openingVersion;
+  late final String _openingOrderId;
+  bool get _ownsScreen => mounted && _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingAuth) &&
+      identical(context.read<OrderProvider>(), _openingOrders) &&
+      _openingAuth.isSessionCurrent(_openingOwner, _openingVersion) &&
+      widget.orderId == _openingOrderId;
+  bool _ownsOrder(OrderModel order) => _ownsScreen &&
+      order.id == _openingOrderId && order.userId == _openingOwner;
+  Widget _sessionChanged() => const Center(child: Text(
+      'Your session changed. Reopen this order to continue.'));
+
   late TabController _tabController;
   bool _isInitialized = false;
 
@@ -70,6 +81,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   @override
   void initState() {
     super.initState();
+    _openingAuth = context.read<AuthProvider>();
+    _openingOrders = context.read<OrderProvider>();
+    _openingOwner = _openingAuth.currentUser?.uid;
+    _openingVersion = _openingAuth.sessionVersion;
+    _openingOrderId = widget.orderId;
     _tabController = TabController(length: 3, vsync: this);
     _isInitialized = true;
 
@@ -115,9 +131,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     // --- End Toast Animations ---
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-      orderProvider.loadOrderById(widget.orderId).then((_) {
-        if (mounted) {
+      if (!_ownsScreen) return;
+      _openingOrders.loadOrderById(_openingOrderId).then((_) {
+        if (_ownsScreen) {
           _animationController.forward();
         }
       });
@@ -127,11 +143,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   }
 
   void _onTabChanged() {
-    if (_tabController.index == 1) {
-      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-      if (orderProvider.selectedOrder != null) {
-        orderProvider.loadOrderById(orderProvider.selectedOrder!.id);
-      }
+    if (_ownsScreen && _tabController.index == 1) {
+      _openingOrders.loadOrderById(_openingOrderId);
     }
   }
 
@@ -149,7 +162,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   // SHOW TOAST MESSAGE
   // ============================================
   void _showToastMessage(String message, {bool isSuccess = true}) {
-    if (!mounted) return;
+    if (!_ownsScreen) return;
     _toastTimer?.cancel();
 
     setState(() {
@@ -162,9 +175,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     _toastAnimationController.forward();
 
     _toastTimer = Timer(const Duration(milliseconds: 2800), () {
-      if (mounted) {
+      if (_ownsScreen) {
         _toastAnimationController.reverse().then((_) {
-          if (mounted) setState(() => _showToast = false);
+          if (_ownsScreen) setState(() => _showToast = false);
         });
       }
     });
@@ -174,6 +187,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   // REORDER LOGIC
   // ============================================
   Future<void> _handleReorder(OrderModel order, bool isDark) async {
+    if (!_ownsOrder(order)) return;
     if (order.items.isEmpty) {
       _showToastMessage('No items to reorder', isSuccess: false);
       return;
@@ -192,27 +206,29 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ProductSelectionModal(
-        items: items,
-        initialSelection: selectedItems,
-        isDark: isDark,
+      builder: (context) => Consumer2<AuthProvider, OrderProvider>(
+        builder: (_, auth, orders, child) => _ownsScreen
+            ? _ProductSelectionModal(items: items,
+                initialSelection: selectedItems, isDark: isDark)
+            : _sessionChanged(),
       ),
     );
 
-    if (result != null && result.isNotEmpty) {
+    if (_ownsScreen && result != null && result.isNotEmpty) {
       _addToCartAndNavigate(result);
     }
   }
 
   void _addToCartAndNavigate(List<CartItemModel> items) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    
+    if (!_ownsScreen) return;
+    final cartProvider = context.read<CartProvider>();
     cartProvider.addOrderItems(items).then((success) {
+      if (!mounted || !_ownsScreen || !identical(context.read<CartProvider>(), cartProvider)) return;
       if (success) {
         _showToastMessage('✅ Added ${items.length} item${items.length > 1 ? 's' : ''} to cart');
 
         Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
+          if (mounted && _ownsScreen && identical(context.read<CartProvider>(), cartProvider)) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const CartScreen()),
@@ -220,7 +236,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           }
         });
       } else {
-        _showToastMessage('❌ Failed: ${cartProvider.error ?? 'Unknown error'}', isSuccess: false);
+        _showToastMessage('Unable to add these items. Please try again.', isSuccess: false);
       }
     });
   }
@@ -228,6 +244,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    context.watch<OrderProvider>();
+    if (!_ownsScreen) return Scaffold(body: _sessionChanged());
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
@@ -238,15 +257,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         children: [
           Consumer<OrderProvider>(
             builder: (context, orderProvider, child) {
-              if (orderProvider.isLoading && orderProvider.selectedOrder == null) {
+              final selected = orderProvider.selectedOrder;
+              final matchesRoute = selected != null && _ownsOrder(selected);
+              if (orderProvider.isLoading && !matchesRoute) {
                 return _buildLoadingState(isDark);
               }
 
-              if (orderProvider.selectedOrder == null) {
+              if (!matchesRoute) {
                 return _buildErrorState(isDark);
               }
 
-              final order = orderProvider.selectedOrder!;
+              final order = selected;
 
               return Column(
                 children: [
@@ -272,7 +293,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                     child: _buildTrackingTabContent(
                                       order,
-                                      orderProvider.selectedOrderTimeline ?? [],
+                                      orderProvider.selectedOrderTimeline,
                                       isDark,
                                     ),
                                   ),
@@ -435,6 +456,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
+                  if (!_ownsScreen) return;
                   // ✅ FIXED: Link to Help Screen and removed const
                   Navigator.push(
                     context,
@@ -574,6 +596,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 const SizedBox(height: 4),
                  GestureDetector(
                   onTap: () {
+                    if (!_ownsOrder(order)) return;
                     Clipboard.setData(ClipboardData(text: order.orderNumber));
                     _showToastMessage('✅ Order ID copied to clipboard');
                   },
@@ -1011,6 +1034,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
+              if (!_ownsOrder(order)) return;
               HapticFeedback.lightImpact();
               Navigator.push(
                 context,
@@ -1750,6 +1774,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   }
 
   void _showCancelDialog(OrderModel order, bool isDark) {
+    if (!_ownsOrder(order)) return;
     final reasonController = TextEditingController();
     // Captured before the dialog opens. The dialog's own builder context
     // (below) is popped as soon as the user confirms, well before the
@@ -1757,9 +1782,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     // navigation was reusing an already-detached context. screenContext is
     // this screen's own, which the dialog never pops.
     final screenContext = context;
-    showDialog(
+    final route = DialogRoute<void>(
       context: context,
-      builder: (dialogContext) => Dialog(
+      builder: (dialogContext) => Consumer2<AuthProvider, OrderProvider>(
+        builder: (_, auth, orders, child) => !_ownsOrder(order)
+            ? Dialog(child: _sessionChanged())
+            : Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
           margin: const EdgeInsets.all(20),
@@ -1868,17 +1896,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
+                          if (!_ownsOrder(order)) return;
                           final reason = reasonController.text.trim();
                           if (reason.isEmpty) {
                              _showToastMessage('⚠️ Please provide a reason', isSuccess: false);
                             return;
                           }
                           Navigator.pop(dialogContext);
-                          final success = await Provider.of<OrderProvider>(
-                                  screenContext,
-                                  listen: false)
-                              .cancelOrder(order.id, reason);
-                          if (success && screenContext.mounted) {
+                          final success = await _openingOrders.cancelOrder(order.id, reason);
+                          if (!screenContext.mounted || !_ownsOrder(order)) return;
+                          if (success) {
                             _showToastMessage('✅ Order cancelled successfully');
                             Navigator.pop(screenContext);
                           } else {
@@ -1908,7 +1935,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           ),
         ),
       ),
+      ),
     );
+    Navigator.of(context, rootNavigator: true).push(route);
+    // popped resolves before the closing animation; completed waits until
+    // the overlay and its TextField have actually been removed.
+    route.completed.whenComplete(reasonController.dispose);
   }
 
   Widget _buildLoadingState(bool isDark) {

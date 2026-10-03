@@ -25,6 +25,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../app/routes.dart';
 import '../../../providers/order_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../services/delivery_tracking_service.dart';
 import 'rate_order_screen.dart';
@@ -35,11 +36,25 @@ import 'widgets/tracking_sections.dart';
 class LiveTrackingScreen extends StatefulWidget {
   final String orderId;
   final OrderModel? initialOrder;
+  // Optional transport/rendering seams keep lifetime tests independent of
+  // native maps and live Firebase. Normal callers retain the SDK defaults.
+  final Stream<OrderModel?> Function(String)? orderSnapshots;
+  final Stream<DeliveryTaskModel?> Function(String)? taskSnapshots;
+  final Stream<RiderLivePoint?> Function(String)? liveSnapshots;
+  final Stream<String?> Function(String)? codeSnapshots;
+  final Future<TrackingMarkerIcons?> Function()? markerIcons;
+  final Widget Function(Set<Marker>, Set<Polyline>)? mapBuilder;
 
   const LiveTrackingScreen({
     super.key,
     required this.orderId,
     this.initialOrder,
+    this.orderSnapshots,
+    this.taskSnapshots,
+    this.liveSnapshots,
+    this.codeSnapshots,
+    this.markerIcons,
+    this.mapBuilder,
   });
 
   @override
@@ -47,7 +62,43 @@ class LiveTrackingScreen extends StatefulWidget {
 }
 
 class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProviderStateMixin {
-  final DeliveryTrackingService _trackingService = DeliveryTrackingService();
+  late final AuthProvider _openingAuth;
+  late final OrderProvider _openingOrders;
+  late final String? _openingOwner;
+  late final int _openingVersion;
+  late final String _openingOrderId;
+  bool _expired = false;
+  bool _orderUnavailable = false;
+  bool _auxiliaryStarted = false;
+  bool get _ownsScreen => mounted && !_expired && _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingAuth) &&
+      identical(context.read<OrderProvider>(), _openingOrders) &&
+      _openingAuth.isSessionCurrent(_openingOwner, _openingVersion) &&
+      widget.orderId == _openingOrderId;
+  bool _matchesOrder(OrderModel order) =>
+      order.id == _openingOrderId && order.userId == _openingOwner;
+  bool get _ownsData => _ownsScreen && _order != null && _matchesOrder(_order!);
+
+  void _expire() {
+    _expired = true;
+    for (final subscription in _subs) { subscription.cancel(); }
+    _subs.clear();
+    _clock?.cancel();
+    _moveController.stop();
+    _pulseController.stop();
+    _order = null; _task = null; _live = null; _eta = null;
+    _deliveryCode = null; _riderShown = null; _moveFrom = null; _moveTo = null;
+    _markers = {}; _polylines = {};
+  }
+  void _unavailable() {
+    _orderUnavailable = true;
+    _expire();
+  }
+  void _onSessionChanged() {
+    if (mounted && !_ownsScreen) setState(_expire);
+  }
+
+  late final DeliveryTrackingService _trackingService = DeliveryTrackingService();
   GoogleMapController? _mapController;
 
   OrderModel? _order;
@@ -78,83 +129,107 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    _order = widget.initialOrder;
+    _openingAuth = context.read<AuthProvider>();
+    _openingOrders = context.read<OrderProvider>();
+    _openingOwner = _openingAuth.currentUser?.uid;
+    _openingVersion = _openingAuth.sessionVersion;
+    _openingOrderId = widget.orderId;
+    final initial = widget.initialOrder;
+    _order = initial != null && _matchesOrder(initial) ? initial : null;
     _pulseController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this)
       ..repeat(reverse: true);
     _moveController = AnimationController(duration: const Duration(milliseconds: 900), vsync: this)
       ..addListener(_onMoveTick);
+    _openingAuth.addListener(_onSessionChanged);
+    if (!_ownsScreen || (initial != null && !_matchesOrder(initial))) {
+      _expire();
+      return;
+    }
     _loadMarkerIcons();
     _listen();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // After the first frame: loadOrderById notifies listeners, which threw
       // 'setState() or markNeedsBuild() called during build' from initState.
-      if (mounted) context.read<OrderProvider>().loadOrderById(widget.orderId);
+      if (_ownsScreen) _openingOrders.loadOrderById(_openingOrderId);
     });
     // Counts the ETA down and ages the 'location updated' note.
     _clock = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted) setState(_recompute);
+      if (_ownsData) setState(_recompute);
     });
   }
 
   Future<void> _loadMarkerIcons() async {
     try {
-      final icons = await TrackingMarkerIcons.build();
-      if (!mounted) return;
+      final icons = await (widget.markerIcons?.call() ?? TrackingMarkerIcons.build());
+      if (!_ownsScreen) return;
       setState(() {
         _icons = icons;
         _recompute();
       });
     } catch (e) {
-      debugPrint('Marker icons: $e');
+      if (_ownsScreen) debugPrint('Tracking marker icons unavailable');
     }
   }
 
   void _listen() {
-    _subs.add(_trackingService.streamOrderStatus(widget.orderId).listen((order) {
-      if (order == null || !mounted) return;
-      setState(() {
-        _order = order;
-        _recompute();
-      });
-    }, onError: (Object e) => debugPrint('Order stream: $e')));
-    _subs.add(_trackingService.streamTask(widget.orderId).listen((task) {
-      if (!mounted) return;
-      setState(() {
-        _task = task;
-        _recompute();
-      });
-    }, onError: (Object e) => debugPrint('Delivery task stream: $e')));
-    _subs.add(_trackingService.streamLivePoint(widget.orderId).listen((live) {
-      if (!mounted) return;
+    _subs.add((widget.orderSnapshots ?? _trackingService.streamOrderStatus)(_openingOrderId)
+        .listen((order) {
+      if (!_ownsScreen) return;
+      if (order == null || !_matchesOrder(order)) { setState(_unavailable); return; }
+      setState(() { _order = order; _recompute(); });
+      _listenAuxiliary();
+    }, onError: (Object error) {
+      if (_ownsScreen) setState(_unavailable);
+    }));
+    if (_ownsData) _listenAuxiliary();
+  }
+
+  void _listenAuxiliary() {
+    if (!_ownsData || _auxiliaryStarted) return;
+    _auxiliaryStarted = true;
+    _subs.add((widget.taskSnapshots ?? _trackingService.streamTask)(_openingOrderId).listen((task) {
+      if (!_ownsData) return;
+      if (task != null && (task.orderId != _openingOrderId ||
+          (task.customerId != null && task.customerId != _openingOwner))) { setState(_unavailable); return; }
+      setState(() { _task = task; _recompute(); });
+    }, onError: (Object error) {
+      if (_ownsData) setState(() { _task = null; _deliveryCode = null; _recompute(); });
+    }));
+    _subs.add((widget.liveSnapshots ?? _trackingService.streamLivePoint)(_openingOrderId).listen((live) {
+      if (!_ownsData) return;
       _live = live;
-      if (live != null) {
+      if (live == null) {
+        _moveController.stop(); _riderShown = null; _moveFrom = null; _moveTo = null;
+      } else {
         final next = LatLng(live.lat, live.lng);
-        if (_riderShown == null) {
-          _riderShown = next;
-        } else {
-          _moveFrom = _riderShown;
-          _moveTo = next;
-          _moveController.forward(from: 0);
-        }
+        if (_riderShown == null) { _riderShown = next; }
+        else { _moveFrom = _riderShown; _moveTo = next; _moveController.forward(from: 0); }
       }
       setState(_recompute);
-    }, onError: (Object e) => debugPrint('Rider live point stream: $e')));
-    _subs.add(FirebaseFirestore.instance
-        .collection('orders')
-        .doc(widget.orderId)
-        .collection('secrets')
-        .doc('delivery')
-        .snapshots()
-        .listen((d) {
-      final code = d.data()?['code'];
-      if (!mounted) return;
-      setState(() => _deliveryCode = code is String && code.isNotEmpty ? code : null);
-    }, onError: (Object e) => debugPrint('Delivery code stream: $e')));
+    }, onError: (Object error) {
+      if (_ownsData) {
+        setState(() {
+          _moveController.stop(); _live = null; _riderShown = null;
+          _moveFrom = null; _moveTo = null; _recompute();
+        });
+      }
+    }));
+    final codes = widget.codeSnapshots?.call(_openingOrderId) ?? FirebaseFirestore.instance
+        .collection('orders').doc(_openingOrderId).collection('secrets')
+        .doc('delivery').snapshots().map((d) {
+          final code = d.data()?['code'];
+          return code is String && code.isNotEmpty ? code : null;
+        });
+    _subs.add(codes.listen((code) {
+      if (_ownsData) { setState(() => _deliveryCode = code); }
+    }, onError: (Object error) {
+      if (_ownsData) { setState(() => _deliveryCode = null); }
+    }));
   }
 
   void _onMoveTick() {
     final from = _moveFrom, to = _moveTo;
-    if (from == null || to == null || !mounted) return;
+    if (from == null || to == null || !_ownsData) return;
     final t = Curves.easeInOut.transform(_moveController.value);
     setState(() {
       _riderShown = LatLng(
@@ -220,6 +295,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
   }
 
   void _recompute() {
+    if (!_ownsData) return;
     final drop = _dropLatLng;
     _eta = DeliveryEtaCalculator.estimate(
       status: _status,
@@ -231,7 +307,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
     );
     _buildMapLayers();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _fitCameraIfNeeded();
+      if (_ownsData) _fitCameraIfNeeded();
     });
   }
 
@@ -349,7 +425,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
   /// sheet, so nothing sits under either.
   Future<void> _fitCameraIfNeeded() async {
     final controller = _mapController;
-    if (controller == null || _finished) return;
+    if (!_ownsData || controller == null || _finished) return;
     final pts = <LatLng>[
       if (_riderShown != null && _riderLegActive) _riderShown!,
       // The whole way still ahead — rider, store and home before pickup —
@@ -390,26 +466,32 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
         (bounds.southwest.longitude + bounds.northeast.longitude) / 2,
       );
       await controller.moveCamera(CameraUpdate.newLatLngZoom(center, zoom));
+      if (!_ownsData || !identical(controller, _mapController)) return;
       // Put that centre in the middle of the band between the ETA card and
       // the sheet.
       await controller.moveCamera(CameraUpdate.scrollBy(0, size.height / 2 - (bandTop + bandBottom) / 2));
+      if (!_ownsData || !identical(controller, _mapController)) return;
       final region = await controller.getVisibleRegion();
+      if (!_ownsData || !identical(controller, _mapController)) return;
       final valid = region.northeast.latitude.isFinite &&
           region.southwest.latitude.isFinite &&
           region.northeast.latitude != region.southwest.latitude;
       if (!valid) throw StateError('map not laid out yet');
     } catch (e) {
       // Map not laid out yet (web): try again shortly.
-      debugPrint('Tracking camera fit failed: $e');
+      if (!_ownsData) return;
+      debugPrint('Tracking camera is not ready');
       _fittedOnce = false;
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) _fitCameraIfNeeded();
+        if (_ownsData) _fitCameraIfNeeded();
       });
     }
   }
 
   @override
   void dispose() {
+    _openingAuth.removeListener(_onSessionChanged);
+    _expired = true;
     for (final s in _subs) {
       s.cancel();
     }
@@ -423,40 +505,60 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
   // ------------------------------------------------------------- actions
 
   Future<void> _callPartner() async {
+    if (!_ownsData) return;
     final phone = _order?.deliveryPartner?.phone;
     if (phone == null || phone.isEmpty) return _noContact();
     final url = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(url)) await launchUrl(url);
+    final available = await canLaunchUrl(url);
+    if (_ownsData && available) await launchUrl(url);
   }
 
   Future<void> _messagePartner() async {
+    if (!_ownsData) return;
     final phone = _order?.deliveryPartner?.phone;
     if (phone == null || phone.isEmpty) return _noContact();
     final body = Uri.encodeComponent('Hi, regarding my Agrimore order #${_order?.orderNumber ?? ''}');
     try {
       await launchUrl(Uri.parse('sms:$phone?body=$body'));
     } catch (_) {
+      if (!_ownsData) return;
       await launchUrl(Uri.parse('sms:$phone'));
     }
   }
 
   void _noContact() {
-    if (!mounted) return;
+    if (!_ownsData) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Your delivery partner's number isn't available yet")),
     );
   }
 
-  void _openHelp() => Navigator.of(context).pushNamed(AppRoutes.support);
-
-  void _openRating() => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => RateOrderScreen(orderId: widget.orderId)),
-      );
+  void _done() {
+    if (_ownsScreen) Navigator.of(context).maybePop();
+  }
+  void _openHelp() {
+    if (_ownsData) Navigator.of(context).pushNamed(AppRoutes.support);
+  }
+  void _openRating() {
+    if (_ownsData) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => RateOrderScreen(orderId: _openingOrderId)));
+    }
+  }
 
   // ------------------------------------------------------------------ UI
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    context.watch<OrderProvider>();
+    if (!_ownsScreen) {
+      _expire();
+      return Scaffold(body: Center(child: Text(_orderUnavailable
+          ? 'This order is unavailable. Reopen it to continue.'
+          : 'Your session changed. Reopen this order to continue.')));
+    }
+    if (!_ownsData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final palette = TrackingPalette(isDark);
     final order = _order;
@@ -469,7 +571,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
         deliveredAt: _task?.stepAt['delivered'],
         onRate: _openRating,
         onHelp: _openHelp,
-        onDone: () => Navigator.of(context).maybePop(),
+        onDone: _done,
       );
     }
 
@@ -490,6 +592,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
   }
 
   Widget _buildMap(bool isDark) {
+    if (widget.mapBuilder != null) return widget.mapBuilder!(_markers, _polylines);
     final start = _dropLatLng ?? _pickupLatLng ?? _defaultLocation;
     return GoogleMap(
       initialCameraPosition: CameraPosition(target: start, zoom: _dropLatLng == null ? 5 : 14),
@@ -502,6 +605,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
       compassEnabled: false,
       style: isDark ? _darkMapStyle : null,
       onMapCreated: (controller) {
+        if (!_ownsData) { controller.dispose(); return; }
         _mapController = controller;
         _fitCameraIfNeeded();
       },
@@ -526,7 +630,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
         right: 12,
         child: Row(
           children: [
-            _circleButton(p, Icons.arrow_back_rounded, 'Back', () => Navigator.of(context).maybePop()),
+            _circleButton(p, Icons.arrow_back_rounded, 'Back', _done),
             const Spacer(),
             if (_order != null)
               Container(

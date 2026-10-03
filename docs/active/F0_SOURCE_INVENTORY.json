@@ -19649,12 +19649,12 @@
         {
           "chain": [
             {
-              "line": 143,
+              "line": 218,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 144,
+              "line": 218,
               "method": "doc"
             }
           ],
@@ -19674,7 +19674,7 @@
             52,
             53
           ],
-          "line": 143,
+          "line": 218,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -19685,16 +19685,16 @@
         {
           "chain": [
             {
-              "line": 145,
+              "line": 218,
               "literal": "secrets",
               "method": "collection"
             },
             {
-              "line": 146,
+              "line": 219,
               "method": "doc"
             },
             {
-              "line": 147,
+              "line": 219,
               "method": "snapshots"
             }
           ],
@@ -19703,7 +19703,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 145,
+          "line": 218,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             20
@@ -19714,7 +19714,7 @@
       ],
       "filter_order_cursor_sites": [],
       "path": "apps/marketplace/lib/screens/user/orders/live_tracking_screen.dart",
-      "sha256": "ff6fb225b1c6d9474f849759f3efaa6b3814e95b2bcb1198e00327669943f809"
+      "sha256": "1b74701735f6d9baff5859455750bd53a6ef68d9ff91fe81ed81bb45e9814fa0"
     },
     {
       "callable_sites": [],
@@ -19722,12 +19722,12 @@
         {
           "chain": [
             {
-              "line": 47,
+              "line": 58,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 48,
+              "line": 59,
               "method": "doc"
             }
           ],
@@ -19747,7 +19747,7 @@
             52,
             53
           ],
-          "line": 47,
+          "line": 58,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -19758,16 +19758,16 @@
         {
           "chain": [
             {
-              "line": 49,
+              "line": 60,
               "literal": "secrets",
               "method": "collection"
             },
             {
-              "line": 50,
+              "line": 61,
               "method": "doc"
             },
             {
-              "line": 51,
+              "line": 62,
               "method": "snapshots"
             }
           ],
@@ -19776,7 +19776,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 49,
+          "line": 60,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             20
@@ -19787,7 +19787,7 @@
       ],
       "filter_order_cursor_sites": [],
       "path": "apps/marketplace/lib/screens/user/orders/order_details_screen.dart",
-      "sha256": "fb25af7b6196b469c4635123170ee413d8b32b8387f1e7a8732b828367173eab"
+      "sha256": "6cf67445723dc24fd73573e67d910b41d37f328cf519a21e42a7d0f5399627d1"
     },
     {
       "callable_sites": [],
