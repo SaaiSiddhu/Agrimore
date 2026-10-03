@@ -3,7 +3,7 @@
   "config_sha256": {
     "firebase.json": "59f20f8a2c2c1e3d8f417d58ebfce6b876887287c63236d9f690bebdeafe25ff",
     "firestore.indexes.json": "2160797d594d1c119a8ccf28fef882b5be2102f3366e993148dc0cb4fe8e039e",
-    "firestore.rules": "984784c940253c8dee9419d8ef8d4c494bb600d4cb2306123348f400c89a106a",
+    "firestore.rules": "faf79325e2aa99e0f56e39077e9345a8383ab2ac5f7383254581e15e2cd43a3e",
     "functions/package.json": "2ea2654dddf058760bc9b92900215ca41febcc6104f2b92d9d68f9e5435aeb9f",
     "storage.rules": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
   },
@@ -51995,317 +51995,317 @@
     },
     {
       "file": "firestore.rules",
-      "line": 1572,
+      "line": 1575,
       "local_path": "/auth_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1586,
+      "line": 1589,
       "local_path": "/bestseller_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1597,
+      "line": 1600,
       "local_path": "/category_section_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1611,
+      "line": 1614,
       "local_path": "/home_product_sections/{sectionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1633,
+      "line": 1636,
       "local_path": "/auth_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1699,
+      "line": 1702,
       "local_path": "/wallets/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1724,
+      "line": 1727,
       "local_path": "/wallet_transactions/{transactionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1743,
+      "line": 1746,
       "local_path": "/wallet_topups/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1760,
+      "line": 1763,
       "local_path": "/ai_connections/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1771,
+      "line": 1774,
       "local_path": "/ai_connection_status/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1784,
+      "line": 1787,
       "local_path": "/rfqs/{rfqId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1797,
+      "line": 1800,
       "local_path": "/referrals/{referralId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1860,
+      "line": 1863,
       "local_path": "/delivery_partners/{partnerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1892,
+      "line": 1895,
       "local_path": "/delivery_tasks/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1913,
+      "line": 1916,
       "local_path": "/live/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1961,
+      "line": 1964,
       "local_path": "/delivery_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1971,
+      "line": 1974,
       "local_path": "/delivery_dispatch/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1978,
+      "line": 1981,
       "local_path": "/vendors/{vendorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1988,
+      "line": 1991,
       "local_path": "/threads/{threadId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2040,
+      "line": 2043,
       "local_path": "/messages/{messageId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2066,
+      "line": 2069,
       "local_path": "/seller_stats_daily/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2073,
+      "line": 2076,
       "local_path": "/seller_stats_contrib/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2088,
+      "line": 2091,
       "local_path": "/rider_incidents/{incidentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2096,
+      "line": 2099,
       "local_path": "/delivery_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2101,
+      "line": 2104,
       "local_path": "/rider_incident_limits/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2110,
+      "line": 2113,
       "local_path": "/rider_support_tickets/{ticketId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2115,
+      "line": 2118,
       "local_path": "/rider_earnings/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2119,
+      "line": 2122,
       "local_path": "/rider_accounts/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2123,
+      "line": 2126,
       "local_path": "/rider_cash_ledger/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2127,
+      "line": 2130,
       "local_path": "/rider_bank_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2135,
+      "line": 2138,
       "local_path": "/rider_identity_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2144,
+      "line": 2147,
       "local_path": "/document_review_submissions/{submissionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2148,
+      "line": 2151,
       "local_path": "/rider_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2173,
+      "line": 2176,
       "local_path": "/seller_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2212,
+      "line": 2215,
       "local_path": "/employee_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2237,
+      "line": 2240,
       "local_path": "/inventory_alerts/{alertId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2250,
+      "line": 2253,
       "local_path": "/razorpay_orders/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2260,
+      "line": 2263,
       "local_path": "/verified_payments/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2276,
+      "line": 2279,
       "local_path": "/onboarding_handoffs/{code}"
     },
     {
       "file": "firestore.rules",
-      "line": 2283,
+      "line": 2286,
       "local_path": "/payment_security_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2313,
+      "line": 2316,
       "local_path": "/onboarding_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2320,
+      "line": 2323,
       "local_path": "/onboarding_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2327,
+      "line": 2330,
       "local_path": "/associate_refund_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2337,
+      "line": 2340,
       "local_path": "/webhook_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2353,
+      "line": 2356,
       "local_path": "/onboarding_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2369,
+      "line": 2372,
       "local_path": "/seller_ai_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2381,
+      "line": 2384,
       "local_path": "/order_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2386,
+      "line": 2389,
       "local_path": "/payment_reconciliation_cursors/{cursorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2393,
+      "line": 2396,
       "local_path": "/checkout_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2405,
+      "line": 2408,
       "local_path": "/commission_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2421,
+      "line": 2424,
       "local_path": "/support_cases/{caseId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2425,
+      "line": 2428,
       "local_path": "/support_case_notes/{noteId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2429,
+      "line": 2432,
       "local_path": "/support_case_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2438,
+      "line": 2441,
       "local_path": "/support_case_evidence/{evidenceId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2456,
+      "line": 2459,
       "local_path": "/subscriptions/{subscriptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2489,
+      "line": 2492,
       "local_path": "/sellerRequests/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2511,
+      "line": 2514,
       "local_path": "/trending_searches/{searchId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2523,
+      "line": 2526,
       "local_path": "/masterProducts/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2535,
+      "line": 2538,
       "local_path": "/centers/{centerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2554,
+      "line": 2557,
       "local_path": "/product_price_mappings/{mappingId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2570,
+      "line": 2573,
       "local_path": "/subscription_plans/{planId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2592,
+      "line": 2595,
       "local_path": "/follows/{followId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2632,
+      "line": 2635,
       "local_path": "/business_posts/{postId}"
     },
     {

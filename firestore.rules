@@ -1562,8 +1562,11 @@ service cloud.firestore {
       // User can create addresses for themselves
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
 
-      // User can update/delete their own addresses
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // An address stays with its creator; ordinary/default edits keep userId.
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+        ('userId' in request.resource.data) &&
+        request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
