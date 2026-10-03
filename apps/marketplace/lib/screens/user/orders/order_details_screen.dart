@@ -1020,7 +1020,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 Expanded(
                   // Phase DLV-3B: the live stage-aware ETA, not fixed minutes.
                   child: LiveEtaText(
+                    key: ValueKey('${order.userId}:${order.id}'),
                     orderId: order.id,
+                    ownerId: order.userId,
                     orderStatus: order.orderStatus,
                     isDark: isDark,
                   ),
