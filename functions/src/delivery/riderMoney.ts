@@ -43,6 +43,7 @@ import {
   statementCutoff, tripKm, validateBankDetails,
 } from "./riderPay";
 import { loadRiderPayRates } from "./riderRates";
+import { isExactMoneyAmount } from "../common/paymentIntegrity";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -178,22 +179,22 @@ export const onRiderDelivery = functions.firestore
 
 export type DepositVerdict =
   | { kind: "recorded"; cashHeld: number; already?: boolean }
-  | { kind: "refused"; reason: "more_than_held" | "bad_amount" | "bad_reference" | "bad_request_id" | "request_reused" };
+  | { kind: "refused"; reason: "more_than_held" | "bad_amount" | "bad_reference" | "bad_request_id" | "request_reused" | "bad_money_state" };
 
 const DEPOSIT_REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
 /**
  * An admin records cash a rider handed over. DLV-M1: exact paise; an amount
- * that rounds to zero paise is refused; with a request id (the admin app
+ * with fractional paise or a nonnumeric value is refused; with a request id (the admin app
  * sends one per deposit dialog) a retried call returns the first result
  * instead of recording the deposit twice, and the same id with a different
  * rider, amount or reference is refused.
  */
 export async function recordCashDepositCore(
-  db: Db, adminUid: string, riderId: string, amount: number, reference: string, nowMs: number,
+  db: Db, adminUid: string, riderId: string, amount: unknown, reference: string, nowMs: number,
   requestId: string | null = null
 ): Promise<DepositVerdict> {
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) return { kind: "refused", reason: "bad_amount" };
+  if (!isExactMoneyAmount(amount) || amount > 1000000) return { kind: "refused", reason: "bad_amount" };
   const amtP = toPaise(amount);
   if (amtP <= 0) return { kind: "refused", reason: "bad_amount" };
   if (reference.length < 2 || reference.length > 64) return { kind: "refused", reason: "bad_reference" };
@@ -204,7 +205,22 @@ export async function recordCashDepositCore(
     : db.collection("rider_cash_ledger").doc();
   return db.runTransaction(async (tx): Promise<DepositVerdict> => {
     const [acc, prior] = await Promise.all([tx.get(accRef), requestId ? tx.get(ledgerRef) : Promise.resolve(null)]);
-    const { cashP, earnedP } = accountPaise(acc.data());
+    // An explicitly present paise field is authoritative, including corruption:
+    // never fall back to a stale legacy display or silently replace it with zero.
+    const a = acc.data() ?? {};
+    const readBalance = (paiseKey: string, rupeeKey: string): number | null => {
+      if (Object.prototype.hasOwnProperty.call(a, paiseKey)) {
+        return Number.isSafeInteger(a[paiseKey]) ? a[paiseKey] as number : null;
+      }
+      if (!Object.prototype.hasOwnProperty.call(a, rupeeKey)) return 0;
+      const value: unknown = a[rupeeKey];
+      if (typeof value !== "number" || !Number.isFinite(value)) return null;
+      const p = toPaise(value);
+      return Number.isSafeInteger(p) && Math.abs(value * 100 - p) < 1e-7 ? p : null;
+    };
+    const cashP = readBalance("cashHeldPaise", "cashHeld");
+    const earnedP = readBalance("earningsUnsettledPaise", "earningsUnsettled");
+    if (cashP === null || cashP < 0 || earnedP === null) return { kind: "refused", reason: "bad_money_state" };
     if (prior?.exists) {
       const p = prior.data()!;
       const same = p.riderId === riderId && p.amountPaise === amtP && p.reference === reference;
@@ -469,6 +485,7 @@ async function requireAdmin(request: { auth?: { uid: string; token: Record<strin
 const REFUSAL_TEXT: Record<string, string> = {
   more_than_held: "That is more cash than the rider holds",
   bad_amount: "Enter an amount greater than zero",
+  bad_money_state: "The rider balance needs review before recording cash",
   bad_reference: "Enter a receipt or reference (2–64 characters)",
   bad_request_id: "The request could not be read",
   request_reused: "This deposit was already recorded with different details",
@@ -492,7 +509,7 @@ export const recordRiderCashDeposit = onCall({ minInstances: 0, memory: "256MiB"
   const d = (request.data ?? {}) as Record<string, unknown>;
   const riderId = typeof d.riderId === "string" ? d.riderId.trim() : "";
   if (!riderId) throw new HttpsError("invalid-argument", "riderId is required");
-  const v = await recordCashDepositCore(admin.firestore(), adminUid, riderId, Number(d.amount),
+  const v = await recordCashDepositCore(admin.firestore(), adminUid, riderId, d.amount,
     typeof d.reference === "string" ? d.reference.trim() : "", Date.now(),
     typeof d.requestId === "string" ? d.requestId : null);
   if (v.kind === "refused") refuse(v.reason);
