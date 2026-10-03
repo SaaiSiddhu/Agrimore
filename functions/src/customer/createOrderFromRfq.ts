@@ -43,7 +43,7 @@ import * as crypto from "crypto";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 import { computeFeeFromSchedule, DeliveryFeeSchedule } from "./deliveryFeeSchedule";
-import { distanceScheduleFingerprint } from "./deliveryDistanceQuote";
+import { distanceScheduleFingerprint } from "./deliveryQuoteFingerprint";
 
 interface CreateOrderFromRfqData {
   rfqId: string;

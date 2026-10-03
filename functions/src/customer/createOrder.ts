@@ -43,7 +43,7 @@ import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH, assert
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
-import { fingerprintDeliveryItems, distanceScheduleFingerprint } from "./deliveryDistanceQuote";
+import { validateDeliveryQuote } from "./deliveryQuoteValidation";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
@@ -473,79 +473,16 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
       if (schedule) sellerFeeSchedules.set(sellerId, schedule);
     }
-
     const distanceSellerIds = [...sellerFeeSchedules.entries()]
       .filter(([, schedule]) => schedule.type === "distance")
       .map(([sellerId]) => sellerId).sort();
-    let sellerDistanceMeters: Map<string, number> | undefined;
-    let deliveryQuoteRef: FirebaseFirestore.DocumentReference | null = null;
-    let deliveryQuoteSnap: FirebaseFirestore.DocumentSnapshot | null = null;
-    if (distanceSellerIds.length > 0 || data?.deliveryQuoteId) {
-      if (!data?.deliveryQuoteId || typeof data.deliveryQuoteId !== "string" ||
-          !/^[A-Za-z0-9_-]{1,150}$/.test(data.deliveryQuoteId)) {
-        throw new HttpsError("failed-precondition", "Refresh delivery pricing before placing this order");
-      }
-      deliveryQuoteRef = db.collection("delivery_fee_quotes").doc(data.deliveryQuoteId);
-      deliveryQuoteSnap = await tx.get(deliveryQuoteRef);
-      const quote = deliveryQuoteSnap.data();
-      const address = data.deliveryAddress ?? {};
-      const addressId = typeof address.id === "string" ? address.id : "";
-      const savedAddressSnap = addressId ? await tx.get(db.collection("addresses").doc(addressId)) : null;
-      const savedAddress = savedAddressSnap?.data();
-      const lat = address.latitude;
-      const lng = address.longitude;
-      const destination = typeof lat === "number" && typeof lng === "number"
-        ? { latitude: lat, longitude: lng }
-        : null;
-      const addressFingerprint = crypto.createHash("sha256")
-        .update(JSON.stringify({ addressId, destination })).digest("hex");
-      const savedLatitude = savedAddress?.latitude;
-      const savedLongitude = savedAddress?.longitude;
-      const savedDestination = typeof savedLatitude === "number" && typeof savedLongitude === "number"
-        ? { latitude: savedLatitude, longitude: savedLongitude }
-        : null;
-      const savedAddressFingerprint = crypto.createHash("sha256")
-        .update(JSON.stringify({ addressId, destination: savedDestination })).digest("hex");
-      const cartFingerprint = fingerprintDeliveryItems(normalizedItems);
-      const expiresAt = quote?.expiresAt as admin.firestore.Timestamp | undefined;
-      const entries = Array.isArray(quote?.distanceEntries) ? quote!.distanceEntries as Array<Record<string, unknown>> : [];
-      const quoteSellerIds = [...(Array.isArray(quote?.sellerIds) ? quote!.sellerIds as string[] : [])].sort();
-      const expectedSellerIds = [...cartSellerIds].sort();
-      if (!deliveryQuoteSnap.exists || !savedAddressSnap?.exists || savedAddress?.userId !== uid ||
-          quote?.uid !== uid || quote?.addressId !== addressId ||
-          quote?.addressFingerprint !== addressFingerprint || quote?.addressFingerprint !== savedAddressFingerprint ||
-          quote?.cartFingerprint !== cartFingerprint ||
-          quote?.orderMode !== orderMode || quote?.legacyDeliveryChargePaise !== Math.round((data.legacyDeliveryCharge ?? 0) * 100) ||
-          JSON.stringify(quoteSellerIds) !== JSON.stringify(expectedSellerIds) ||
-          !expiresAt || expiresAt.toMillis() <= Date.now() || quote?.consumedAt != null ||
-          entries.length !== distanceSellerIds.length ||
-          !Number.isSafeInteger(quote?.deliveryChargePaise) ||
-          Math.round((data.deliveryCharge ?? 0) * 100) !== quote?.deliveryChargePaise) {
-        throw new HttpsError("failed-precondition", "Delivery pricing changed or expired. Please refresh checkout.");
-      }
-      const quoteScheduleFingerprints = quote?.scheduleFingerprints as Record<string, unknown> | undefined;
-      for (const [sellerId, schedule] of sellerFeeSchedules) {
-        if (quoteScheduleFingerprints?.[sellerId] !== distanceScheduleFingerprint(schedule)) {
-          throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
-        }
-      }
-      sellerDistanceMeters = new Map();
-      for (const entry of entries) {
-        const sellerId = entry.sellerId;
-        const schedule = typeof sellerId === "string" ? sellerFeeSchedules.get(sellerId) : undefined;
-        const seller = sellerSnaps.find((s) => s.id === sellerId)?.data() ?? {};
-        const origin = { latitude: seller.latitude, longitude: seller.longitude };
-        const originFingerprint = crypto.createHash("sha256").update(JSON.stringify(origin)).digest("hex");
-        if (!schedule || schedule.type !== "distance" || entry.policyFingerprint !== distanceScheduleFingerprint(schedule) ||
-            entry.originFingerprint !== originFingerprint || entry.radiusKm !== seller.deliveryRadiusKm ||
-            !Number.isSafeInteger(entry.distanceMeters) || (entry.distanceMeters as number) > Math.round(Number(seller.deliveryRadiusKm) * 1000)) {
-          throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
-        }
-        sellerDistanceMeters.set(sellerId as string, entry.distanceMeters as number);
-      }
-    } else if (data?.deliveryQuoteId) {
-      throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
-    }
+
+    const { ref: deliveryQuoteRef, snap: deliveryQuoteSnap, sellerDistanceMeters } = await validateDeliveryQuote({
+      db, tx, uid, deliveryQuoteId: data?.deliveryQuoteId, deliveryAddress: data?.deliveryAddress,
+      items: normalizedItems, orderMode, deliveryCharge: data?.deliveryCharge,
+      legacyDeliveryCharge: data?.legacyDeliveryCharge, sellerFeeSchedules, sellerSnapshots: sellerSnaps,
+      expectedSellerIds: [...cartSellerIds],
+    });
 
     const normalizedCouponCode =
       data?.couponCode && data.couponCode.trim() ? data.couponCode.trim().toUpperCase() : null;
@@ -735,6 +672,15 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         throw new HttpsError(
           "failed-precondition",
           "Your cart has changed since this Product Credit hold was quoted — please re-quote"
+        );
+      }
+      const holdDeliveryQuoteId = typeof hold.deliveryQuoteId === "string" ? hold.deliveryQuoteId : null;
+      const orderDeliveryQuoteId = typeof data?.deliveryQuoteId === "string" ? data.deliveryQuoteId : null;
+      if ((distanceSellerIds.length > 0 && holdDeliveryQuoteId !== orderDeliveryQuoteId) ||
+          (holdDeliveryQuoteId !== null && holdDeliveryQuoteId !== orderDeliveryQuoteId)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The Product Credit hold is bound to different delivery pricing — please re-quote"
         );
       }
 

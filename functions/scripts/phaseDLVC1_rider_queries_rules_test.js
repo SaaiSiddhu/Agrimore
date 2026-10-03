@@ -20,6 +20,7 @@
 const fs = require("fs");
 const path = require("path");
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require("@firebase/rules-unit-testing");
+const { collection, query, where, and, or, orderBy, getDocs, getCountFromServer } = require("firebase/firestore");
 
 const ACTIVE = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "packages", "agrimore_core", "test",
   "fixtures", "delivery_status_table.json"), "utf8")).riderActiveOrderStatuses;
@@ -82,6 +83,27 @@ async function main() {
       if (second.size !== 5 || second.docs.some((d) => ids.has(d.id))) throw new Error(`second page ${second.docs.map((d) => d.id)}`);
     })());
     await record("q3_other_rider_history_refused", assertFails(q3(r2, "r1")));
+    // Match rider_history.dart's conditional AND/OR status + date-range builder,
+    // rather than treating its simple owner-only history query as exhaustive.
+    const filteredHistory = (db, uid) => query(collection(db, "orders"),
+      and(where("deliveryPartnerId", "==", uid),
+        or(where("orderStatus", "in", ["delivered", "completed", "Delivered", "Completed"]),
+           where("status", "in", ["delivered", "completed", "Delivered", "Completed"])),
+        where("createdAt", ">=", new Date(Date.UTC(2026, 8, 10))),
+        where("createdAt", "<", new Date(Date.UTC(2026, 8, 20)))),
+      orderBy("createdAt", "desc"));
+    await record("q4_conditional_history_matches_owner_and_date_window", (async () => {
+      const page = await assertSucceeds(getDocs(filteredHistory(r1, "r1")));
+      if (page.size !== 10 || page.docs.some(d => d.data().deliveryPartnerId !== "r1"))
+        throw new Error(`unexpected filtered page size ${page.size}`);
+    })());
+    await record("q4_conditional_history_other_owner_refused", assertFails(getDocs(filteredHistory(r2, "r1"))));
+    await record("q4_conditional_history_signed_out_refused", assertFails(getDocs(filteredHistory(anon, "r1"))));
+    await record("q4_conditional_history_suspended_refused", assertFails(getDocs(filteredHistory(r3, "r3"))));
+    await record("q4_conditional_history_count_allowed", (async () => {
+      const count = await assertSucceeds(getCountFromServer(filteredHistory(r1, "r1")));
+      if (count.data().count !== 10) throw new Error(`unexpected filtered count ${count.data().count}`);
+    })());
     const FV = require("firebase/compat/app").default.firestore.FieldValue;
     await record("t1_rider_removes_own_device_token",
       assertSucceeds(r1.doc("users/r1").update({ fcmTokens: FV.arrayRemove("T1"), fcmToken: FV.delete() })));

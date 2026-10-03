@@ -7,11 +7,11 @@
 // short-lived quote snapshot (no raw coordinates or route geometry).
 
 import * as admin from "firebase-admin";
-import * as crypto from "crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { Timestamp } from "firebase-admin/firestore";
 import { normalizeOrderItems, OrderPricingItemInput, MAX_CART_LINES } from "./orderPricing";
 import { computeFeeFromSchedule, DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { distanceScheduleFingerprint, fingerprintDeliveryItems, hashDeliveryQuoteValue as hash } from "./deliveryQuoteFingerprint";
 import { computeOrderPricing } from "./orderPricing";
 import { GOOGLE_ROUTES_API_KEY } from "../delivery/deliveryRoute";
 
@@ -33,9 +33,7 @@ function validCoordinatePair(lat: unknown, lng: unknown): RoutePoint | null {
   return { latitude: lat, longitude: lng };
 }
 
-function hash(value: unknown): string {
-  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
+export { distanceScheduleFingerprint, fingerprintDeliveryItems } from "./deliveryQuoteFingerprint";
 
 function routeBody(origin: RoutePoint, destination: RoutePoint): Record<string, unknown> {
   return {
@@ -96,16 +94,6 @@ export async function getRoadDistanceMeters(
   return distanceMeters;
 }
 
-export function fingerprintDeliveryItems(items: OrderPricingItemInput[]): string {
-  return hash([...items]
-    .map((item) => ({ productId: item.productId, quantity: item.quantity, variantId: item.variantId ?? null }))
-    .sort((a, b) => a.productId.localeCompare(b.productId) || String(a.variantId).localeCompare(String(b.variantId))));
-}
-
-export function distanceScheduleFingerprint(schedule: DeliveryFeeSchedule): string {
-  return hash(schedule);
-}
-
 async function claimQuoteRateSlot(db: FirebaseFirestore.Firestore, uid: string, nowMs: number): Promise<void> {
   const ref = db.collection("delivery_fee_quote_rate_limits").doc(uid);
   await db.runTransaction(async (tx) => {
@@ -141,7 +129,7 @@ export interface CreateDeliveryQuoteInput {
 export async function createDeliveryQuoteCore(
   db: FirebaseFirestore.Firestore,
   input: CreateDeliveryQuoteInput
-): Promise<{ deliveryQuoteId: string | null; deliveryCharge: number | null; sellerFees: Array<Record<string, unknown>> }> {
+): Promise<{ deliveryQuoteId: string | null; deliveryQuoteExpiresAtMs?: number; deliveryCharge: number | null; sellerFees: Array<Record<string, unknown>> }> {
   const { uid, addressId, nowMs } = input;
   if (typeof addressId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(addressId)) {
     throw new HttpsError("invalid-argument", "A saved delivery address is required");
@@ -229,10 +217,12 @@ export async function createDeliveryQuoteCore(
     policyFingerprint: string;
   }> = [];
 
-  for (const sellerId of distanceSellerIds) {
+  const distancePolicies = distanceSellerIds.map((sellerId) => {
     const seller = sellers.get(sellerId)!;
     const schedule = parseDeliveryFeeSchedule(seller.deliveryFeeSchedule);
-    if (!schedule || schedule.type !== "distance") continue;
+    if (!schedule || schedule.type !== "distance") {
+      throw new HttpsError("failed-precondition", "A seller delivery schedule changed; request a new quote");
+    }
     const origin = validCoordinatePair(seller.latitude, seller.longitude);
     if (!origin) {
       throw new HttpsError("failed-precondition", "A seller using distance delivery must configure a valid shop location");
@@ -241,7 +231,16 @@ export async function createDeliveryQuoteCore(
     if (typeof radiusKm !== "number" || !Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > MAX_RADIUS_KM) {
       throw new HttpsError("failed-precondition", "A seller using distance delivery must configure a valid delivery radius");
     }
-    const distanceMeters = await getRoadDistanceMeters(origin, destination!, apiKey, input.fetcher);
+    return { sellerId, schedule, origin, radiusKm };
+  });
+
+  // Fetch the bounded set together so a cart with several distance-priced sellers
+  // cannot consume one per-route timeout for each seller in sequence.
+  const measuredDistances = await Promise.all(distancePolicies.map(async (policy) => ({
+    ...policy,
+    distanceMeters: await getRoadDistanceMeters(policy.origin, destination!, apiKey, input.fetcher),
+  })));
+  for (const { sellerId, schedule, origin, radiusKm, distanceMeters } of measuredDistances) {
     if (distanceMeters > Math.round(radiusKm * 1000)) {
       throw new HttpsError("failed-precondition", "This delivery address is outside the seller's delivery area");
     }
@@ -311,7 +310,7 @@ export async function createDeliveryQuoteCore(
     consumedAt: null,
     consumedByOrderIds: null,
   });
-  return { deliveryQuoteId: quoteRef.id, deliveryCharge: totalPaise / 100, sellerFees };
+  return { deliveryQuoteId: quoteRef.id, deliveryQuoteExpiresAtMs: nowMs + QUOTE_TTL_MS, deliveryCharge: totalPaise / 100, sellerFees };
 }
 
 export const quoteDeliveryFees = onCall(

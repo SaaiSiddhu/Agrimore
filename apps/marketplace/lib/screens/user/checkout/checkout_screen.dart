@@ -765,6 +765,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     'deliveryCharge': deliveryCharge,
                     'legacyDeliveryCharge': widget.deliveryCharge,
                     if (data['deliveryQuoteId'] is String) 'deliveryQuoteId': data['deliveryQuoteId'],
+                    if (data['deliveryQuoteExpiresAtMs'] is num) 'deliveryQuoteExpiresAtMs': data['deliveryQuoteExpiresAtMs'],
                     'tax': widget.tax,
                   },
                 );

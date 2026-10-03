@@ -30,6 +30,7 @@ class PaymentMethodScreen extends StatefulWidget {
   final double deliveryCharge;
   final double legacyDeliveryCharge;
   final String? deliveryQuoteId;
+  final Object? deliveryQuoteExpiresAtMs;
   final double tax;
   final CheckoutRecoveryService? checkoutRecovery;
 
@@ -40,6 +41,7 @@ class PaymentMethodScreen extends StatefulWidget {
     this.deliveryCharge = 0.0,
     this.legacyDeliveryCharge = 0.0,
     this.deliveryQuoteId,
+    this.deliveryQuoteExpiresAtMs,
     this.tax = 0.0,
     this.checkoutRecovery,
   }) : super(key: key);
@@ -501,6 +503,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         'deliveryCharge': widget.deliveryCharge,
         'legacyDeliveryCharge': widget.legacyDeliveryCharge,
         if (widget.deliveryQuoteId != null) 'deliveryQuoteId': widget.deliveryQuoteId,
+        if (widget.deliveryQuoteId != null) 'deliveryQuoteExpiresAtMs': widget.deliveryQuoteExpiresAtMs,
         'tax': widget.tax,
         if (_selectedSlot != null) 'deliverySlot': '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})',
         if (_notesController.text.trim().isNotEmpty) 'notes': _notesController.text.trim(),

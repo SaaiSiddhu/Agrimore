@@ -548,6 +548,7 @@ class AppRoutes {
           final deliveryCharge = (paymentArgs?['deliveryCharge'] as num?)?.toDouble() ?? 0.0;
           final legacyDeliveryCharge = (paymentArgs?['legacyDeliveryCharge'] as num?)?.toDouble() ?? deliveryCharge;
           final deliveryQuoteId = paymentArgs?['deliveryQuoteId'] as String?;
+          final deliveryQuoteExpiresAtMs = paymentArgs?['deliveryQuoteExpiresAtMs'];
           if (address == null) {
             return _buildErrorRoute(
                 'Address is required for payment', settings);
@@ -559,7 +560,8 @@ class AppRoutes {
                     total: total,
                     deliveryCharge: deliveryCharge,
                     legacyDeliveryCharge: legacyDeliveryCharge,
-                    deliveryQuoteId: deliveryQuoteId)),
+                    deliveryQuoteId: deliveryQuoteId,
+                    deliveryQuoteExpiresAtMs: deliveryQuoteExpiresAtMs)),
             settings,
           );
         case couponSelection:

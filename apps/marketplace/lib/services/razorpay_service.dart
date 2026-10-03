@@ -223,6 +223,7 @@ class RazorpayService {
     required String userEmail,
     required String userPhone,
     String? description,
+    bool Function()? canReopenCheckout,
   }) =>
       _resumeSavedPayment(
           order: order,
@@ -232,7 +233,8 @@ class RazorpayService {
           userEmail: userEmail,
           userPhone: userPhone,
           description: description,
-          recoveryFunction: 'recoverCheckoutPayment');
+          recoveryFunction: 'recoverCheckoutPayment',
+          canReopenCheckout: canReopenCheckout);
 
   Future<GoodsCheckoutResumeOutcome> resumeWalletTopup({
     required PaymentCheckoutOrder order,
@@ -262,6 +264,7 @@ class RazorpayService {
     required String userPhone,
     String? description,
     required String recoveryFunction,
+    bool Function()? canReopenCheckout,
   }) async {
     void checkSession() {
       if (_disposed ||
@@ -306,6 +309,10 @@ class RazorpayService {
         data['outcome'] != 'unconfirmed' ||
         data['keyId'] != order.keyId) {
       throw StateError('The saved payment needs review.');
+    }
+    // Captured outcomes above always remain recoverable after pricing expiry.
+    if (canReopenCheckout != null && !canReopenCheckout()) {
+      throw StateError('The saved checkout pricing needs review.');
     }
     _openMobileOrder(order,
         userName: userName,

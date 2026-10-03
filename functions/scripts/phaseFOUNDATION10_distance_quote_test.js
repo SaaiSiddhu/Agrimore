@@ -18,6 +18,8 @@ const { createOrder } = require("../lib/customer/createOrder");
 const wrappedCreateOrder = test.wrap(createOrder);
 const { createOrderFromRfq } = require("../lib/customer/createOrderFromRfq");
 const wrappedCreateOrderFromRfq = test.wrap(createOrderFromRfq);
+const { quoteOrderWithCredit } = require("../lib/customer/productCreditHold");
+const wrappedCreditQuote = test.wrap(quoteOrderWithCredit);
 
 let failures = 0;
 let passed = 0;
@@ -44,6 +46,14 @@ async function expectCode(label, fn, code) {
     check(label, false, "expected callable error");
   } catch (error) {
     check(label, error.code === code, { actual: error.code, message: error.message });
+  }
+}
+
+async function callAndCapture(fn, data, auth) {
+  try {
+    return { ok: true, result: await fn({ data, auth }) };
+  } catch (error) {
+    return { ok: false, code: error.code, message: error.message };
   }
 }
 
@@ -94,6 +104,7 @@ async function main() {
   check("route request uses driving distance without live traffic", routeBody.travelMode === "DRIVE" && routeBody.routingPreference === "TRAFFIC_UNAWARE", routeBody);
   const quoteDoc = await db.collection("delivery_fee_quotes").doc(valid.deliveryQuoteId).get();
   const quoteData = quoteDoc.data();
+  check("client deadline exactly matches server quote expiry", valid.deliveryQuoteExpiresAtMs === quoteData.expiresAt.toMillis());
   check("quote is short-lived and contains no raw origin or destination coordinates", quoteData.expiresAt.toMillis() - quoteData.createdAt.toMillis() === 600000 && !JSON.stringify(quoteData).includes("12.9716") && !JSON.stringify(quoteData).includes("12.99"), quoteData);
 
   routeCalls = [];
@@ -163,6 +174,154 @@ async function main() {
   check("mixed seller quote includes distance, flat, and only the applicable legacy fallback", mixed.deliveryCharge === 295 && !!mixed.deliveryQuoteId, mixed);
   const mixedQuote = (await db.collection("delivery_fee_quotes").doc(mixed.deliveryQuoteId).get()).data();
   check("mixed quote fingerprints every configured seller schedule and preserves legacy input separately", Object.keys(mixedQuote.scheduleFingerprints).length === 2 && mixedQuote.legacyDeliveryChargePaise === 4000);
+
+  await seedAddress("f3c-address-parallel", "f3c-user-parallel");
+  await seedSeller("f3c-seller-parallel-a");
+  await seedSeller("f3c-seller-parallel-b", { latitude: 12.972, longitude: 77.595 });
+  await seedProduct("f3c-product-parallel-a", "f3c-seller-parallel-a");
+  await seedProduct("f3c-product-parallel-b", "f3c-seller-parallel-b");
+  const originalFetch = global.fetch;
+  let activeRoutes = 0;
+  let peakActiveRoutes = 0;
+  global.fetch = async () => {
+    activeRoutes++;
+    peakActiveRoutes = Math.max(peakActiveRoutes, activeRoutes);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    activeRoutes--;
+    return { ok: true, json: async () => ({ routes: [{ distanceMeters: 5000 }] }) };
+  };
+  try {
+    const parallel = await wrappedQuote({
+      data: {
+        addressId: "f3c-address-parallel", orderMode: "B2C",
+        items: [
+          { productId: "f3c-product-parallel-a", quantity: 1 },
+          { productId: "f3c-product-parallel-b", quantity: 1 },
+        ],
+      },
+      auth: { uid: "f3c-user-parallel", token: {} },
+    });
+    check("bounded multi-seller route lookups run concurrently and return both fees", peakActiveRoutes === 2 && parallel.sellerFees.length === 2, { peakActiveRoutes, sellerFees: parallel.sellerFees });
+  } finally {
+    global.fetch = originalFetch;
+  }
+
+  const creditUid = "f3c-user-credit-distance";
+  await seedAddress("f3c-address-credit", creditUid);
+  await seedSeller("f3c-seller-credit-distance");
+  await seedProduct("f3c-product-credit-distance", "f3c-seller-credit-distance");
+  await db.collection("compliance_config").doc("benefit_program").set({
+    legalReviewStatus: "APPROVED", complianceApprovalStatus: "APPROVED",
+  });
+  await db.collection("feature_flags").doc("benefit_program").set({
+    BENEFIT_PROGRAM_ENABLED: true, PRODUCT_CREDIT_REDEMPTION_ENABLED: true,
+  });
+  await db.collection("benefit_programs").doc("f3c-credit-program").set({
+    status: "active", redemptionEnabled: true, minOrderValueForRedemption: 0,
+    maxCreditPerOrder: null, maxCreditPercentOfOrder: null,
+  });
+  await db.collection("benefit_enrollments").doc("f3c-credit-enrollment").set({
+    customerId: creditUid, programId: "f3c-credit-program", status: "active",
+  });
+  await db.collection("product_credit_balances").doc(creditUid).set({
+    available: 30, pending: 0, onHold: 0, lifetimeEarned: 30, lifetimeUsed: 0, lifetimeExpired: 0,
+  });
+  await db.collection("users").doc(creditUid).set({ uid: creditUid, profileCompleted: true, role: "customer" });
+  const creditDeliveryQuote = await quote(creditUid, "f3c-address-credit", "f3c-product-credit-distance");
+  const creditRequest = {
+    items: [{ productId: "f3c-product-credit-distance", quantity: 1 }],
+    orderMode: "B2C", deliveryCharge: creditDeliveryQuote.deliveryCharge,
+    legacyDeliveryCharge: 0, deliveryQuoteId: creditDeliveryQuote.deliveryQuoteId,
+    deliveryAddress: { id: "f3c-address-credit", latitude: 12.99, longitude: 77.6 },
+  };
+  const creditResult = await wrappedCreditQuote({ data: creditRequest, auth: { uid: creditUid, token: {} } });
+  const creditHoldRef = db.collection("product_credit_holds").doc(creditResult.holdId);
+  const creditHold = (await creditHoldRef.get()).data();
+  check("Product Credit quote uses server distance fee and binds its hold to the exact delivery quote", creditResult.total === 325 && creditResult.creditApplied === 30 && creditResult.deliveryQuoteId === creditDeliveryQuote.deliveryQuoteId && creditHold.deliveryQuoteId === creditDeliveryQuote.deliveryQuoteId, { creditResult, holdDeliveryQuoteId: creditHold.deliveryQuoteId });
+
+  const wrongAddressCredit = await callAndCapture(wrappedCreditQuote, {
+    ...creditRequest,
+    deliveryAddress: { id: "f3c-address-other", latitude: 12.99, longitude: 77.6 },
+  }, { uid: creditUid, token: {} });
+  const activeCreditHoldAfterMismatch = await creditHoldRef.get();
+  check("Product Credit rejects address mismatch before releasing or replacing the active hold", !wrongAddressCredit.ok && activeCreditHoldAfterMismatch.data().status === "active");
+
+  const alternateCreditDeliveryQuote = await quote(creditUid, "f3c-address-credit", "f3c-product-credit-distance");
+  const alternateCreditRequest = {
+    ...creditRequest,
+    deliveryCharge: alternateCreditDeliveryQuote.deliveryCharge,
+    deliveryQuoteId: alternateCreditDeliveryQuote.deliveryQuoteId,
+  };
+  const alternateCreditResult = await wrappedCreditQuote({ data: alternateCreditRequest, auth: { uid: creditUid, token: {} } });
+  const alternateCreditHoldRef = db.collection("product_credit_holds").doc(alternateCreditResult.holdId);
+  const mismatchedQuoteOrder = await callAndCapture(wrappedCreateOrder, {
+    ...alternateCreditRequest,
+    deliveryQuoteId: creditDeliveryQuote.deliveryQuoteId,
+    deliveryCharge: creditDeliveryQuote.deliveryCharge,
+    paymentMethod: "cod", productCreditHoldId: alternateCreditResult.holdId,
+  }, { uid: creditUid, token: {} });
+  const quoteAfterHoldMismatch = (await db.collection("delivery_fee_quotes").doc(creditDeliveryQuote.deliveryQuoteId).get()).data();
+  const alternateQuoteAfterHoldMismatch = (await db.collection("delivery_fee_quotes").doc(alternateCreditDeliveryQuote.deliveryQuoteId).get()).data();
+  check("createOrder rejects a Product Credit hold paired with another valid delivery quote without consuming either", !mismatchedQuoteOrder.ok && (await alternateCreditHoldRef.get()).data().status === "active" && quoteAfterHoldMismatch.consumedAt == null && alternateQuoteAfterHoldMismatch.consumedAt == null);
+
+  // A provider can capture while the app is backgrounded. Neither expiry
+  // refusal may consume that payment or partially mutate the economic state.
+  // This proves safety, not successful recovery/refund of an expired checkout.
+  const prepaidPaymentId = "pay_f3c_credit_expiry";
+  const prepaidOrderId = "order_f3c_credit_expiry";
+  await db.collection("verified_payments").doc(prepaidPaymentId).set({
+    paymentId: prepaidPaymentId, orderId: prepaidOrderId, userId: creditUid,
+    amount: 295, amountPaise: 29500, currency: "INR", status: "captured",
+    signatureVerified: true, purpose: "goods_checkout", consumedByOrderId: null,
+  });
+  const prepaidCreditRequest = {
+    ...alternateCreditRequest, paymentMethod: "razorpay",
+    productCreditHoldId: alternateCreditResult.holdId,
+    razorpayPaymentId: prepaidPaymentId, razorpayOrderId: prepaidOrderId,
+  };
+  async function creditEconomicState() {
+    const [hold, projection, product, payment, deliveryQuote, orders, ledger] = await Promise.all([
+      alternateCreditHoldRef.get(), db.collection("product_credit_balances").doc(creditUid).get(),
+      db.collection("products").doc("f3c-product-credit-distance").get(),
+      db.collection("verified_payments").doc(prepaidPaymentId).get(),
+      db.collection("delivery_fee_quotes").doc(alternateCreditDeliveryQuote.deliveryQuoteId).get(),
+      db.collection("orders").where("userId", "==", creditUid).get(),
+      db.collection("product_credit_ledger").where("customerId", "==", creditUid).get(),
+    ]);
+    return JSON.stringify({ hold: hold.data(), balance: projection.data(), stock: product.data().stock,
+      payment: payment.data(), deliveryQuote: deliveryQuote.data(),
+      orders: orders.docs.map((d) => d.id).sort(), ledger: ledger.docs.map((d) => d.id).sort() });
+  }
+  const holdExpiry = (await alternateCreditHoldRef.get()).data().expiresAt;
+  await alternateCreditHoldRef.update({ expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() - 1000) });
+  const beforeHoldExpiry = await creditEconomicState();
+  const expiredHoldOrder = await callAndCapture(wrappedCreateOrder, prepaidCreditRequest, { uid: creditUid, token: {} });
+  check("captured prepaid order refuses an expired credit hold specifically", !expiredHoldOrder.ok && expiredHoldOrder.code === "failed-precondition" && expiredHoldOrder.message.includes("hold has expired"), expiredHoldOrder);
+  check("expired credit hold leaves captured payment, balance, stock, quote and ledger untouched", beforeHoldExpiry === await creditEconomicState());
+  await alternateCreditHoldRef.update({ expiresAt: holdExpiry });
+
+  const deliveryQuoteRef = db.collection("delivery_fee_quotes").doc(alternateCreditDeliveryQuote.deliveryQuoteId);
+  const deliveryExpiry = (await deliveryQuoteRef.get()).data().expiresAt;
+  await deliveryQuoteRef.update({ expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() - 1000) });
+  const beforeQuoteExpiry = await creditEconomicState();
+  const expiredDeliveryOrder = await callAndCapture(wrappedCreateOrder, prepaidCreditRequest, { uid: creditUid, token: {} });
+  check("captured prepaid order refuses expired delivery pricing specifically", !expiredDeliveryOrder.ok && expiredDeliveryOrder.code === "failed-precondition" && expiredDeliveryOrder.message.includes("pricing changed or expired"), expiredDeliveryOrder);
+  check("expired delivery quote leaves captured payment, balance, stock, hold and ledger untouched", beforeQuoteExpiry === await creditEconomicState());
+  await deliveryQuoteRef.update({ expiresAt: deliveryExpiry });
+
+  const creditOrder = await wrappedCreateOrder({
+    data: {
+      ...prepaidCreditRequest,
+      deliveryAddress: { ...alternateCreditRequest.deliveryAddress, name: "Test", phone: "9999999999" },
+    },
+    auth: { uid: creditUid, token: {} },
+  });
+  const creditOrderDoc = await db.collection("orders").doc(creditOrder.orders[0].orderId).get();
+  check("Product Credit order settles the quote-bound hold and consumes that same distance quote", creditOrderDoc.data().deliveryCharge === 275 && creditOrderDoc.data().deliveryQuoteId === alternateCreditDeliveryQuote.deliveryQuoteId && (await alternateCreditHoldRef.get()).data().status === "settled" && (await db.collection("delivery_fee_quotes").doc(alternateCreditDeliveryQuote.deliveryQuoteId).get()).data().consumedAt != null);
+  check("valid prepaid credit checkout consumes the captured payment exactly once", (await db.collection("verified_payments").doc(prepaidPaymentId).get()).data().consumedByOrderId === creditOrder.orders[0].orderId && creditOrderDoc.data().paymentStatus === "paid");
+
+  const replayedCreditQuote = await callAndCapture(wrappedCreditQuote, alternateCreditRequest, { uid: creditUid, token: {} });
+  check("Product Credit cannot create a new hold from a delivery quote already consumed by an order", !replayedCreditQuote.ok && (await db.collection("product_credit_holds").where("customerId", "==", creditUid).where("status", "==", "active").get()).empty);
 
   const checkoutUid = "f3c-user-atomic-checkout";
   await db.collection("users").doc(checkoutUid).set({ uid: checkoutUid, profileCompleted: true, role: "customer" });
