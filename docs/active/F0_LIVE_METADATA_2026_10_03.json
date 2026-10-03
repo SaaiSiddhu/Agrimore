@@ -2255,5 +2255,28 @@
         "density": "SPARSE_ALL"
       }
     ]
+  },
+  "liveStockAudit": {
+    "generatedAt": "2026-10-03T17:47:54.655Z",
+    "projectId": "agrimore-66a4e",
+    "readOnly": true,
+    "scannedProductDocuments": 65,
+    "pages": 1,
+    "potentiallySellableSkuFields": 93,
+    "skippedInactiveOrDraftProductDocuments": 0,
+    "incompleteSellableSkus": 27,
+    "affectedProductDocuments": 11,
+    "issueCounts": {
+      "missing": 27
+    },
+    "issuesWithoutStableVariantId": 27,
+    "issuesWithLegacyNameFingerprint": 27,
+    "ambiguousLegacyNameIssues": 0,
+    "physicallyVerifiedCounts": false,
+    "reportSha256": "b5f13cdc3d8a5392246bcc3a16dbdddd6a1db93feba8d9d3e1b7736d424d1671",
+    "reportPath": "/Users/saai_siddharth/.agrimore/run/agrimore-mobile-foundation/evidence/stock-audit-2026-10-03-174754Z.json",
+    "worksheetPath": "/Users/saai_siddharth/.agrimore/run/agrimore-mobile-foundation/evidence/stock-physical-count-2026-10-03-174754Z.csv",
+    "consistency": "Paginated read-only snapshots; catalog may change between pages. Recheck exact document version and stable variant identity before owner backfill; no write or enforcement performed.",
+    "scope": "Owner-requested read-only products projection; rows/locators retained privately outside the repository. Not physical-count/backfill or enforcement proof."
   }
 }
