@@ -87,7 +87,7 @@
   ],
   "sourceIndexCount": 78,
   "liveIndexCount": 58,
-  "normalization": "Ignores server-added __name__ fields and default density; compares collection group, query scope and ordered business fields. No state/version/rules/body parity proof. Source includes current uncommitted index preparation.",
+  "normalization": "Ignores server-added __name__ fields and default density; compares collection group, query scope and ordered business fields. No state/version/rules/body parity proof. Source includes current uncommitted index preparation. A later paginated Admin REST GET independently confirms all58 listed composite indexes READY; see liveIndexReadiness timestamp. Missing source shapes remain absent.",
   "sourceIndexShapesAbsentLive": [
     {
       "collectionGroup": "commission_exceptions",
@@ -1059,5 +1059,1201 @@
       "localPath": "storage.rules",
       "localSha256": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
     }
-  ]
+  ],
+  "liveIndexReadiness": {
+    "checkedAtUtc": "2026-10-03T17:27:45.767Z",
+    "database": "projects/agrimore-66a4e/databases/(default)",
+    "method": "Firestore Admin REST v1 GET indexes, pageSize0 (server rejects nonzero size for wildcard collection-group listing), consume nextPageToken until exhausted",
+    "pages": 1,
+    "count": 58,
+    "states": {
+      "READY": 58
+    },
+    "indexes": [
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_partners/indexes/CICAgNiroIEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNjpgYIJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/banners/indexes/CICAgLiIkYMJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/sellerRequests/indexes/CICAgPig2YMJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/sellers/indexes/CICAgJjmiJEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payouts/indexes/CICAgPjC4pEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/vendors/indexes/CICAgJiUsZIJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/business_posts/indexes/CICAgPj-05MJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgPjChIAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isRead",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgNiav4AK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "unread",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJim14AK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isAvailable",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "soldCount",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLjy8IAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgOjXh4EK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/product_credit_ledger/indexes/CICAgPi9lIEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "customerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNiroIEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/coupons/indexes/CICAgJj7z4EK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiry",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgLiT6IEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgNjpgYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/threads/indexes/CICAgPj-pYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgLjRyYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "productId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJjF9oIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLiIkYMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJiUpoMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryName",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "priority",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPiftYMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeUid",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgPig2YMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/banners/indexes/CICAgNi47oMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "priority",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_requests/indexes/CICAgJjUgIcK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/razorpay_orders/indexes/CICAgJjmnIgK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "purpose",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPjC9ogK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "deliveredAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/device_tokens/indexes/CICAgJiHgokK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_dispatch/indexes/CICAgNiryokK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "nextActionAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_withdrawals/indexes/CICAgOi39IkK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payout_change_requests/indexes/CICAgPigl4sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJiUzYsK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_withdrawals/indexes/CICAgPif34sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/coupons/indexes/CICAgLiI64sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "validTo",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/follows/indexes/CICAgPi9ipAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/threads/indexes/CICAgOi3kJAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "customerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/employee_payouts/indexes/CICAgNirtJAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJiH2JAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/deliveryRequests/indexes/CICAgLiT_JAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJjmiJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/rider_incidents/indexes/CICAgLjyrJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNjaxJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgPjC4pEK",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLiIjZIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "rating",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPifq5IK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/categories/indexes/CICAgJiUsZIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/referrals/indexes/CICAgPigw5IK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "referredUserId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isCompleted",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_requests/indexes/CICAgLjRnZMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgJjFqZMK",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_stats_daily/indexes/CICAgPj-05MK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "day",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payouts/indexes/CICAgNjp5ZMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/rider_earnings/indexes/CICAgJjUlJYK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "statementId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_exceptions/indexes/CICAgNir3pgK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPjCqZkK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payout_change_requests/indexes/CICAgPjfxJoK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/wallet_transactions/indexes/CICAgJiU25oK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      }
+    ]
+  }
 }
