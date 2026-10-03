@@ -8,7 +8,7 @@
     "storage.rules": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
   },
   "coverage": {
-    "callable_sites": 102,
+    "callable_sites": 99,
     "collection_accesses": 1169,
     "filter_order_cursor_sites": 892,
     "source_files": 822
@@ -16772,23 +16772,8 @@
     {
       "callable_sites": [
         {
-          "line": 68,
-          "literal": "createRfq",
-          "method": "httpsCallable"
-        },
-        {
-          "line": 99,
-          "literal": "submitRfqOffer",
-          "method": "httpsCallable"
-        },
-        {
-          "line": 134,
-          "literal": "createOrderFromRfq",
-          "method": "httpsCallable"
-        },
-        {
-          "line": 164,
-          "literal": "respondToRfqOffer",
+          "line": 36,
+          "literal": null,
           "method": "httpsCallable"
         }
       ],
@@ -16796,12 +16781,12 @@
         {
           "chain": [
             {
-              "line": 39,
+              "line": 147,
               "literal": "rfqs",
               "method": "collection"
             },
             {
-              "line": 40,
+              "line": 148,
               "literal": "buyerId",
               "method": "where",
               "operators": [
@@ -16809,7 +16794,7 @@
               ]
             },
             {
-              "line": 41,
+              "line": 149,
               "method": "snapshots"
             }
           ],
@@ -16818,7 +16803,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 39,
+          "line": 147,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             85
@@ -16829,7 +16814,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 40,
+          "line": 148,
           "literal": "buyerId",
           "method": "where",
           "operators": [
@@ -16838,7 +16823,7 @@
         }
       ],
       "path": "apps/marketplace/lib/providers/rfq_provider.dart",
-      "sha256": "5a94b77939f4768799c38732b879f55c93bdd4e72efbe1efd8811e8988e9a6cb"
+      "sha256": "4edb92105f3aebdf2e6e1ea724ee0adcb5786a954f41cc1d0b88554d2a99be07"
     },
     {
       "callable_sites": [],
