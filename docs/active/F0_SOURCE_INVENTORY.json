@@ -10,8 +10,8 @@
   "coverage": {
     "callable_sites": 102,
     "collection_accesses": 1169,
-    "filter_order_cursor_sites": 893,
-    "source_files": 821
+    "filter_order_cursor_sites": 892,
+    "source_files": 822
   },
   "files": [
     {
@@ -36853,12 +36853,12 @@
         {
           "chain": [
             {
-              "line": 78,
+              "line": 79,
               "literal": "delivery_dispatch",
               "method": "collection"
             },
             {
-              "line": 78,
+              "line": 79,
               "method": "doc"
             }
           ],
@@ -36869,7 +36869,7 @@
           "index_candidate_ids": [
             47
           ],
-          "line": 78,
+          "line": 79,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             91
@@ -36880,12 +36880,12 @@
         {
           "chain": [
             {
-              "line": 80,
+              "line": 81,
               "literal": "delivery_requests",
               "method": "collection"
             },
             {
-              "line": 80,
+              "line": 81,
               "method": "doc"
             }
           ],
@@ -36897,7 +36897,7 @@
             45,
             46
           ],
-          "line": 80,
+          "line": 81,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -36908,16 +36908,16 @@
         {
           "chain": [
             {
-              "line": 183,
+              "line": 184,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 183,
+              "line": 184,
               "method": "doc"
             },
             {
-              "line": 183,
+              "line": 184,
               "method": "get"
             }
           ],
@@ -36928,7 +36928,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 183,
+          "line": 184,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             30,
@@ -36941,12 +36941,12 @@
         {
           "chain": [
             {
-              "line": 188,
+              "line": 189,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 189,
+              "line": 190,
               "literal": "orderStatus",
               "method": "where",
               "operators": [
@@ -36954,7 +36954,7 @@
               ]
             },
             {
-              "line": 189,
+              "line": 190,
               "method": "get"
             }
           ],
@@ -36974,7 +36974,7 @@
             52,
             53
           ],
-          "line": 188,
+          "line": 189,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -36985,12 +36985,12 @@
         {
           "chain": [
             {
-              "line": 200,
+              "line": 201,
               "literal": "delivery_requests",
               "method": "collection"
             },
             {
-              "line": 201,
+              "line": 202,
               "literal": "orderId",
               "method": "where",
               "operators": [
@@ -36998,7 +36998,7 @@
               ]
             },
             {
-              "line": 201,
+              "line": 202,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37006,7 +37006,7 @@
               ]
             },
             {
-              "line": 201,
+              "line": 202,
               "method": "get"
             }
           ],
@@ -37018,7 +37018,7 @@
             45,
             46
           ],
-          "line": 200,
+          "line": 201,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -37029,12 +37029,12 @@
         {
           "chain": [
             {
-              "line": 266,
+              "line": 267,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 266,
+              "line": 267,
               "method": "doc"
             }
           ],
@@ -37054,7 +37054,7 @@
             52,
             53
           ],
-          "line": 266,
+          "line": 267,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -37065,12 +37065,12 @@
         {
           "chain": [
             {
-              "line": 290,
+              "line": 304,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 291,
+              "line": 305,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37078,7 +37078,7 @@
               ]
             },
             {
-              "line": 291,
+              "line": 305,
               "literal": "isOnline",
               "method": "where",
               "operators": [
@@ -37086,7 +37086,7 @@
               ]
             },
             {
-              "line": 291,
+              "line": 305,
               "method": "get"
             }
           ],
@@ -37097,7 +37097,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 290,
+          "line": 304,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -37108,16 +37108,16 @@
         {
           "chain": [
             {
-              "line": 329,
+              "line": 349,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 329,
+              "line": 349,
               "method": "doc"
             },
             {
-              "line": 329,
+              "line": 349,
               "method": "get"
             }
           ],
@@ -37128,7 +37128,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 329,
+          "line": 349,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             30,
@@ -37141,12 +37141,12 @@
         {
           "chain": [
             {
-              "line": 389,
+              "line": 410,
               "literal": "delivery_requests",
               "method": "collection"
             },
             {
-              "line": 390,
+              "line": 411,
               "literal": "orderId",
               "method": "where",
               "operators": [
@@ -37154,7 +37154,7 @@
               ]
             },
             {
-              "line": 390,
+              "line": 411,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37162,7 +37162,7 @@
               ]
             },
             {
-              "line": 390,
+              "line": 411,
               "method": "get"
             }
           ],
@@ -37174,7 +37174,7 @@
             45,
             46
           ],
-          "line": 389,
+          "line": 410,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -37185,12 +37185,12 @@
         {
           "chain": [
             {
-              "line": 417,
+              "line": 438,
               "literal": "delivery_requests",
               "method": "collection"
             },
             {
-              "line": 418,
+              "line": 439,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37198,7 +37198,7 @@
               ]
             },
             {
-              "line": 419,
+              "line": 440,
               "literal": "expiresAt",
               "method": "where",
               "operators": [
@@ -37206,11 +37206,11 @@
               ]
             },
             {
-              "line": 420,
+              "line": 441,
               "method": "limit"
             },
             {
-              "line": 420,
+              "line": 441,
               "method": "get"
             }
           ],
@@ -37222,7 +37222,7 @@
             45,
             46
           ],
-          "line": 417,
+          "line": 438,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -37233,12 +37233,12 @@
         {
           "chain": [
             {
-              "line": 431,
+              "line": 452,
               "literal": "delivery_dispatch",
               "method": "collection"
             },
             {
-              "line": 432,
+              "line": 453,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37246,7 +37246,7 @@
               ]
             },
             {
-              "line": 433,
+              "line": 454,
               "literal": "nextActionAt",
               "method": "where",
               "operators": [
@@ -37254,11 +37254,11 @@
               ]
             },
             {
-              "line": 434,
+              "line": 455,
               "method": "limit"
             },
             {
-              "line": 434,
+              "line": 455,
               "method": "get"
             }
           ],
@@ -37269,7 +37269,7 @@
           "index_candidate_ids": [
             47
           ],
-          "line": 431,
+          "line": 452,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             91
@@ -37280,12 +37280,12 @@
         {
           "chain": [
             {
-              "line": 473,
+              "line": 494,
               "literal": "users",
               "method": "collection"
             },
             {
-              "line": 473,
+              "line": 494,
               "method": "doc"
             }
           ],
@@ -37294,7 +37294,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 473,
+          "line": 494,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             1,
@@ -37306,7 +37306,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 189,
+          "line": 190,
           "literal": "orderStatus",
           "method": "where",
           "operators": [
@@ -37314,7 +37314,7 @@
           ]
         },
         {
-          "line": 201,
+          "line": 202,
           "literal": "orderId",
           "method": "where",
           "operators": [
@@ -37322,7 +37322,7 @@
           ]
         },
         {
-          "line": 201,
+          "line": 202,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37330,7 +37330,7 @@
           ]
         },
         {
-          "line": 291,
+          "line": 305,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37338,7 +37338,7 @@
           ]
         },
         {
-          "line": 291,
+          "line": 305,
           "literal": "isOnline",
           "method": "where",
           "operators": [
@@ -37346,7 +37346,7 @@
           ]
         },
         {
-          "line": 390,
+          "line": 411,
           "literal": "orderId",
           "method": "where",
           "operators": [
@@ -37354,7 +37354,7 @@
           ]
         },
         {
-          "line": 390,
+          "line": 411,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37362,7 +37362,7 @@
           ]
         },
         {
-          "line": 418,
+          "line": 439,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37370,7 +37370,7 @@
           ]
         },
         {
-          "line": 419,
+          "line": 440,
           "literal": "expiresAt",
           "method": "where",
           "operators": [
@@ -37378,11 +37378,11 @@
           ]
         },
         {
-          "line": 420,
+          "line": 441,
           "method": "limit"
         },
         {
-          "line": 432,
+          "line": 453,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37390,7 +37390,7 @@
           ]
         },
         {
-          "line": 433,
+          "line": 454,
           "literal": "nextActionAt",
           "method": "where",
           "operators": [
@@ -37398,12 +37398,12 @@
           ]
         },
         {
-          "line": 434,
+          "line": 455,
           "method": "limit"
         }
       ],
       "path": "functions/src/delivery/dispatch.ts",
-      "sha256": "0f2bcdef77566804589e2457b6e2274c59a38aa6d275ff2c7843ca70587467a0"
+      "sha256": "34135591386e54968f78c7d69c760c7f7716fd0d1628d26f3d37ba71e1b58767"
     },
     {
       "callable_sites": [],
@@ -37411,12 +37411,12 @@
         {
           "chain": [
             {
-              "line": 52,
+              "line": 53,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 52,
+              "line": 53,
               "method": "doc"
             }
           ],
@@ -37436,7 +37436,7 @@
             52,
             53
           ],
-          "line": 52,
+          "line": 53,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -37447,12 +37447,12 @@
         {
           "chain": [
             {
-              "line": 53,
+              "line": 54,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 53,
+              "line": 54,
               "method": "doc"
             }
           ],
@@ -37463,7 +37463,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 53,
+          "line": 54,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -37474,12 +37474,12 @@
         {
           "chain": [
             {
-              "line": 54,
+              "line": 55,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 55,
+              "line": 56,
               "literal": "deliveryPartnerId",
               "method": "where",
               "operators": [
@@ -37487,7 +37487,7 @@
               ]
             },
             {
-              "line": 56,
+              "line": 57,
               "literal": "orderStatus",
               "method": "where",
               "operators": [
@@ -37495,7 +37495,7 @@
               ]
             },
             {
-              "line": 57,
+              "line": 58,
               "method": "limit"
             }
           ],
@@ -37515,7 +37515,7 @@
             52,
             53
           ],
-          "line": 54,
+          "line": 55,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -37526,12 +37526,12 @@
         {
           "chain": [
             {
-              "line": 58,
+              "line": 59,
               "literal": "rider_accounts",
               "method": "collection"
             },
             {
-              "line": 58,
+              "line": 59,
               "method": "doc"
             }
           ],
@@ -37540,7 +37540,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 58,
+          "line": 59,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             102
@@ -37551,12 +37551,12 @@
         {
           "chain": [
             {
-              "line": 74,
+              "line": 75,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 74,
+              "line": 75,
               "method": "doc"
             }
           ],
@@ -37576,7 +37576,7 @@
             52,
             53
           ],
-          "line": 74,
+          "line": 75,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -37587,12 +37587,12 @@
         {
           "chain": [
             {
-              "line": 132,
+              "line": 138,
               "literal": "timeline",
               "method": "collection"
             },
             {
-              "line": 132,
+              "line": 138,
               "method": "doc"
             }
           ],
@@ -37601,7 +37601,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 132,
+          "line": 138,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             19
@@ -37612,12 +37612,12 @@
         {
           "chain": [
             {
-              "line": 194,
+              "line": 201,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 194,
+              "line": 201,
               "method": "doc"
             }
           ],
@@ -37637,7 +37637,7 @@
             52,
             53
           ],
-          "line": 194,
+          "line": 201,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -37648,12 +37648,12 @@
         {
           "chain": [
             {
-              "line": 225,
+              "line": 232,
               "literal": "delivery_requests",
               "method": "collection"
             },
             {
-              "line": 226,
+              "line": 233,
               "literal": "orderId",
               "method": "where",
               "operators": [
@@ -37661,7 +37661,7 @@
               ]
             },
             {
-              "line": 226,
+              "line": 233,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -37669,7 +37669,7 @@
               ]
             },
             {
-              "line": 226,
+              "line": 233,
               "method": "get"
             }
           ],
@@ -37681,7 +37681,7 @@
             45,
             46
           ],
-          "line": 225,
+          "line": 232,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -37692,7 +37692,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 55,
+          "line": 56,
           "literal": "deliveryPartnerId",
           "method": "where",
           "operators": [
@@ -37700,7 +37700,7 @@
           ]
         },
         {
-          "line": 56,
+          "line": 57,
           "literal": "orderStatus",
           "method": "where",
           "operators": [
@@ -37708,11 +37708,11 @@
           ]
         },
         {
-          "line": 57,
+          "line": 58,
           "method": "limit"
         },
         {
-          "line": 226,
+          "line": 233,
           "literal": "orderId",
           "method": "where",
           "operators": [
@@ -37720,7 +37720,7 @@
           ]
         },
         {
-          "line": 226,
+          "line": 233,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -37729,7 +37729,7 @@
         }
       ],
       "path": "functions/src/delivery/dispatchCallables.ts",
-      "sha256": "9b05caf76e822125843549f529e3d1d7a7b2ae9e925a46edc2f3a59a7c702136"
+      "sha256": "b5cd5116faeba0cde124b8577ffe223eb0bba0b12b639e85df1329b4385e787a"
     },
     {
       "callable_sites": [],
@@ -38234,6 +38234,13 @@
       "filter_order_cursor_sites": [],
       "path": "functions/src/delivery/riderApplication.ts",
       "sha256": "336862ce0174a90d14e7a6a4daa3015b3d2e743e70479b4140a464a3750823b5"
+    },
+    {
+      "callable_sites": [],
+      "collection_accesses": [],
+      "filter_order_cursor_sites": [],
+      "path": "functions/src/delivery/riderCashBalance.ts",
+      "sha256": "8182a13a965550c899d586b1d36627d17a9e20e9726dfa8ff695287f5a48873e"
     },
     {
       "callable_sites": [],
@@ -38973,12 +38980,12 @@
         {
           "chain": [
             {
-              "line": 50,
+              "line": 51,
               "literal": "rider_accounts",
               "method": "collection"
             },
             {
-              "line": 50,
+              "line": 51,
               "method": "doc"
             }
           ],
@@ -38987,7 +38994,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 50,
+          "line": 51,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             102
@@ -38998,12 +39005,12 @@
         {
           "chain": [
             {
-              "line": 129,
+              "line": 132,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 129,
+              "line": 132,
               "method": "doc"
             }
           ],
@@ -39023,7 +39030,7 @@
             52,
             53
           ],
-          "line": 129,
+          "line": 132,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -39034,12 +39041,12 @@
         {
           "chain": [
             {
-              "line": 130,
+              "line": 133,
               "literal": "rider_earnings",
               "method": "collection"
             },
             {
-              "line": 130,
+              "line": 133,
               "method": "doc"
             }
           ],
@@ -39051,7 +39058,7 @@
             55,
             63
           ],
-          "line": 130,
+          "line": 133,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             101
@@ -39062,12 +39069,12 @@
         {
           "chain": [
             {
-              "line": 131,
+              "line": 134,
               "literal": "delivery_tasks",
               "method": "collection"
             },
             {
-              "line": 131,
+              "line": 134,
               "method": "doc"
             }
           ],
@@ -39076,7 +39083,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 131,
+          "line": 134,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             88
@@ -39087,12 +39094,12 @@
         {
           "chain": [
             {
-              "line": 148,
+              "line": 151,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 148,
+              "line": 151,
               "method": "doc"
             }
           ],
@@ -39103,7 +39110,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 148,
+          "line": 151,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             30,
@@ -39116,12 +39123,12 @@
         {
           "chain": [
             {
-              "line": 186,
+              "line": 189,
               "literal": "rider_cash_ledger",
               "method": "collection"
             },
             {
-              "line": 186,
+              "line": 189,
               "method": "doc"
             }
           ],
@@ -39132,7 +39139,7 @@
           "index_candidate_ids": [
             49
           ],
-          "line": 186,
+          "line": 189,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             103
@@ -39143,12 +39150,12 @@
         {
           "chain": [
             {
-              "line": 234,
+              "line": 237,
               "literal": "rider_cash_ledger",
               "method": "collection"
             },
             {
-              "line": 234,
+              "line": 237,
               "method": "doc"
             }
           ],
@@ -39159,7 +39166,7 @@
           "index_candidate_ids": [
             49
           ],
-          "line": 234,
+          "line": 237,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             103
@@ -39170,12 +39177,12 @@
         {
           "chain": [
             {
-              "line": 235,
+              "line": 238,
               "literal": "rider_cash_ledger",
               "method": "collection"
             },
             {
-              "line": 235,
+              "line": 238,
               "method": "doc"
             }
           ],
@@ -39186,7 +39193,7 @@
           "index_candidate_ids": [
             49
           ],
-          "line": 235,
+          "line": 238,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             103
@@ -39197,12 +39204,12 @@
         {
           "chain": [
             {
-              "line": 290,
+              "line": 293,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 290,
+              "line": 293,
               "method": "doc"
             }
           ],
@@ -39213,7 +39220,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 290,
+          "line": 293,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39224,12 +39231,12 @@
         {
           "chain": [
             {
-              "line": 292,
+              "line": 295,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 292,
+              "line": 295,
               "method": "doc"
             }
           ],
@@ -39240,7 +39247,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 292,
+          "line": 295,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -39251,12 +39258,12 @@
         {
           "chain": [
             {
-              "line": 293,
+              "line": 296,
               "literal": "rider_earnings",
               "method": "collection"
             },
             {
-              "line": 293,
+              "line": 296,
               "literal": "riderId",
               "method": "where",
               "operators": [
@@ -39264,7 +39271,7 @@
               ]
             },
             {
-              "line": 293,
+              "line": 296,
               "literal": "statementId",
               "method": "where",
               "operators": [
@@ -39280,7 +39287,7 @@
             55,
             63
           ],
-          "line": 293,
+          "line": 296,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             101
@@ -39291,12 +39298,12 @@
         {
           "chain": [
             {
-              "line": 331,
+              "line": 334,
               "literal": "rider_cash_ledger",
               "method": "collection"
             },
             {
-              "line": 331,
+              "line": 334,
               "method": "doc"
             }
           ],
@@ -39307,7 +39314,7 @@
           "index_candidate_ids": [
             49
           ],
-          "line": 331,
+          "line": 334,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             103
@@ -39318,12 +39325,12 @@
         {
           "chain": [
             {
-              "line": 351,
+              "line": 354,
               "literal": "rider_accounts",
               "method": "collection"
             },
             {
-              "line": 351,
+              "line": 354,
               "method": "get"
             }
           ],
@@ -39332,7 +39339,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 351,
+          "line": 354,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             102
@@ -39343,16 +39350,16 @@
         {
           "chain": [
             {
-              "line": 359,
+              "line": 362,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 359,
+              "line": 362,
               "method": "doc"
             },
             {
-              "line": 359,
+              "line": 362,
               "method": "get"
             }
           ],
@@ -39363,7 +39370,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 359,
+          "line": 362,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39374,12 +39381,12 @@
         {
           "chain": [
             {
-              "line": 387,
+              "line": 390,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 387,
+              "line": 390,
               "method": "doc"
             }
           ],
@@ -39390,7 +39397,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 387,
+          "line": 390,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -39401,12 +39408,12 @@
         {
           "chain": [
             {
-              "line": 389,
+              "line": 392,
               "literal": "rider_bank_change_requests",
               "method": "collection"
             },
             {
-              "line": 389,
+              "line": 392,
               "method": "doc"
             }
           ],
@@ -39415,7 +39422,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 389,
+          "line": 392,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             104
@@ -39426,12 +39433,12 @@
         {
           "chain": [
             {
-              "line": 393,
+              "line": 396,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 393,
+              "line": 396,
               "literal": "riderId",
               "method": "where",
               "operators": [
@@ -39439,7 +39446,7 @@
               ]
             },
             {
-              "line": 393,
+              "line": 396,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -39454,7 +39461,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 393,
+          "line": 396,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39465,12 +39472,12 @@
         {
           "chain": [
             {
-              "line": 414,
+              "line": 417,
               "literal": "rider_bank_change_requests",
               "method": "collection"
             },
             {
-              "line": 414,
+              "line": 417,
               "method": "doc"
             }
           ],
@@ -39479,7 +39486,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 414,
+          "line": 417,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             104
@@ -39490,12 +39497,12 @@
         {
           "chain": [
             {
-              "line": 421,
+              "line": 424,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 421,
+              "line": 424,
               "method": "doc"
             }
           ],
@@ -39506,7 +39513,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 421,
+          "line": 424,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -39517,12 +39524,12 @@
         {
           "chain": [
             {
-              "line": 422,
+              "line": 425,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 422,
+              "line": 425,
               "literal": "riderId",
               "method": "where",
               "operators": [
@@ -39530,7 +39537,7 @@
               ]
             },
             {
-              "line": 422,
+              "line": 425,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -39545,7 +39552,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 422,
+          "line": 425,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39556,12 +39563,12 @@
         {
           "chain": [
             {
-              "line": 471,
+              "line": 474,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 471,
+              "line": 474,
               "method": "doc"
             }
           ],
@@ -39572,7 +39579,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 471,
+          "line": 474,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39583,12 +39590,12 @@
         {
           "chain": [
             {
-              "line": 479,
+              "line": 482,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 479,
+              "line": 482,
               "method": "doc"
             }
           ],
@@ -39599,7 +39606,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 479,
+          "line": 482,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -39610,16 +39617,16 @@
         {
           "chain": [
             {
-              "line": 555,
+              "line": 558,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 555,
+              "line": 558,
               "method": "doc"
             },
             {
-              "line": 555,
+              "line": 558,
               "method": "get"
             }
           ],
@@ -39630,7 +39637,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 555,
+          "line": 558,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             107
@@ -39641,16 +39648,16 @@
         {
           "chain": [
             {
-              "line": 569,
+              "line": 572,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 569,
+              "line": 572,
               "method": "doc"
             },
             {
-              "line": 569,
+              "line": 572,
               "method": "get"
             }
           ],
@@ -39661,7 +39668,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 569,
+          "line": 572,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             87
@@ -39672,16 +39679,16 @@
         {
           "chain": [
             {
-              "line": 591,
+              "line": 594,
               "literal": "rider_bank_change_requests",
               "method": "collection"
             },
             {
-              "line": 591,
+              "line": 594,
               "method": "doc"
             },
             {
-              "line": 591,
+              "line": 594,
               "method": "get"
             }
           ],
@@ -39690,7 +39697,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 591,
+          "line": 594,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             104
@@ -39701,7 +39708,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 293,
+          "line": 296,
           "literal": "riderId",
           "method": "where",
           "operators": [
@@ -39709,7 +39716,7 @@
           ]
         },
         {
-          "line": 293,
+          "line": 296,
           "literal": "statementId",
           "method": "where",
           "operators": [
@@ -39717,7 +39724,7 @@
           ]
         },
         {
-          "line": 393,
+          "line": 396,
           "literal": "riderId",
           "method": "where",
           "operators": [
@@ -39725,7 +39732,7 @@
           ]
         },
         {
-          "line": 393,
+          "line": 396,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -39733,7 +39740,7 @@
           ]
         },
         {
-          "line": 422,
+          "line": 425,
           "literal": "riderId",
           "method": "where",
           "operators": [
@@ -39741,7 +39748,7 @@
           ]
         },
         {
-          "line": 422,
+          "line": 425,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -39750,7 +39757,7 @@
         }
       ],
       "path": "functions/src/delivery/riderMoney.ts",
-      "sha256": "b7a06ce7710ecb72bafa8eee19cd761a65175ce131efdda9b2eec2d603c67594"
+      "sha256": "4f8031dbd34e2eb66a35c10dfd7a03bc3343912abfbc9155839bed2a9f072721"
     },
     {
       "callable_sites": [],
@@ -40020,16 +40027,16 @@
         {
           "chain": [
             {
-              "line": 14,
+              "line": 15,
               "literal": "settings",
               "method": "collection"
             },
             {
-              "line": 14,
+              "line": 15,
               "method": "doc"
             },
             {
-              "line": 14,
+              "line": 15,
               "method": "get"
             }
           ],
@@ -40038,7 +40045,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 14,
+          "line": 15,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             5,
@@ -40056,21 +40063,13 @@
         {
           "chain": [
             {
-              "line": 25,
+              "line": 31,
               "literal": "rider_accounts",
               "method": "collection"
             },
             {
-              "line": 25,
-              "literal": "cashHeld",
-              "method": "where",
-              "operators": [
-                ">="
-              ]
-            },
-            {
-              "line": 25,
-              "method": "get"
+              "line": 31,
+              "method": "doc"
             }
           ],
           "collection": "rider_accounts",
@@ -40078,7 +40077,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 25,
+          "line": 31,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             102
@@ -40087,18 +40086,9 @@
           "unresolved": false
         }
       ],
-      "filter_order_cursor_sites": [
-        {
-          "line": 25,
-          "literal": "cashHeld",
-          "method": "where",
-          "operators": [
-            ">="
-          ]
-        }
-      ],
+      "filter_order_cursor_sites": [],
       "path": "functions/src/delivery/riderRates.ts",
-      "sha256": "5633efb7b87876b167479b0ecffb6741bd3077a2dd60292a39d8dcc3388afb61"
+      "sha256": "3a23e4c0a35448f8a59b8bd376b68c0d2d6c59851a6e7fe4eb24b8a89a63e362"
     },
     {
       "callable_sites": [],

@@ -24,6 +24,7 @@ import {
   RIDER_ACTIVE_ORDER_STATUSES, runNextWave,
 } from "./dispatch";
 import { loadRiderPayRates } from "./riderRates";
+import { readCodAmountPaise, readRiderCashPaise } from "./riderCashBalance";
 
 /** DeliveryFailureReason wire values (packages/agrimore_core delivery_enums.dart). */
 const DECLINE_REASONS = new Set([
@@ -45,7 +46,7 @@ function refuse(reason: string, message: string): never {
 
 type AcceptVerdict =
   | { kind: "accepted"; alreadyAccepted?: boolean }
-  | { kind: "refused"; reason: "no_offer" | "expired" | "taken" | "not_eligible" | "busy" | "offline" | "cash_limit" };
+  | { kind: "refused"; reason: "no_offer" | "expired" | "taken" | "not_eligible" | "busy" | "offline" | "cash_limit" | "bad_money_state" };
 
 export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: string, orderId: string, nowMs: number) {
   const oRef = offerRef(db, orderId, uid);
@@ -111,9 +112,14 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
         return { kind: "refused", reason: "busy" };
       }
     }
-    if (isCod(ord.paymentMethod) && (Number(ord.total) || 0) > 0) {
-      const held = Number(account.data()?.cashHeld) || 0;
-      if (held >= rates.codCashLimit) return { kind: "refused", reason: "cash_limit" };
+    if (isCod(ord.paymentMethod)) {
+      const codP = readCodAmountPaise(ord.total);
+      if (codP === null) return { kind: "refused", reason: "bad_money_state" };
+      if (codP > 0) {
+        const held = readRiderCashPaise(account.data());
+        if (held === null) return { kind: "refused", reason: "bad_money_state" };
+        if (held >= rates.codCashLimit * 100) return { kind: "refused", reason: "cash_limit" };
+      }
     }
 
     tx.update(orderRef, {
@@ -184,6 +190,7 @@ export const acceptDeliveryOffer = onCall({ minInstances: 0, memory: "256MiB" },
     case "not_eligible": return refuse(v.reason, "Your account cannot take orders right now");
     case "offline": return refuse(v.reason, "Go online to accept orders");
     case "cash_limit": return refuse(v.reason, "Deposit the cash you hold before taking cash orders");
+    case "bad_money_state": return refuse(v.reason, "The cash record needs review before taking this order");
   }
 });
 

@@ -44,6 +44,7 @@ import {
 } from "./riderPay";
 import { loadRiderPayRates } from "./riderRates";
 import { isExactMoneyAmount } from "../common/paymentIntegrity";
+import { readRiderCashPaise } from "./riderCashBalance";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -77,7 +78,7 @@ function checkedPaise(value: number, signed = false): number {
 }
 
 function exactRupeePaise(value: unknown, signed = false): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) badMoneyState();
+  if (typeof value !== "number" || !Number.isFinite(value) || (!signed && value < 0)) badMoneyState();
   const p = toPaise(value);
   if (Math.abs(value * 100 - p) >= 1e-7) badMoneyState();
   return checkedPaise(p, signed);
@@ -98,8 +99,10 @@ function storedPaise(
 
 /** Paise is authoritative; only absent optional legacy balances default to zero. */
 export function accountPaise(a: FirebaseFirestore.DocumentData | undefined): { cashP: number; earnedP: number } {
+  const cashP = readRiderCashPaise(a);
+  if (cashP === null) badMoneyState();
   return {
-    cashP: storedPaise(a ?? {}, "cashHeldPaise", "cashHeld", true),
+    cashP,
     earnedP: storedPaise(a ?? {}, "earningsUnsettledPaise", "earningsUnsettled", true, true),
   };
 }
