@@ -2382,6 +2382,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Server-only scheduled payment reconciliation progress, never client authority.
+    match /payment_reconciliation_cursors/{cursorId} {
+      allow read, write: if false;
+    }
+
     // Completed checkout retry anchors belong to createOrder's transaction.
     // Like order_rate_limits, they have no direct client access. A caller
     // recovers only its own original order result through createOrder.

@@ -14,7 +14,7 @@ async function main() {
   });
   let passed = 0;
   try {
-    const collections = ['delivery_fee_quotes', 'delivery_fee_quote_rate_limits', 'checkout_requests'];
+    const collections = ['delivery_fee_quotes', 'delivery_fee_quote_rate_limits', 'checkout_requests', 'payment_reconciliation_cursors'];
     await env.withSecurityRulesDisabled(async (ctx) => {
       for (const name of collections) await ctx.firestore().doc(`${name}/fixture_owner`).set({ uid: 'fixture_owner', userId: 'fixture_owner' });
       await ctx.firestore().doc('product_credit_holds/fixture_hold').set({ customerId: 'fixture_owner', status: 'active' });

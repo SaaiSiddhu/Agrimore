@@ -17,6 +17,7 @@ import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
 import { verifyOnboardingCapture } from "./onboardingVerification";
 import { razorpayModeFromKey } from "../common/paymentIntegrity";
+import { readStaleOnboardingPage, advanceStaleOnboardingCursor } from "./staleOnboardingPage";
 
 // Decision (8a/8d — see completion report Decisions section): a stale
 // order is one created more than STALENESS_MINUTES ago (long enough that
@@ -54,18 +55,13 @@ export const reconcileStaleOnboardingPayments = onSchedule(
     // this phase; the owner must deploy it (see completion report Section
     // V-equivalent) before this function can run without a
     // failed-precondition "requires an index" error.
-    const snap = await db
-      .collection("razorpay_orders")
-      .where("purpose", "==", ONBOARDING_PURPOSE)
-      .where("createdAt", ">=", lookbackFloor)
-      .where("createdAt", "<=", staleCutoff)
-      .orderBy("createdAt", "asc")
-      .limit(MAX_ORDERS_PER_RUN)
-      .get();
+    const { snapshot: snap, version: cursorVersion } = await readStaleOnboardingPage(
+      db, ONBOARDING_PURPOSE, lookbackFloor, staleCutoff, MAX_ORDERS_PER_RUN
+    );
 
     if (snap.size >= MAX_ORDERS_PER_RUN) {
       log.warn(
-        `⚠️ reconcileStaleOnboardingPayments hit its per-run cap of ${MAX_ORDERS_PER_RUN} orders — some stale orders were NOT processed this run and will be picked up on the next run.`
+        `⚠️ reconcileStaleOnboardingPayments hit its per-run cap of ${MAX_ORDERS_PER_RUN} orders — remaining orders continue from a durable cursor on the next run.`
       );
     }
     log.info(`📌 reconcileStaleOnboardingPayments: found ${snap.size} candidate order(s)`);
@@ -166,6 +162,10 @@ export const reconcileStaleOnboardingPayments = onSchedule(
         log.error(`❌ reconcileStaleOnboardingPayments error for order=${orderDoc.id}: ${message}`);
       }
     }
+
+    // Checkpoint only after processing: interruption repeats a page through the
+    // existing one-use verification/activation gates. CAS protects overlapping runs.
+    await advanceStaleOnboardingCursor(db, cursorVersion, snap.docs[snap.docs.length - 1]);
 
     log.info(
       `📌 reconcileStaleOnboardingPayments run complete: activated=${activated} exceptions=${exceptions}`
