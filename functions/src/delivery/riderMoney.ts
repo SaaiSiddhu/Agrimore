@@ -54,8 +54,6 @@ function millis(v: unknown): number | null {
   if (v && typeof (v as { toMillis?: unknown }).toMillis === "function") return (v as { toMillis: () => number }).toMillis();
   return null;
 }
-const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
-const rupees = (x: number) => Math.round(x * 100) / 100;
 
 // ── DLV-M1: exact money ──
 // Balances used to move by FieldValue.increment of rupee floats and drifted
@@ -67,23 +65,54 @@ const rupees = (x: number) => Math.round(x * 100) / 100;
 export const toPaise = (rupeeAmount: number) => Math.round(rupeeAmount * 100);
 export const fromPaise = (paise: number) => paise / 100;
 
-/** The account's balances in paise: the paise fields, else the legacy rupee fields. */
-export function accountPaise(a: FirebaseFirestore.DocumentData | undefined): { cashP: number; earnedP: number } {
-  const cashP = Number.isInteger(a?.cashHeldPaise) ? (a!.cashHeldPaise as number) : toPaise(num(a?.cashHeld) ?? 0);
-  const earnedP = Number.isInteger(a?.earningsUnsettledPaise)
-    ? (a!.earningsUnsettledPaise as number) : toPaise(num(a?.earningsUnsettled) ?? 0);
-  return { cashP, earnedP };
+function badMoneyState(): never {
+  throw new HttpsError("failed-precondition", "The rider money record needs review", { reason: "bad_money_state" });
 }
 
-/** The exact balance fields to write (paise authoritative, rupees derived). */
+/** Safe paise must also survive the rupee display used by existing clients. */
+function checkedPaise(value: number, signed = false): number {
+  if (!Number.isSafeInteger(value) || (!signed && value < 0) ||
+      toPaise(fromPaise(value)) !== value) badMoneyState();
+  return value;
+}
+
+function exactRupeePaise(value: unknown, signed = false): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) badMoneyState();
+  const p = toPaise(value);
+  if (Math.abs(value * 100 - p) >= 1e-7) badMoneyState();
+  return checkedPaise(p, signed);
+}
+
+function storedPaise(
+  data: FirebaseFirestore.DocumentData, paiseKey: string, rupeeKey: string,
+  missingZero: boolean, signed = false
+): number {
+  // Explicit paise corruption cannot fall back to a stale display balance.
+  if (Object.prototype.hasOwnProperty.call(data, paiseKey)) {
+    if (typeof data[paiseKey] !== "number") badMoneyState();
+    return checkedPaise(data[paiseKey], signed);
+  }
+  if (missingZero && !Object.prototype.hasOwnProperty.call(data, rupeeKey)) return 0;
+  return exactRupeePaise(data[rupeeKey], signed);
+}
+
+/** Paise is authoritative; only absent optional legacy balances default to zero. */
+export function accountPaise(a: FirebaseFirestore.DocumentData | undefined): { cashP: number; earnedP: number } {
+  return {
+    cashP: storedPaise(a ?? {}, "cashHeldPaise", "cashHeld", true),
+    earnedP: storedPaise(a ?? {}, "earningsUnsettledPaise", "earningsUnsettled", true, true),
+  };
+}
+
+/** Validate arithmetic before writing exact paise and its compatible rupee display. */
 export const balanceFields = (cashP: number, earnedP: number) => ({
-  cashHeld: fromPaise(cashP), cashHeldPaise: cashP,
-  earningsUnsettled: fromPaise(earnedP), earningsUnsettledPaise: earnedP,
+  cashHeld: fromPaise(checkedPaise(cashP)), cashHeldPaise: cashP,
+  earningsUnsettled: fromPaise(checkedPaise(earnedP, true)), earningsUnsettledPaise: earnedP,
 });
 
-/** An earning's pay in paise (totalPaise when recorded, else its rupee total). */
+/** An earning must contain valid nonnegative money; missing money is not zero pay. */
 const earningPaise = (d: FirebaseFirestore.DocumentData) =>
-  Number.isInteger(d.totalPaise) ? (d.totalPaise as number) : toPaise(num(d.total) ?? 0);
+  storedPaise(d, "totalPaise", "total", false);
 
 export type EarningVerdict =
   | { kind: "created"; total: number; cod: number }
@@ -127,13 +156,14 @@ export async function recordDeliveryEarningCore(db: Db, orderId: string, nowMs: 
       r,
     );
     const pay = riderPay(r, trip.km, wait);
-    const cod = isCashOnDelivery(o.paymentMethod) && !isPaid(o.paymentStatus) ? rupees(num(o.total) ?? 0) : 0;
+    const codP = isCashOnDelivery(o.paymentMethod) && !isPaid(o.paymentStatus) ? exactRupeePaise(o.total) : 0;
+    const cod = fromPaise(codP);
     const at = Timestamp.fromMillis(nowMs);
     const accRef = riderAccountRef(db, riderId);
     const acc = await tx.get(accRef);
     const { cashP, earnedP } = accountPaise(acc.data());
-    const payP = toPaise(pay.total);
-    const codP = toPaise(cod);
+    const payP = exactRupeePaise(pay.total);
+    const nextBalances = balanceFields(cashP + codP, earnedP + payP);
 
     tx.create(earnRef, {
       orderId,
@@ -151,7 +181,7 @@ export async function recordDeliveryEarningCore(db: Db, orderId: string, nowMs: 
       statementId: null,
       createdAt: at,
     });
-    tx.set(accRef, { riderId, ...balanceFields(cashP + codP, earnedP + payP), updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, ...nextBalances, updatedAt: at }, { merge: true });
     if (cod > 0) {
       tx.set(db.collection("rider_cash_ledger").doc(), {
         riderId, type: "cash_collected", amount: cod, amountPaise: codP, orderId, at,
@@ -205,22 +235,16 @@ export async function recordCashDepositCore(
     : db.collection("rider_cash_ledger").doc();
   return db.runTransaction(async (tx): Promise<DepositVerdict> => {
     const [acc, prior] = await Promise.all([tx.get(accRef), requestId ? tx.get(ledgerRef) : Promise.resolve(null)]);
-    // An explicitly present paise field is authoritative, including corruption:
-    // never fall back to a stale legacy display or silently replace it with zero.
-    const a = acc.data() ?? {};
-    const readBalance = (paiseKey: string, rupeeKey: string): number | null => {
-      if (Object.prototype.hasOwnProperty.call(a, paiseKey)) {
-        return Number.isSafeInteger(a[paiseKey]) ? a[paiseKey] as number : null;
+    let cashP: number, earnedP: number;
+    try {
+      ({ cashP, earnedP } = accountPaise(acc.data()));
+    } catch (error) {
+      const details = error instanceof HttpsError ? error.details as { reason?: unknown } | undefined : undefined;
+      if (details?.reason === "bad_money_state") {
+        return { kind: "refused", reason: "bad_money_state" };
       }
-      if (!Object.prototype.hasOwnProperty.call(a, rupeeKey)) return 0;
-      const value: unknown = a[rupeeKey];
-      if (typeof value !== "number" || !Number.isFinite(value)) return null;
-      const p = toPaise(value);
-      return Number.isSafeInteger(p) && Math.abs(value * 100 - p) < 1e-7 ? p : null;
-    };
-    const cashP = readBalance("cashHeldPaise", "cashHeld");
-    const earnedP = readBalance("earningsUnsettledPaise", "earningsUnsettled");
-    if (cashP === null || cashP < 0 || earnedP === null) return { kind: "refused", reason: "bad_money_state" };
+      throw error;
+    }
     if (prior?.exists) {
       const p = prior.data()!;
       const same = p.riderId === riderId && p.amountPaise === amtP && p.reference === reference;
@@ -275,13 +299,15 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
       .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0));
     const covered = eligible.slice(0, MAX_LINES_PER_STATEMENT);
     const more = eligible.length > covered.length;
-    const earnedP = covered.reduce((sum, d) => sum + earningPaise(d.data()), 0);
+    const earnedP = covered.reduce((sum, d) => checkedPaise(sum + earningPaise(d.data())), 0);
     const a = acc.data() ?? {};
     const { cashP, earnedP: unsettledP } = accountPaise(a);
     if (earnedP <= 0 && (part > 1 || cashP <= 0)) return { kind: "nothing" };
     const nettedP = Math.min(Math.max(earnedP, 0), Math.max(cashP, 0));
     const payoutP = earnedP - nettedP;
-    const cashAfterP = cashP - nettedP;
+    const cashAfterP = checkedPaise(cashP - nettedP);
+    checkedPaise(payoutP);
+    const nextBalances = balanceFields(cashAfterP, unsettledP - earnedP);
     let status = "nothing_to_pay";
     let holdReason: string | null = null;
     if (payoutP > 0) {
@@ -300,7 +326,7 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
       orderCount: covered.length, status, holdReason, createdAt: at, updatedAt: at,
     });
     for (const d of covered) tx.update(d.ref, { statementId: id, settledAt: at });
-    tx.set(accRef, { riderId, ...balanceFields(cashAfterP, unsettledP - earnedP), lastStatementId: id, updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, ...nextBalances, lastStatementId: id, updatedAt: at }, { merge: true });
     if (nettedP > 0) {
       tx.set(db.collection("rider_cash_ledger").doc(), {
         riderId, type: "netted_against_payout", amount: fromPaise(nettedP), amountPaise: nettedP, statementId: id, at,
