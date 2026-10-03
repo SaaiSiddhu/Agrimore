@@ -632,9 +632,10 @@ class DatabaseService {
   // Add address
   Future<String> addAddress(AddressModel address) async {
     try {
-      // Use the address's own ID if it has one
-      final docRef = _firestore.collection('addresses').doc(address.id);
-      await docRef.set(address.toMap());
+      // A new onboarding/GPS address has no ID yet; Firestore rejects ''.
+      final docRef = _firestore.collection('addresses').doc(
+          address.id.isEmpty ? null : address.id);
+      await docRef.set(address.copyWith(id: docRef.id).toMap());
       return docRef.id;
     } catch (e) {
       throw DatabaseException('Failed to add address: ${e.toString()}');

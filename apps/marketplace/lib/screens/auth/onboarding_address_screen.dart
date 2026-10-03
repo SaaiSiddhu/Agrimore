@@ -8,11 +8,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/address_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class OnboardingAddressScreen extends StatefulWidget {
   /// When [isOnboarding] = true:  save as default → push to /main
@@ -23,10 +23,10 @@ class OnboardingAddressScreen extends StatefulWidget {
   final AddressModel? existingAddress;
 
   const OnboardingAddressScreen({
-    Key? key,
+    super.key,
     this.isOnboarding = true,
     this.existingAddress,
-  }) : super(key: key);
+  });
 
   @override
   State<OnboardingAddressScreen> createState() =>
@@ -35,6 +35,16 @@ class OnboardingAddressScreen extends StatefulWidget {
 
 class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
     with SingleTickerProviderStateMixin {
+  late AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  bool get _ownsForm =>
+      mounted &&
+      _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion) &&
+      (widget.existingAddress == null ||
+          widget.existingAddress!.userId == _openingOwner);
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -60,6 +70,10 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
+    _openingProvider.addListener(_clearExpiredSession);
 
     _animCtrl = AnimationController(
       vsync: this,
@@ -73,7 +87,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
     _animCtrl.forward();
 
     // Pre-fill if editing
-    if (_isEditing) {
+    if (_isEditing && _ownsForm) {
       final a = widget.existingAddress!;
       _nameCtrl.text = a.name;
       _phoneCtrl.text = a.phone.replaceAll('+91', '');
@@ -84,36 +98,56 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
       _pinCtrl.text = a.zipcode;
       _landmarkCtrl.text = a.landmark ?? '';
       _addressType = a.addressType ?? 'home';
-    } else {
-      // Pre-fill name & phone from Firebase user
+    } else if (!_isEditing && _ownsForm) {
+      // Pre-fill name & phone from the opening owner
       _prefillFromFirebase();
     }
   }
 
   Future<void> _prefillFromFirebase() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (!_ownsForm) return;
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(_openingOwner!)
           .get();
-      if (!mounted) return;
+      if (!_ownsForm) return;
       final data = doc.data();
       if (data != null) {
         if (mounted) {
           setState(() {
-            _nameCtrl.text = data['name'] ?? '';
+            if (_nameCtrl.text.isEmpty) _nameCtrl.text = data['name'] ?? '';
             final raw = (data['phone'] ?? '') as String;
-            _phoneCtrl.text = raw.replaceAll('+91', '').trim();
+            if (_phoneCtrl.text.isEmpty) {
+              _phoneCtrl.text = raw.replaceAll('+91', '').trim();
+            }
           });
         }
       }
     } catch (_) {}
   }
 
+  void _clearExpiredSession() {
+    if (!mounted || _ownsForm) return;
+    for (final controller in [
+      _nameCtrl,
+      _phoneCtrl,
+      _line1Ctrl,
+      _line2Ctrl,
+      _cityCtrl,
+      _stateCtrl,
+      _pinCtrl,
+      _landmarkCtrl
+    ]) {
+      controller.clear();
+    }
+    _isLoading = false;
+    _errorMessage = null;
+  }
+
   @override
   void dispose() {
+    _openingProvider.removeListener(_clearExpiredSession);
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _line1Ctrl.dispose();
@@ -146,7 +180,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
 
   // ── Save ─────────────────────────────────────────────────────
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_ownsForm || _isLoading || !_formKey.currentState!.validate()) return;
     HapticFeedback.mediumImpact();
 
     setState(() {
@@ -155,11 +189,9 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('Session expired. Please login again.');
+      if (!_ownsForm) return;
 
-      final addressProvider =
-          context.read<AddressProvider>();
+      final addressProvider = context.read<AddressProvider>();
 
       // In onboarding: first address → always default
       final makeDefault = widget.isOnboarding || _isEditing
@@ -168,7 +200,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
 
       final address = AddressModel(
         id: _isEditing ? widget.existingAddress!.id : '',
-        userId: user.uid,
+        userId: _openingOwner!,
         name: _nameCtrl.text.trim(),
         phone: '+91${_phoneCtrl.text.trim()}',
         addressLine1: _line1Ctrl.text.trim(),
@@ -184,16 +216,19 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
         country: 'India',
       );
 
-      if (_isEditing) {
-        await addressProvider.updateAddress(
-            address.id, address.toMap());
-      } else {
-        await addressProvider.addAddress(address);
-      }
-
-      debugPrint('✅ Address saved. isOnboarding=${widget.isOnboarding}');
-
+      final saved = _isEditing
+          ? await addressProvider.updateAddress(address.id, address.toMap())
+          : (await addressProvider.addAddress(address))?.isNotEmpty == true;
       if (!mounted) return;
+      if (!_ownsForm ||
+          !identical(context.read<AddressProvider>(), addressProvider)) {
+        return;
+      }
+      if (!saved) {
+        setState(() =>
+            _errorMessage = 'Could not save your address. Please try again.');
+        return;
+      }
 
       if (widget.isOnboarding) {
         // Clear entire stack → Home
@@ -205,12 +240,13 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
       } else {
         Navigator.pop(context, true); // return true = saved
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+    } catch (_) {
+      if (_ownsForm) {
+        setState(() =>
+            _errorMessage = 'Could not save your address. Please try again.');
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (_ownsForm) setState(() => _isLoading = false);
     }
   }
 
@@ -219,6 +255,14 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
   // ════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    if (!_ownsForm) {
+      return const Scaffold(
+          body: SafeArea(
+              child: Center(
+                  child: Text(
+                      'Your session changed. Reopen your addresses to continue.'))));
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
@@ -276,8 +320,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.symmetric(
-                          horizontal:
-                              size.width > 600 ? size.width * 0.15 : 20,
+                          horizontal: size.width > 600 ? size.width * 0.15 : 20,
                           vertical: 24,
                         ),
                         child: Column(
@@ -372,10 +415,10 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                                               ctrl: _cityCtrl,
                                               label: 'City',
                                               hint: 'Chennai',
-                                              icon: Icons.location_city_outlined,
+                                              icon:
+                                                  Icons.location_city_outlined,
                                               isDark: isDark,
-                                              validator: (v) =>
-                                                  _req(v, 'City'),
+                                              validator: (v) => _req(v, 'City'),
                                               capitalization:
                                                   TextCapitalization.words,
                                             ),
@@ -409,7 +452,8 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                                         icon: Icons.flag_outlined,
                                         isDark: isDark,
                                         validator: (v) => _req(v, 'State'),
-                                        capitalization: TextCapitalization.words,
+                                        capitalization:
+                                            TextCapitalization.words,
                                       ),
                                     ],
                                   ),
@@ -609,7 +653,8 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF1A6B3A).withValues(alpha: 0.25),
+                          color:
+                              const Color(0xFF1A6B3A).withValues(alpha: 0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         )
@@ -618,8 +663,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
               ),
               child: Column(
                 children: [
-                  Text(t['icon']!,
-                      style: const TextStyle(fontSize: 20)),
+                  Text(t['icon']!, style: const TextStyle(fontSize: 20)),
                   const SizedBox(height: 4),
                   Text(
                     t['label']!,
@@ -680,17 +724,14 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
             children: [
               Row(
                 children: [
-                  Icon(icon,
-                      size: 18, color: const Color(0xFF1A6B3A)),
+                  Icon(icon, size: 18, color: const Color(0xFF1A6B3A)),
                   const SizedBox(width: 8),
                   Text(
                     title,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: isDark
-                          ? Colors.white
-                          : const Color(0xFF1A1A1A),
+                      color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                     ),
                   ),
                 ],
@@ -722,14 +763,15 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
       children: [
         Row(
           children: [
-            Text(
+            Expanded(
+                child: Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white54 : Colors.grey.shade600,
               ),
-            ),
+            )),
             if (isOptional) ...[
               const SizedBox(width: 4),
               Text(
@@ -768,9 +810,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
             decoration: InputDecoration(
               prefixIcon: Icon(icon,
                   size: 18,
-                  color: isDark
-                      ? Colors.white38
-                      : Colors.grey.shade500),
+                  color: isDark ? Colors.white38 : Colors.grey.shade500),
               hintText: hint,
               hintStyle: TextStyle(
                 fontSize: 14,
@@ -778,8 +818,8 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                 fontWeight: FontWeight.w400,
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             ),
             validator: validator,
           ),
@@ -817,30 +857,25 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
           child: Row(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 child: Row(
                   children: [
-                    const Text('🇮🇳',
-                        style: TextStyle(fontSize: 18)),
+                    const Text('🇮🇳', style: TextStyle(fontSize: 18)),
                     const SizedBox(width: 6),
                     Text(
                       '+91',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? Colors.white
-                            : const Color(0xFF1A1A1A),
+                        color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Container(
                       height: 18,
                       width: 1,
-                      color: isDark
-                          ? Colors.white24
-                          : Colors.grey.shade300,
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
                     ),
                   ],
                 ),
@@ -861,14 +896,12 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                   decoration: InputDecoration(
                     hintText: '98765 43210',
                     hintStyle: TextStyle(
-                      color: isDark
-                          ? Colors.white24
-                          : Colors.grey.shade400,
+                      color: isDark ? Colors.white24 : Colors.grey.shade400,
                       fontWeight: FontWeight.w400,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 14),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
                   ),
                   validator: _validatePhone,
                 ),
@@ -892,16 +925,13 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded,
-              color: Colors.red, size: 20),
+          const Icon(Icons.error_outline_rounded, color: Colors.red, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               _errorMessage!,
               style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
+                  color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -934,8 +964,8 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
           ),
           child: _isLoading
@@ -944,8 +974,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : Row(
@@ -960,18 +989,17 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                       size: 20,
                     ),
                     const SizedBox(width: 10),
-                    Text(
+                    Flexible(
+                        child: Text(
                       widget.isOnboarding
                           ? 'Save & Go to Home'
-                          : (_isEditing
-                              ? 'Update Address'
-                              : 'Save Address'),
+                          : (_isEditing ? 'Update Address' : 'Save Address'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.3,
                       ),
-                    ),
+                    )),
                   ],
                 ),
         ),
