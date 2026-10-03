@@ -219,3 +219,10 @@ VERIFIED_REPOSITORY_FACT:19 ETA +16 list widgets exit0; scoped analyzer0errors/6
 ### Public product-review stats reads — 2026-10-04
 
 CURRENT_IMPLEMENTATION: products/{id}/reviewStats/stats is the existing direct SDK read, no compound-index need. Source products/{id}/reviewStats rule is public read/admin-only write; seller/reviews.ts onProductReviewWrite recomputes backend product/seller aggregate and verified purchase. ReviewProvider now tracks product/read generation/status and disposal, callers ReviewsSection/ReviewsSectionInline use reviewStatsFor(productId) plus generic canonical error/retry. Controlled actual provider SDK fixtures14 +rendered sections8 pass; authoritative backend mutation/provider/device acceptance not inferred. Existing review stream, client review mutation/upload/helpful and denied aggregate-write behavior remain pending follow-up. Source inventory hashes refreshed; current lexical coverage remains823/1162/896/99.
+
+
+### Shared author review transactions — 2026-10-04
+
+CURRENT_IMPLEMENTATION: DatabaseService.addReview/updateReview/deleteReview delegate to ProductReviewWriter and actual SDK transaction get at products/{id}/reviews/{openingUID-or-existingId}; content merge or author-owned delete only, no aggregate writes. Default current UID guard; optional caller opening-session guard not yet wired in dialog. Review content helper excludes votes/badge/server metadata; creation date only first write, images frozen. Other shared helpful/batch APIs and marketplace provider path unchanged. No query/index/rules/functions change.
+
+VERIFIED_REPOSITORY_FACT: baseline3pass7fail/10, final22 SDK controls/full2136; related source rules/backend uniqueness9 + seller-account23 onlocalemulator pass. Inventory824/1152/896/99, one source modified/new writer added/config unchanged. onProductReviewWrite live metadata exists Node22; deployed body/adoption and native writer/device acceptance unproven. Full optional epoch/UI/receipt/upload/helpful lifecycle remains follow-up, not inferred from these shared writer controls.
