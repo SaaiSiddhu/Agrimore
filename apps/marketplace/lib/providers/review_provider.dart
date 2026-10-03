@@ -3,17 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 class ReviewProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  ReviewProvider({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
 
   List<ReviewModel> _reviews = [];
   ReviewStats? _reviewStats;
+  final Map<String, ReviewStats> _statsByProduct = {};
+  final Map<String, int> _statsEpochs = {};
+  final Set<String> _statsLoading = {};
+  final Set<String> _statsFailed = {};
+  String? _activeStatsProduct;
+  bool _statsDisposed = false;
   bool _isLoading = false;
   String _sortBy = 'newest'; // newest, highest, lowest, helpful
   int _filterRating = 0; // 0 = all, 1-5 = specific rating
   String _searchQuery = '';
 
   List<ReviewModel> get reviews => _reviews;
-  ReviewStats? get reviewStats => _reviewStats;
+  ReviewStats? get reviewStats => _activeStatsProduct == null
+      ? _reviewStats : _statsByProduct[_activeStatsProduct];
+  ReviewStats? reviewStatsFor(String productId) => _statsByProduct[productId];
+  bool isLoadingStats(String productId) => _statsLoading.contains(productId);
+  bool hasStatsError(String productId) => _statsFailed.contains(productId);
   bool get isLoading => _isLoading;
   String get sortBy => _sortBy;
   int get filterRating => _filterRating;
@@ -38,47 +51,52 @@ class ReviewProvider extends ChangeNotifier {
     });
   }
 
-  // Get review stats
+  // Public backend-derived stats belong to their product and read generation.
   Future<void> loadReviewStats(String productId) async {
+    if (_statsDisposed || productId.isEmpty || productId.contains('/')) return;
+    _activeStatsProduct = productId;
+    final epoch = (_statsEpochs[productId] ?? 0) + 1;
+    _statsEpochs[productId] = epoch;
+    _statsByProduct.remove(productId);
+    _statsFailed.remove(productId);
+    _statsLoading.add(productId);
+    notifyListeners();
+    bool current() => !_statsDisposed && _statsEpochs[productId] == epoch;
     try {
-      final doc = await _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviewStats')
-          .doc('stats')
-          .get();
-
-      if (doc.exists && doc.data() != null) {
-        _reviewStats = ReviewStats.fromMap(doc.data()!);
-      } else {
-        // ✅ FIXED: Set empty stats when no reviews exist
-        _reviewStats = ReviewStats(
-          averageRating: 0,
-          totalReviews: 0,
-          fiveStarCount: 0,
-          fourStarCount: 0,
-          threeStarCount: 0,
-          twoStarCount: 0,
-          oneStarCount: 0,
-          ratingDistribution: {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0},
-        );
+      final doc = await _firestore.collection('products').doc(productId)
+          .collection('reviewStats').doc('stats').get();
+      if (!current()) return;
+      final data = doc.data();
+      final stats = doc.exists
+          ? ReviewStats.fromMap(data ?? (throw const FormatException('Missing stats data')))
+          : ReviewStats(averageRating: 0, totalReviews: 0, fiveStarCount: 0,
+              fourStarCount: 0, threeStarCount: 0, twoStarCount: 0, oneStarCount: 0,
+              ratingDistribution: const {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0});
+      if (!stats.averageRating.isFinite || stats.averageRating < 0 || stats.averageRating > 5 ||
+          [stats.totalReviews, stats.fiveStarCount, stats.fourStarCount,
+            stats.threeStarCount, stats.twoStarCount, stats.oneStarCount].any((n) => n < 0)) {
+        throw const FormatException('Invalid stats');
       }
-      notifyListeners();
-    } catch (e) {
-      // ✅ Set empty stats on error too
-      _reviewStats = ReviewStats(
-        averageRating: 0,
-        totalReviews: 0,
-        fiveStarCount: 0,
-        fourStarCount: 0,
-        threeStarCount: 0,
-        twoStarCount: 0,
-        oneStarCount: 0,
-        ratingDistribution: {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0},
-      );
-      notifyListeners();
-      debugPrint('Error loading review stats: $e');
+      _statsByProduct[productId] = stats;
+    } catch (_) {
+      if (!current()) return;
+      _statsFailed.add(productId);
     }
+    if (current()) {
+      _statsLoading.remove(productId);
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _statsDisposed = true;
+    _statsByProduct.clear();
+    _statsEpochs.clear();
+    _statsLoading.clear();
+    _statsFailed.clear();
+    _reviewStats = null;
+    super.dispose();
   }
 
   // Add new review

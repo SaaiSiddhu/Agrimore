@@ -26,12 +26,35 @@ class ReviewsSectionInline extends StatefulWidget {
 }
 
 class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
+  ReviewProvider? _statsProvider;
+  String? _statsProduct;
+  int _statsRequest = 0;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleStats();
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewsSectionInline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleStats();
+  }
+
+  void _scheduleStats() {
+    final provider = Provider.of<ReviewProvider>(context);
+    final product = widget.productId;
+    if (identical(provider, _statsProvider) && product == _statsProduct) return;
+    _statsProvider = provider;
+    _statsProduct = product;
+    final request = ++_statsRequest;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ReviewProvider>(context, listen: false)
-          .loadReviewStats(widget.productId);
+      if (!mounted || request != _statsRequest || product != widget.productId ||
+          !identical(context.read<ReviewProvider>(), provider)) {
+        return;
+      }
+      provider.loadReviewStats(product);
     });
   }
 
@@ -151,11 +174,13 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Customer Reviews',
-              style: AppTextStyles.titleLarge.copyWith(
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.white : Colors.black87,
+            Expanded(
+              child: Text(
+                'Customer Reviews',
+                style: AppTextStyles.titleLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: widget.isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ),
             TextButton.icon(
@@ -223,13 +248,26 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
   Widget _buildStatsSection() {
     return Consumer<ReviewProvider>(
       builder: (context, provider, child) {
-        if (provider.reviewStats == null) {
+        final product = widget.productId;
+        if (provider.hasStatsError(product)) {
+          return ErrorView(
+            message: 'Review ratings are unavailable right now.',
+            useThemeColors: true,
+            onRetry: () {
+              if (mounted && product == widget.productId &&
+                  identical(context.read<ReviewProvider>(), provider)) {
+                provider.loadReviewStats(product);
+              }
+            },
+          );
+        }
+        if (provider.reviewStatsFor(widget.productId) == null) {
           return const SizedBox(
             height: 120,
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final stats = provider.reviewStats!;
+        final stats = provider.reviewStatsFor(widget.productId)!;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
