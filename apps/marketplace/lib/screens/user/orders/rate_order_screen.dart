@@ -1,16 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../services/order_rating_service.dart';
 
 class RateOrderScreen extends StatefulWidget {
   final String orderId;
-  const RateOrderScreen({Key? key, required this.orderId}) : super(key: key);
+  final Future<int> Function(String, String, int, List<String>, String, bool Function())? submitRating;
+  const RateOrderScreen({super.key, required this.orderId, this.submitRating});
 
   @override
   State<RateOrderScreen> createState() => _RateOrderScreenState();
 }
 
-class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProviderStateMixin {
+class _RateOrderScreenState extends State<RateOrderScreen> {
+  late final AuthProvider _openingAuth;
+  late final String? _openingOwner;
+  late final int _openingVersion;
+  late final String _openingOrderId;
+  bool get _ownsScreen => mounted && _openingOwner != null &&
+      _openingOrderId.isNotEmpty && !_openingOrderId.contains('/') &&
+      identical(context.read<AuthProvider>(), _openingAuth) &&
+      _openingAuth.isSessionCurrent(_openingOwner, _openingVersion) &&
+      widget.orderId == _openingOrderId;
+
+  @override
+  void initState() {
+    super.initState();
+    _openingAuth = context.read<AuthProvider>();
+    _openingOwner = _openingAuth.currentUser?.uid;
+    _openingVersion = _openingAuth.sessionVersion;
+    _openingOrderId = widget.orderId;
+  }
+  void _chooseRating(int value) {
+    if (_ownsScreen && !_submitting && !_submitted) setState(() => _rating = value);
+  }
+  void _toggleTag(String tag) {
+    if (!_ownsScreen || _submitting || _submitted) return;
+    setState(() { _selectedTags.contains(tag) ? _selectedTags.remove(tag) : _selectedTags.add(tag); });
+  }
+  void _done() {
+    if (_ownsScreen) Navigator.of(context).maybePop();
+  }
   int _rating = 0;
   final Set<String> _selectedTags = {};
   final TextEditingController _noteCtrl = TextEditingController();
@@ -24,39 +55,29 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
   static const List<String> _labels = ['', 'Terrible', 'Poor', 'Okay', 'Good', 'Excellent'];
 
   Future<void> _handleSubmit() async {
-    if (_rating == 0 || _submitting) return;
-    setState(() => _submitting = true);
-
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance
-            .collection('orders')
-            .doc(widget.orderId)
-            .collection('reviews')
-            .add({
-          'userId': uid,
-          'rating': _rating,
-          'tags': _selectedTags.toList(),
-          'note': _noteCtrl.text.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // Update order with rating
-        await FirebaseFirestore.instance
-            .collection('orders')
-            .doc(widget.orderId)
-            .update({'rating': _rating, 'isRated': true});
-      }
-      setState(() => _submitted = true);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+    if (!_ownsScreen || _rating == 0 || _submitting || _submitted) return;
+    final rating = _rating;
+    final tags = List<String>.unmodifiable(_selectedTags);
+    final note = _noteCtrl.text.trim();
+    if (note.length > 2000) {
+      SnackbarHelper.showError(context, 'Keep your note within 2,000 characters.');
+      return;
     }
-    if (mounted) setState(() => _submitting = false);
+    setState(() => _submitting = true);
+    try {
+      final submit = widget.submitRating ?? OrderRatingService().submit;
+      final confirmed = await submit(_openingOrderId, _openingOwner!, rating,
+          tags, note, () => _ownsScreen);
+      if (!_ownsScreen) return;
+      if (confirmed < 1 || confirmed > 5) throw StateError('Invalid rating receipt');
+      setState(() { _rating = confirmed; _submitted = true; });
+    } catch (_) {
+      if (mounted && _ownsScreen) {
+        SnackbarHelper.showError(context, 'Unable to save your rating. Please try again.');
+      }
+    } finally {
+      if (_ownsScreen) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -67,6 +88,11 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    if (!_ownsScreen) {
+      return const Scaffold(body: Center(child: Text(
+          'Your session changed. Reopen this order to continue.')));
+    }
     if (_submitted) return _buildCelebration();
 
     return Scaffold(
@@ -89,7 +115,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: _done,
                   child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.arrow_back, color: Color(0xFFD4A843), size: 22)),
                 ),
                 const Expanded(
@@ -114,7 +140,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Order #${widget.orderId.substring(0, 8).toUpperCase()}',
+                      'Order #${_openingOrderId.substring(0, _openingOrderId.length < 8 ? _openingOrderId.length : 8).toUpperCase()}',
                       style: const TextStyle(color: Color(0xFF145A32), fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -129,7 +155,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
                     children: List.generate(5, (i) {
                       final starVal = i + 1;
                       return GestureDetector(
-                        onTap: () => setState(() => _rating = starVal),
+                        onTap: !_submitting && _ownsScreen ? () => _chooseRating(starVal) : null,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           child: Icon(
@@ -161,9 +187,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
                     children: _tags.map((tag) {
                       final isActive = _selectedTags.contains(tag);
                       return GestureDetector(
-                        onTap: () => setState(() {
-                          isActive ? _selectedTags.remove(tag) : _selectedTags.add(tag);
-                        }),
+                        onTap: !_submitting && _ownsScreen ? () => _toggleTag(tag) : null,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
@@ -195,6 +219,8 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
                   const SizedBox(height: 10),
                   TextField(
                     controller: _noteCtrl,
+                    enabled: !_submitting,
+                    maxLength: 2000,
                     maxLines: 4,
                     decoration: InputDecoration(
                       hintText: 'Tell us more about your experience...',
@@ -219,7 +245,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
 
                   // Submit
                   GestureDetector(
-                    onTap: _rating > 0 ? _handleSubmit : null,
+                    onTap: _rating > 0 && !_submitting ? _handleSubmit : null,
                     child: AnimatedOpacity(
                       opacity: _rating > 0 ? 1.0 : 0.5,
                       duration: const Duration(milliseconds: 200),
@@ -278,7 +304,7 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
               ),
               const SizedBox(height: 20),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: _done,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                   decoration: BoxDecoration(
