@@ -1,0 +1,1063 @@
+{
+  "checkedAt": "2026-10-03 Asia/Kolkata",
+  "sourceExportedSymbols": 147,
+  "liveFunctionCount": 87,
+  "runtimeCounts": {
+    "nodejs22": 72,
+    "nodejs20": 15
+  },
+  "regionCounts": {
+    "us-central1": 87
+  },
+  "sourceExportsAbsentLive": [
+    "accrueMonthlyBenefits",
+    "addSupportCaseNote",
+    "adminUpdateOrderStatus",
+    "aiChatProxy",
+    "assignReferralCode",
+    "assignSupportCase",
+    "attachDeliveryProof",
+    "attachSupportCaseEvidence",
+    "cancelEmployeePayoutChange",
+    "changeDateOfBirth",
+    "changeEmailAddress",
+    "changePhoneNumber",
+    "changeSupportCaseStatus",
+    "claimScratchCard",
+    "completeReferralOnFirstDelivery",
+    "confirmOrderReturnReceived",
+    "connectAiProvider",
+    "connectSellerAiProvider",
+    "createBenefitEnrollment",
+    "createOnboardingWebHandoff",
+    "createSellerAiActivationOrder",
+    "createSupportCase",
+    "createSupportCaseFromSource",
+    "disconnectAiProvider",
+    "ensureCheckoutSubscriptions",
+    "expireProductCredits",
+    "financeReconciliationRecheckFinding",
+    "financeReconciliationScan",
+    "linkSupportCaseRecord",
+    "markEmployeePayoutPaid",
+    "markRiderPayoutPaid",
+    "notifyFollowersOnNewProduct",
+    "quoteDeliveryFees",
+    "reconcileProductCreditBalances",
+    "recoverCheckoutPayment",
+    "recoverWalletTopupPayment",
+    "redeemOnboardingWebHandoff",
+    "rejectEmployeePayout",
+    "releaseExpiredProductCreditHolds",
+    "reopenSupportCase",
+    "reportDeliveryException",
+    "requestEmployeePayoutChange",
+    "requestRiderIdentityChange",
+    "resolveSupportCase",
+    "restoreStockOnCancellation",
+    "retryCommissionException",
+    "reverseProductCreditOnCancellation",
+    "reviewDocumentSubmission",
+    "reviewEmployeePayoutChange",
+    "reviewRiderIdentityChange",
+    "riderMoneySummary",
+    "runBenefitAccrualNow",
+    "sellerAiChatProxy",
+    "setBenefitFeatureFlag",
+    "setBenefitProgramConfig",
+    "setComplianceStatus",
+    "setEnrollmentStatus",
+    "setUserRole",
+    "submitDocumentReplacement",
+    "submitRiderApplication",
+    "submitSupportRequest",
+    "unlinkSupportCaseRecord",
+    "updateDeliveryException",
+    "updateRiderContact",
+    "updateSupportRequest",
+    "viewSupportCaseEvidence"
+  ],
+  "liveIdsAbsentSource": [
+    "retryFailedNotifications",
+    "sendAfternoonGreeting",
+    "sendEveningGreeting",
+    "sendMorningGreeting",
+    "sendNightGreeting",
+    "subscriptionChecker"
+  ],
+  "sourceIndexCount": 78,
+  "liveIndexCount": 58,
+  "normalization": "Ignores server-added __name__ fields and default density; compares collection group, query scope and ordered business fields. No state/version/rules/body parity proof. Source includes current uncommitted index preparation.",
+  "sourceIndexShapesAbsentLive": [
+    {
+      "collectionGroup": "commission_exceptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "employeeUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "delivery_exceptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "employee_payouts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "paidAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "deliveryPartnerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderNumber",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "product_credit_holds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "expiresAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "product_credit_ledger",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "expiresAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rider_cash_ledger",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rider_earnings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rider_incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rider_payouts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "paidAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rider_support_tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "seller_withdrawals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "paidAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_case_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "caseId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_case_evidence",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "caseId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "uploadedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_case_notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "caseId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assignedTo",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "linkedRecords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "primaryActor.type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "primaryActor.id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "support_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "verified_payments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "verifiedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "liveIndexShapesAbsentSource": [],
+  "sourceFieldOverrides": 0,
+  "liveFieldOverrides": 0,
+  "sourceComparisonCommit": "fcbfcd09",
+  "checkedAtUtc": "2026-10-03T17:20:51.865641+00:00",
+  "note": "Point-in-time read-only metadata snapshot; counts do not prove function body/trigger/version or index build readiness. No production documents, secrets, provider calls or changes.",
+  "commands": [
+    "firebase functions:list --project agrimore-66a4e --json",
+    "firebase firestore:indexes --project agrimore-66a4e --json",
+    "firebase firestore:databases:get '(default)' --project agrimore-66a4e --json",
+    "firebase firestore:backups:list --project agrimore-66a4e --json",
+    "firebase firestore:backups:schedules:list --project agrimore-66a4e --json",
+    "Installed firebase-tools: requireAuth; gcp/rules.listAllReleases + getRulesetContent (GET only), exact default Firestore and identified Storage bucket releases"
+  ],
+  "liveFunctions": [
+    {
+      "id": "acceptDeliveryOffer",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "acceptDeliveryOffer"
+    },
+    {
+      "id": "activateAssociateOnboarding",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "activateAssociateOnboarding"
+    },
+    {
+      "id": "advanceDeliveryDispatch",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "advanceDeliveryDispatch"
+    },
+    {
+      "id": "advanceDeliveryStep",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "advanceDeliveryStep"
+    },
+    {
+      "id": "buildRiderStatements",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "buildRiderStatements"
+    },
+    {
+      "id": "cancelSellerPayoutChange",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "cancelSellerPayoutChange"
+    },
+    {
+      "id": "cancelSellerWithdrawal",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "cancelSellerWithdrawal"
+    },
+    {
+      "id": "completeUserProfile",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "completeUserProfile"
+    },
+    {
+      "id": "confirmDelivery",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "confirmDelivery"
+    },
+    {
+      "id": "createAssociateOnboardingPayment",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "createAssociateOnboardingPayment"
+    },
+    {
+      "id": "createOrder",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "createOrder"
+    },
+    {
+      "id": "createOrderFromRfq",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "createOrderFromRfq"
+    },
+    {
+      "id": "createRazorpayOrder",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "createRazorpayOrder"
+    },
+    {
+      "id": "createRfq",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "createRfq"
+    },
+    {
+      "id": "creditSignupBonus",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "creditSignupBonus"
+    },
+    {
+      "id": "declineDeliveryOffer",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "declineDeliveryOffer"
+    },
+    {
+      "id": "getAssociateOnboardingConfig",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "getAssociateOnboardingConfig"
+    },
+    {
+      "id": "issueSellerInvoice",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "issueSellerInvoice"
+    },
+    {
+      "id": "markSellerWithdrawalPaid",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "markSellerWithdrawalPaid"
+    },
+    {
+      "id": "quoteOrderWithCredit",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "quoteOrderWithCredit"
+    },
+    {
+      "id": "razorpayOnboardingWebhook",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "razorpayOnboardingWebhook"
+    },
+    {
+      "id": "rebuildMySellerStats",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "rebuildMySellerStats"
+    },
+    {
+      "id": "reconcileStaleOnboardingPayments",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "reconcileStaleOnboardingPayments"
+    },
+    {
+      "id": "recordAssociateOnboardingRefund",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "recordAssociateOnboardingRefund"
+    },
+    {
+      "id": "recordRiderCashDeposit",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "recordRiderCashDeposit"
+    },
+    {
+      "id": "redeemReferralCode",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "redeemReferralCode"
+    },
+    {
+      "id": "refreshDeliveryRoute",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "refreshDeliveryRoute"
+    },
+    {
+      "id": "rejectSellerWithdrawal",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "rejectSellerWithdrawal"
+    },
+    {
+      "id": "releaseDeliveryOrder",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "releaseDeliveryOrder"
+    },
+    {
+      "id": "releaseProductCreditHold",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "releaseProductCreditHold"
+    },
+    {
+      "id": "replyToReview",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "replyToReview"
+    },
+    {
+      "id": "reportRiderIncident",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "reportRiderIncident"
+    },
+    {
+      "id": "requestRiderBankChange",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "requestRiderBankChange"
+    },
+    {
+      "id": "requestSellerPayoutChange",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "requestSellerPayoutChange"
+    },
+    {
+      "id": "requestSellerWithdrawal",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "requestSellerWithdrawal"
+    },
+    {
+      "id": "respondToRfqOffer",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "respondToRfqOffer"
+    },
+    {
+      "id": "reviewRiderBankChange",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "reviewRiderBankChange"
+    },
+    {
+      "id": "reviewSellerPayoutChange",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "reviewSellerPayoutChange"
+    },
+    {
+      "id": "sellerTransitionOrder",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "sellerTransitionOrder"
+    },
+    {
+      "id": "sellerWalletSummary",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "sellerWalletSummary"
+    },
+    {
+      "id": "submitRfqOffer",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "submitRfqOffer"
+    },
+    {
+      "id": "submitSellerApplication",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "submitSellerApplication"
+    },
+    {
+      "id": "updateRiderIncident",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "updateRiderIncident"
+    },
+    {
+      "id": "verifyAssociateCode",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "verifyAssociateCode"
+    },
+    {
+      "id": "verifyEmailForProfile",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "verifyEmailForProfile"
+    },
+    {
+      "id": "verifyRazorpayPayment",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "verifyRazorpayPayment"
+    },
+    {
+      "id": "verifyWalletTopup",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs22",
+      "entryPoint": "verifyWalletTopup"
+    },
+    {
+      "id": "waiveAssociateOnboardingFee",
+      "region": "us-central1",
+      "platform": "gcfv2",
+      "runtime": "nodejs20",
+      "entryPoint": "waiveAssociateOnboardingFee"
+    },
+    {
+      "id": "calculateSellerPayout",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "calculateSellerPayout"
+    },
+    {
+      "id": "cleanupInvalidTokens",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "cleanupInvalidTokens"
+    },
+    {
+      "id": "createEmployeeByAdmin",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "createEmployeeByAdmin"
+    },
+    {
+      "id": "createSellerByAdmin",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "createSellerByAdmin"
+    },
+    {
+      "id": "deleteUserData",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "deleteUserData"
+    },
+    {
+      "id": "getNotificationStats",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "getNotificationStats"
+    },
+    {
+      "id": "notifySellerNewOrder",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "notifySellerNewOrder"
+    },
+    {
+      "id": "notifySellerPayoutPaid",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "notifySellerPayoutPaid"
+    },
+    {
+      "id": "onOrderCreatedNotifications",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "onOrderCreatedNotifications"
+    },
+    {
+      "id": "onOrderStatusChanged",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "onOrderStatusChanged"
+    },
+    {
+      "id": "onProductReviewWrite",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "onProductReviewWrite"
+    },
+    {
+      "id": "onProductStockChanged",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "onProductStockChanged"
+    },
+    {
+      "id": "onRiderDelivery",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "onRiderDelivery"
+    },
+    {
+      "id": "payEmployeeCommissionOnDelivery",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "payEmployeeCommissionOnDelivery"
+    },
+    {
+      "id": "refreshUserRoleClaims",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "refreshUserRoleClaims"
+    },
+    {
+      "id": "requestAssociateOnboardingRefundOnSuspend",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "requestAssociateOnboardingRefundOnSuspend"
+    },
+    {
+      "id": "requestEmployeePayout",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "requestEmployeePayout"
+    },
+    {
+      "id": "resolveGoogleIdentity",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "resolveGoogleIdentity"
+    },
+    {
+      "id": "retryFailedNotifications",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "retryFailedNotifications"
+    },
+    {
+      "id": "reverseEmployeeCommissionOnCancellation",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "reverseEmployeeCommissionOnCancellation"
+    },
+    {
+      "id": "rollupSellerStats",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "rollupSellerStats"
+    },
+    {
+      "id": "sendAfternoonGreeting",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendAfternoonGreeting"
+    },
+    {
+      "id": "sendBroadcastNotification",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendBroadcastNotification"
+    },
+    {
+      "id": "sendEmailOTP",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "sendEmailOTP"
+    },
+    {
+      "id": "sendEveningGreeting",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendEveningGreeting"
+    },
+    {
+      "id": "sendMorningGreeting",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendMorningGreeting"
+    },
+    {
+      "id": "sendNightGreeting",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendNightGreeting"
+    },
+    {
+      "id": "sendNotificationToUser",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendNotificationToUser"
+    },
+    {
+      "id": "sendOrderUpdateNotification",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendOrderUpdateNotification"
+    },
+    {
+      "id": "sendPhoneOTP",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "sendPhoneOTP"
+    },
+    {
+      "id": "setLowStockThreshold",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "setLowStockThreshold"
+    },
+    {
+      "id": "subscriptionChecker",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "subscriptionChecker"
+    },
+    {
+      "id": "syncDeliveryRoleClaims",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "syncDeliveryRoleClaims"
+    },
+    {
+      "id": "syncDeliveryTask",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "syncDeliveryTask"
+    },
+    {
+      "id": "syncEmployeeRoleClaims",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "syncEmployeeRoleClaims"
+    },
+    {
+      "id": "syncSellerRoleClaims",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "syncSellerRoleClaims"
+    },
+    {
+      "id": "syncUserRoleClaims",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "syncUserRoleClaims"
+    },
+    {
+      "id": "verifyEmailOTP",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs20",
+      "entryPoint": "verifyEmailOTP"
+    },
+    {
+      "id": "verifyPhoneOTP",
+      "region": "us-central1",
+      "platform": "gcfv1",
+      "runtime": "nodejs22",
+      "entryPoint": "verifyPhoneOTP"
+    }
+  ],
+  "sourceCommittedIndexCount": 75,
+  "sourceCommittedShapesAbsentLive": 17,
+  "preparedIndexCollections": [
+    "product_credit_holds",
+    "product_credit_ledger",
+    "verified_payments"
+  ],
+  "database": {
+    "name": "projects/agrimore-66a4e/databases/(default)",
+    "locationId": "nam5",
+    "type": "FIRESTORE_NATIVE",
+    "concurrencyMode": "PESSIMISTIC",
+    "pointInTimeRecoveryEnablement": "POINT_IN_TIME_RECOVERY_DISABLED",
+    "earliestVersionTime": "2026-10-03T16:17:38.117056Z",
+    "versionRetentionPeriod": "3600s",
+    "deleteProtectionState": "DELETE_PROTECTION_DISABLED",
+    "createTime": "2026-03-18T08:30:59.419208Z",
+    "updateTime": "2026-03-18T08:30:59.419208Z"
+  },
+  "backupsListResponse": {},
+  "defaultDatabaseBackupSchedules": [],
+  "rules": [
+    {
+      "service": "cloud.firestore",
+      "release": {
+        "name": "projects/agrimore-66a4e/releases/cloud.firestore",
+        "rulesetName": "projects/agrimore-66a4e/rulesets/bf55943c-1ba4-4ed8-b518-4a44c33e456c",
+        "createTime": "2026-03-18T08:31:09.300227Z",
+        "updateTime": "2026-09-24T13:42:30.170045Z"
+      },
+      "files": [
+        {
+          "name": "firestore.rules",
+          "bytes": 133330,
+          "sha256": "ed23d495a30d732854ac76b29f367ceed67399a4eda3d439f09352898277696a",
+          "localByteEqual": false
+        }
+      ],
+      "localPath": "firestore.rules",
+      "localSha256": "984784c940253c8dee9419d8ef8d4c494bb600d4cb2306123348f400c89a106a"
+    },
+    {
+      "service": "firebase.storage",
+      "release": {
+        "name": "projects/agrimore-66a4e/releases/firebase.storage/agrimore-66a4e.firebasestorage.app",
+        "rulesetName": "projects/agrimore-66a4e/rulesets/8e6c147f-916f-4489-a948-fc8fe3ff7490",
+        "createTime": "2026-03-14T13:20:20.260867Z",
+        "updateTime": "2026-09-24T13:42:29.249053Z"
+      },
+      "files": [
+        {
+          "name": "storage.rules",
+          "bytes": 14584,
+          "sha256": "87a1f9aa0ad37d85ceb8a8adf744c0f61ba9ebf15d349e88d249fe825f655cb4",
+          "localByteEqual": false
+        }
+      ],
+      "localPath": "storage.rules",
+      "localSha256": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
+    }
+  ]
+}
