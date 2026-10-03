@@ -15766,16 +15766,16 @@
         {
           "chain": [
             {
-              "line": 159,
+              "line": 174,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 160,
+              "line": 175,
               "method": "doc"
             },
             {
-              "line": 161,
+              "line": 176,
               "method": "snapshots"
             }
           ],
@@ -15784,7 +15784,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 159,
+          "line": 174,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             60
@@ -15795,12 +15795,12 @@
         {
           "chain": [
             {
-              "line": 185,
+              "line": 199,
               "literal": "product_credit_ledger",
               "method": "collection"
             },
             {
-              "line": 186,
+              "line": 200,
               "literal": "customerId",
               "method": "where",
               "operators": [
@@ -15809,16 +15809,16 @@
             },
             {
               "direction": "DESCENDING",
-              "line": 187,
+              "line": 201,
               "literal": "createdAt",
               "method": "orderBy"
             },
             {
-              "line": 188,
+              "line": 202,
               "method": "limit"
             },
             {
-              "line": 189,
+              "line": 203,
               "method": "get"
             }
           ],
@@ -15833,7 +15833,7 @@
             18,
             75
           ],
-          "line": 185,
+          "line": 199,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             59
@@ -15844,7 +15844,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 186,
+          "line": 200,
           "literal": "customerId",
           "method": "where",
           "operators": [
@@ -15853,17 +15853,17 @@
         },
         {
           "direction": "DESCENDING",
-          "line": 187,
+          "line": 201,
           "literal": "createdAt",
           "method": "orderBy"
         },
         {
-          "line": 188,
+          "line": 202,
           "method": "limit"
         }
       ],
       "path": "apps/marketplace/lib/providers/product_credit_provider.dart",
-      "sha256": "c051ac64e1a1fc631a2b5dff4887df626b4e28c741b18c026cd07d7990e33721"
+      "sha256": "c2b1e9d1ed75194cc7725ee0abc4046144509a752b43d764a54b1e44814eb2b2"
     },
     {
       "callable_sites": [],

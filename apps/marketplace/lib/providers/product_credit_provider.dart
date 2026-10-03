@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 /// Read-only provider for the customer-facing AgriMore Product Credit
@@ -24,12 +23,30 @@ import 'package:agrimore_services/agrimore_services.dart';
 /// this provider performs ZERO Firestore reads for credit data — not "a
 /// balance load that then hides itself," a genuine no-op.
 class ProductCreditProvider with ChangeNotifier {
-  ProductCreditProvider({BenefitFlagService? flagService})
-      : _flagService = flagService ?? BenefitFlagService();
+  ProductCreditProvider({
+    BenefitFlagService? flagService,
+    String? Function()? currentUserId,
+    Stream<String?> Function()? authChanges,
+    Stream<ProductCreditBalanceModel> Function(String uid)? balanceSnapshots,
+    Future<List<ProductCreditLedgerModel>> Function(String uid)? loadLedger,
+  })  : _flagService = flagService ?? BenefitFlagService(),
+        _currentUserId =
+            currentUserId ?? (() => FirebaseAuth.instance.currentUser?.uid),
+        _authChanges = authChanges ??
+            (() => FirebaseAuth.instance
+                .authStateChanges()
+                .map((user) => user?.uid)),
+        _balanceSnapshots = balanceSnapshots,
+        _loadLedger = loadLedger;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final BenefitFlagService _flagService;
+  final String? Function() _currentUserId;
+  final Stream<String?> Function() _authChanges;
+  final Stream<ProductCreditBalanceModel> Function(String uid)?
+      _balanceSnapshots;
+  final Future<List<ProductCreditLedgerModel>> Function(String uid)?
+      _loadLedger;
 
   // Bounded read, matching this repo's Phase 10-13 read-cost discipline —
   // never an unbounded ledger listener. Loaded once per init()/refresh();
@@ -41,98 +58,157 @@ class ProductCreditProvider with ChangeNotifier {
   bool _hasLedgerError = false;
   ProductCreditBalanceModel? _balance;
   List<ProductCreditLedgerModel> _ledger = [];
-  StreamSubscription<DocumentSnapshot>? _balanceSubscription;
+  StreamSubscription<ProductCreditBalanceModel>? _balanceSubscription;
+  StreamSubscription<String?>? _authSubscription;
+  String? _ownerId;
+  int _loadGeneration = 0;
+  bool _disposed = false;
 
-  bool get isEnabled => _isEnabled;
-  bool get isLoading => _isLoading;
+  bool get _hasCurrentOwner =>
+      !_disposed && _ownerId != null && _ownerId == _currentUserId();
+
+  bool _owns(String ownerId, int generation) =>
+      _hasCurrentOwner && _ownerId == ownerId && generation == _loadGeneration;
+
+  bool get isEnabled => _hasCurrentOwner && _isEnabled;
+  bool get isLoading => _hasCurrentOwner && _isLoading;
 
   /// True only when the ledger query itself failed (most likely
   /// FAILED_PRECONDITION from the missing composite index — see
   /// firestore.indexes.json — until the owner deploys it). Distinct from
   /// "flag disabled" and from "no entries yet," so the UI can show a
   /// neutral message instead of a false empty state.
-  bool get hasLedgerError => _hasLedgerError;
+  bool get hasLedgerError => isEnabled && _hasLedgerError;
 
-  ProductCreditBalanceModel? get balanceModel => _balance;
-  List<ProductCreditLedgerModel> get ledger => List.unmodifiable(_ledger);
+  ProductCreditBalanceModel? get balanceModel => isEnabled ? _balance : null;
+  List<ProductCreditLedgerModel> get ledger =>
+      List.unmodifiable(isEnabled ? _ledger : <ProductCreditLedgerModel>[]);
 
-  double get available => _balance?.available ?? 0;
-  double get onHold => _balance?.onHold ?? 0;
-  double get pending => _balance?.pending ?? 0;
+  double get available => balanceModel?.available ?? 0;
+  double get onHold => balanceModel?.onHold ?? 0;
+  double get pending => balanceModel?.pending ?? 0;
+
+  void _cancelBalanceListener() {
+    _balanceSubscription?.cancel();
+    _balanceSubscription = null;
+  }
+
+  void _clearCredit() {
+    _balance = null;
+    _ledger = [];
+    _hasLedgerError = false;
+    _isEnabled = false;
+  }
 
   /// Call once per screen mount (mirrors WalletProvider.loadWallet()'s
   /// one-shot-fetch-then-listen shape). Checks the flag first; only when
   /// enabled does it start the balance listener and load the ledger
   /// preview.
   Future<void> init() async {
+    if (_disposed) return;
+    final generation = ++_loadGeneration;
+    final ownerId = _currentUserId();
+    if (_ownerId != ownerId) _clearCredit();
+    _ownerId = ownerId;
+    _cancelBalanceListener();
+    _authSubscription ??= _authChanges().listen((userId) {
+      // An auth event queued before the current identity changed cannot
+      // rebind the provider to an obsolete session.
+      if (_disposed || userId != _currentUserId() || userId == _ownerId) {
+        return;
+      }
+      _ownerId = userId;
+      ++_loadGeneration;
+      _cancelBalanceListener();
+      _clearCredit();
+      _isLoading = false;
+      notifyListeners();
+      if (userId != null) unawaited(init());
+    });
+    if (ownerId == null) {
+      _clearCredit();
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
     _isLoading = true;
     notifyListeners();
 
+    var enabled = false;
     try {
       final flags = await _flagService.fetchFlags();
-      _isEnabled = flags.benefitProgramEnabled;
+      enabled = flags.benefitProgramEnabled;
     } catch (e) {
       // fetchFlags() already fails closed internally; this catch is
       // belt-and-suspenders in case a future change to that contract ever
       // lets an exception through instead of resolving to disabled.
       debugPrint('ProductCreditProvider: flag fetch threw, failing closed: $e');
-      _isEnabled = false;
     }
 
+    if (!_owns(ownerId, generation)) return;
+    _isEnabled = enabled;
+
     if (!_isEnabled) {
-      _balanceSubscription?.cancel();
-      _balance = null;
-      _ledger = [];
-      _hasLedgerError = false;
+      _cancelBalanceListener();
+      _clearCredit();
       _isLoading = false;
       notifyListeners();
       return;
     }
 
-    _startBalanceListener();
-    await _loadLedgerPreview();
+    _startBalanceListener(ownerId, generation);
+    await _loadLedgerPreview(ownerId, generation);
+
+    if (!_owns(ownerId, generation)) return;
 
     _isLoading = false;
     notifyListeners();
   }
 
-  void _startBalanceListener() {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
+  void _startBalanceListener(String userId, int generation) {
+    if (!_owns(userId, generation) || !_isEnabled) return;
 
-    _balanceSubscription?.cancel();
-    _balanceSubscription = _firestore
-        .collection('product_credit_balances')
-        .doc(userId)
-        .snapshots()
-        .listen((doc) {
+    _cancelBalanceListener();
+    final snapshots = _balanceSnapshots?.call(userId) ??
+        _firestore
+            .collection('product_credit_balances')
+            .doc(userId)
+            .snapshots()
+            .map((doc) => doc.exists
+                ? ProductCreditBalanceModel.fromFirestore(doc)
+                : ProductCreditBalanceModel.zero(userId));
+    _balanceSubscription = snapshots.listen((balance) {
+      if (!_owns(userId, generation) || !_isEnabled) return;
       // A customer who has never accrued has no balance document — that
       // is a normal all-zero state, never an error.
-      _balance = doc.exists
-          ? ProductCreditBalanceModel.fromFirestore(doc)
-          : ProductCreditBalanceModel.zero(userId);
+      _balance = balance;
       notifyListeners();
     }, onError: (e) {
+      if (!_owns(userId, generation) || !_isEnabled) return;
       debugPrint('ProductCreditProvider: balance listener error: $e');
     });
   }
 
-  Future<void> _loadLedgerPreview() async {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
+  Future<void> _loadLedgerPreview(String userId, int generation) async {
+    if (!_owns(userId, generation) || !_isEnabled) return;
 
     try {
-      final query = await _firestore
-          .collection('product_credit_ledger')
-          .where('customerId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(_ledgerPreviewSize)
-          .get();
-      _ledger = query.docs
-          .map((doc) => ProductCreditLedgerModel.fromFirestore(doc))
-          .toList();
+      final entries = _loadLedger != null
+          ? await _loadLedger(userId)
+          : (await _firestore
+                  .collection('product_credit_ledger')
+                  .where('customerId', isEqualTo: userId)
+                  .orderBy('createdAt', descending: true)
+                  .limit(_ledgerPreviewSize)
+                  .get())
+              .docs
+              .map((doc) => ProductCreditLedgerModel.fromFirestore(doc))
+              .toList();
+      if (!_owns(userId, generation) || !_isEnabled) return;
+      _ledger = entries;
       _hasLedgerError = false;
     } catch (e) {
+      if (!_owns(userId, generation) || !_isEnabled) return;
       // Catch rather than crash — see firestore.indexes.json's new
       // product_credit_ledger index, which production needs before this
       // query can succeed there.
@@ -146,7 +222,12 @@ class ProductCreditProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _balanceSubscription?.cancel();
+    _disposed = true;
+    ++_loadGeneration;
+    _authSubscription?.cancel();
+    _cancelBalanceListener();
+    _clearCredit();
+    _isLoading = false;
     super.dispose();
   }
 }
