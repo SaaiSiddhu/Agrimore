@@ -42,12 +42,14 @@ import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import { employeeWalletRef } from "../employee/employeePayoutAccount";
+import { isExactMoneyAmount } from "../common/paymentIntegrity";
+import { payoutBalancePaise, payoutAmountFromPaise } from "../employee/employeePayoutMoney";
 
 type Db = FirebaseFirestore.Firestore;
 
 type ReviewVerdict =
   | { kind: "paid" | "rejected" | "already"; employeeId: string; amount: number }
-  | { kind: "refused"; reason: "not_found" | "not_requested" | "bad_reference" | "reason_required" | "payout_change_pending" };
+  | { kind: "refused"; reason: "not_found" | "not_requested" | "bad_reference" | "reason_required" | "payout_change_pending" | "bad_money_state" };
 
 /** Admin: the money was sent. Idempotent on an identical (payoutId, reference) retry.
  * Phase ADMR-5: refuses while a bank/UPI change is pending review — the same
@@ -63,8 +65,13 @@ async function markEmployeePayoutPaidCore(
     const snap = await tx.get(payoutRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const d = snap.data()!;
-    const employeeId = String(d.employeeId);
-    const amount = Number(d.amount ?? 0);
+    const employeeId = d.employeeId;
+    const storedAmount = d.amount;
+    if (typeof employeeId !== "string" || !employeeId || employeeId.length > 128 ||
+        employeeId.includes("/") || !isExactMoneyAmount(storedAmount)) {
+      return { kind: "refused", reason: "bad_money_state" };
+    }
+    const amount = Math.round(storedAmount * 100) / 100;
     if (d.status === "paid" && d.paymentReference === ref) return { kind: "already", employeeId, amount };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
     const wallet = await tx.get(employeeWalletRef(db, employeeId));
@@ -90,16 +97,26 @@ async function rejectEmployeePayoutCore(
     const snap = await tx.get(payoutRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const d = snap.data()!;
-    const employeeId = String(d.employeeId);
-    const amount = Number(d.amount ?? 0);
+    const employeeId = d.employeeId;
+    const storedAmount = d.amount;
+    if (typeof employeeId !== "string" || !employeeId || employeeId.length > 128 ||
+        employeeId.includes("/") || !isExactMoneyAmount(storedAmount)) {
+      return { kind: "refused", reason: "bad_money_state" };
+    }
+    const amount = Math.round(storedAmount * 100) / 100;
     if (d.status === "rejected") return { kind: "already", employeeId, amount };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
     const at = Timestamp.fromMillis(nowMs);
     const walletRef = db.collection("wallets").doc(employeeId);
     const walletTxRef = db.collection("wallet_transactions").doc();
     const walletSnap = await tx.get(walletRef);
-    const balanceAfter = (Number(walletSnap.data()?.balance ?? 0)) + amount;
-    tx.set(walletRef, { balance: FieldValue.increment(amount), updatedAt: at }, { merge: true });
+    const currentPaise = payoutBalancePaise(walletSnap.data()?.balance);
+    if (!walletSnap.exists || currentPaise === null) return { kind: "refused", reason: "bad_money_state" };
+    const balancePaise = currentPaise + Math.round(amount * 100);
+    if (!Number.isSafeInteger(balancePaise)) return { kind: "refused", reason: "bad_money_state" };
+    const balanceAfter = payoutAmountFromPaise(balancePaise);
+    if (balanceAfter === null) return { kind: "refused", reason: "bad_money_state" };
+    tx.set(walletRef, { balance: balanceAfter, updatedAt: at }, { merge: true });
     tx.set(walletTxRef, {
       walletId: employeeId,
       userId: employeeId,
@@ -132,6 +149,7 @@ async function requireAdmin(request: { auth?: { uid: string; token: Record<strin
 
 const REFUSAL_TEXT: Record<string, string> = {
   not_found: "Payout request not found",
+  bad_money_state: "Payout or wallet details need review before continuing",
   not_requested: "This payout has already been reviewed",
   bad_reference: "Enter a payment reference (4–64 characters)",
   reason_required: "Give a reason (3–200 characters)",
