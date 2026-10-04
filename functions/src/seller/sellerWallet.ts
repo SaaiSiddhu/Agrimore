@@ -181,32 +181,55 @@ export interface WalletSummary {
   hasDestination: boolean;
 }
 
-export async function walletSummaryCore(db: Db, sellerId: string, nowMs: number): Promise<WalletSummary> {
-  const settings = await loadWalletSettings(db);
-  const cutoff = nowMs - settings.holdDays * 86400000;
-  const [pending, wallet, details] = await Promise.all([
-    db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending").get(),
-    walletRef(db, sellerId).get(),
-    db.collection("seller_payout_details").doc(sellerId).get(),
-  ]);
-  let available = 0, count = 0, held = 0;
-  for (const p of pending.docs) {
-    const d = p.data();
-    if (d.withdrawalId) continue;
-    if (isWithdrawable(d, cutoff)) { available = checkedSellerPaise(available + netPaise(d)); count += 1; }
-    else held = checkedSellerPaise(held + netPaise(d));
+const PENDING_PAYOUT_PAGE_SIZE = 100;
+
+function pendingPayoutQuery(db: Db, sellerId: string): FirebaseFirestore.Query {
+  return db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending")
+    .select("sellerId", "status", "withdrawalId", "createdAt", "netAmount", "amount", "orderNumber", "orderId");
+}
+
+/** Same snapshot and implicit document-ID order across every page. */
+async function* pendingPayoutPages(tx: FirebaseFirestore.Transaction, query: FirebaseFirestore.Query) {
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  for (;;) {
+    const pageQuery = last ? query.startAfter(last).limit(PENDING_PAYOUT_PAGE_SIZE) : query.limit(PENDING_PAYOUT_PAGE_SIZE);
+    const page = await tx.get(pageQuery);
+    yield page;
+    if (page.size < PENDING_PAYOUT_PAGE_SIZE) return;
+    last = page.docs[page.docs.length - 1];
   }
-  const w = wallet.data() ?? {};
-  return {
-    availablePaise: available,
-    availableCount: count,
-    heldPaise: held,
-    minWithdrawalPaise: settings.minWithdrawalPaise,
-    holdDays: settings.holdDays,
-    openWithdrawalId: typeof w.openWithdrawal === "string" ? w.openWithdrawal : null,
-    payoutChangePendingId: typeof w.payoutChangePending === "string" ? w.payoutChangePending : null,
-    hasDestination: payoutDestination(details.data()) !== null,
-  };
+}
+
+export async function walletSummaryCore(db: Db, sellerId: string, nowMs: number): Promise<WalletSummary> {
+  return db.runTransaction(async (tx): Promise<WalletSummary> => {
+    const [wallet, details, settingsDoc] = await Promise.all([
+      tx.get(walletRef(db, sellerId)),
+      tx.get(db.collection("seller_payout_details").doc(sellerId)),
+      tx.get(db.collection("settings").doc("seller_wallet")),
+    ]);
+    const settings = walletSettingsFromData(settingsDoc.data() ?? {});
+    const cutoff = nowMs - settings.holdDays * 86400000;
+    let available = 0, count = 0, held = 0;
+    for await (const page of pendingPayoutPages(tx, pendingPayoutQuery(db, sellerId))) {
+      for (const p of page.docs) {
+        const d = p.data();
+        if (d.withdrawalId) continue;
+        if (isWithdrawable(d, cutoff)) { available = checkedSellerPaise(available + netPaise(d)); count += 1; }
+        else held = checkedSellerPaise(held + netPaise(d));
+      }
+    }
+    const w = wallet.data() ?? {};
+    return {
+      availablePaise: available,
+      availableCount: count,
+      heldPaise: held,
+      minWithdrawalPaise: settings.minWithdrawalPaise,
+      holdDays: settings.holdDays,
+      openWithdrawalId: typeof w.openWithdrawal === "string" ? w.openWithdrawal : null,
+      payoutChangePendingId: typeof w.payoutChangePending === "string" ? w.payoutChangePending : null,
+      hasDestination: payoutDestination(details.data()) !== null,
+    };
+  }, { readOnly: true });
 }
 
 // ── withdrawals ──
@@ -225,7 +248,7 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
   const id = `${sellerId}_${requestId}`;
   const wRef = db.collection("seller_withdrawals").doc(id);
   const accRef = walletRef(db, sellerId);
-  const pendingQ = db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending");
+  const pendingQ = pendingPayoutQuery(db, sellerId);
   return db.runTransaction(async (tx): Promise<WithdrawVerdict> => {
     // A historical request is its own replay anchor. Later seller, wallet,
     // destination or pending-payout changes must not add reads to that retry.
@@ -235,9 +258,9 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
       if (e.sellerId !== sellerId) return { kind: "refused", reason: "bad_request_id" };
       return { kind: "already", id, amountPaise: Number(e.amountPaise ?? 0), count: Number(e.payoutCount ?? 0) };
     }
-    const [seller, acc, details, pending, settingsDoc] = await Promise.all([
+    const [seller, acc, details, settingsDoc] = await Promise.all([
       tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
-      tx.get(db.collection("seller_payout_details").doc(sellerId)), tx.get(pendingQ),
+      tx.get(db.collection("seller_payout_details").doc(sellerId)),
       tx.get(db.collection("settings").doc("seller_wallet")),
     ]);
     if (!seller.exists) return { kind: "refused", reason: "not_a_seller" };
@@ -251,14 +274,18 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
     // Completed request replays above never depend on a new settings read.
     const settings = walletSettingsFromData(settingsDoc.data() ?? {});
     const cutoff = nowMs - settings.holdDays * 86400000;
-    for (const p of pending.docs) {
-      if (!p.data().withdrawalId) netPaise(p.data());
+    const rows: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    for await (const page of pendingPayoutPages(tx, pendingQ)) {
+      for (const p of page.docs) {
+        const d = p.data();
+        if (!d.withdrawalId) netPaise(d);
+        if (isWithdrawable(d, cutoff)) rows.push(p);
+      }
+      // Stable sorting preserves the legacy ID tie order. Keep only the oldest
+      // candidates, but still traverse later pages to validate all pending money.
+      rows.sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0));
+      rows.splice(MAX_PAYOUTS_PER_WITHDRAWAL);
     }
-
-    const rows = pending.docs
-      .filter((p) => isWithdrawable(p.data(), cutoff))
-      .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0))
-      .slice(0, MAX_PAYOUTS_PER_WITHDRAWAL);
     const amountPaise = rows.reduce((sum, p) => checkedSellerPaise(sum + netPaise(p.data())), 0);
     if (amountPaise <= 0) return { kind: "refused", reason: "nothing_to_withdraw" };
     if (amountPaise < settings.minWithdrawalPaise) return { kind: "refused", reason: "below_minimum" };
