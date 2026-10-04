@@ -577,3 +577,6 @@ F8 compiler continuation disposition: implementationd341f2e6 plus analyzerbounda
 
 
 F8 Android compiler continuation CLAIMED (2026-10-04), basebea7b25f: marketplace unsigned release through external /tmp Gradle init, release signing null and every Crashlytics upload task disabled before execution; dry-run graph guards first. Contract /tmp/agrimore-native-android-contract.md. Exact initial repo scope foundation evidence only; source compiler fixes separately claimed. No keystore signing/install/run/cloud writes/deploy; preserve owner WIP and independent builds. SINGLE AGENT, full F8/F9 acceptance remains open.
+
+
+F8/F2 Android identity amendment before edit (2026-10-04): read-only apps:list ANDROID confirms7 registered packages and native customer SDK appId matches live com.customer.agrimore, but Dart Android appId differs. Include exact marketplace lib/firebase_options.dart Android block to align with fetched existing customer SDK fields; ignored native google-services.json only if read-only SDK refresh requires it. Other platform blocks preserved; no Cloud app/OAuth client creation, signing or provider call. External init first dryrun failed safely in Flutter included-build without :app; guard corrected, final dryrun still active.
