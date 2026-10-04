@@ -72,7 +72,8 @@ export async function publishPhotoRequest(db: admin.firestore.Firestore, bucket:
      if (capability(m, asset) === "active") continue;
      // Another request may have completed and released the client lock. Never reissue then.
      if (checked.state !== "pending") retry();
-     await inspectPhotoActivation(db, actor, draftId, expectedBucket);
+     const beforePatch = await inspectPhotoActivation(db, actor, draftId, expectedBucket);
+     if (beforePatch.state !== "pending" || JSON.stringify(beforePatch.plan) !== JSON.stringify(plan)) retry();
      try {
        // Patch the CURRENT object, not an archived generation; conditions guard the current version atomically in GCS.
        await bucket.file(asset.path, { preconditionOpts: { ifGenerationMatch: asset.generation, ifMetagenerationMatch: metageneration } }).setMetadata({
