@@ -8,6 +8,8 @@ service cloud.firestore {
     match /review_photo_rpc_limits/{limitId} { allow read, write: if false; }
     // Scheduled credit expiry checkpoints are server-owned, including for admins.
     match /product_credit_expiry_cursors/{cursorId} { allow read, write: if false; }
+    // Monthly accrual checkpoints are private server state, including for admins.
+    match /benefit_accrual_cursors/{period} { allow read, write: if false; }
 
     
     // ============================================
