@@ -1,0 +1,68 @@
+// Actual Admin SDK transactions in demo Firestore. No Storage/cloud/provider calls.
+process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+const admin = require('firebase-admin');
+admin.initializeApp({projectId:'demo-agrimore-review-photos'});
+const {createPhotoDraft:create,readyPhotoDraft:ready,publishPhotoDraft:publish,claimPhotoCleanup:cleanup}=require('../lib/seller/reviewPhotoDraftCore');
+const assert=require('node:assert/strict');
+const db=admin.firestore(), now=100000, expiry=now+30*60*1000;
+const content={rating:4,title:'Title',comment:'Comment',userName:'Owner',userAvatar:''};
+let passed=0,failed=0;
+async function check(name,fn){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.log('FAIL '+name+': '+e.message);}}
+const draft=id=>db.collection('review_photo_drafts').doc(id);
+const review=id=>db.collection('products').doc('p').collection('reviews').doc(id);
+async function staged(id,actor=id){const paths=await create(db,actor,id,'p',actor,['photo'],now);const receipts=paths.map(path=>({path,url:'https://fixture.invalid/'+id+'.jpg',generation:'1'}));await ready(db,actor,id,receipts,now);return receipts;}
+async function main(){
+await db.doc('products/p').set({name:'Product'});
+await check('create stable owned asset path',async()=>assert.deepEqual(await create(db,'a','d','p','a',['photo'],now),['review_drafts/a/d/photo.jpg']));
+await check('retry create does not extend expiry',async()=>{await create(db,'a','d','p','a',['photo'],now+100);assert.equal((await draft('d').get()).data().expiresAt,expiry);});
+await check('foreign draft retry refused',()=>assert.rejects(create(db,'foreign','d','p','foreign',['photo'],now)));
+await check('target mutation refused',()=>assert.rejects(create(db,'a','d','p','different',['photo'],now)));
+await check('asset mutation refused',()=>assert.rejects(create(db,'a','d','p','a',['another'],now)));
+await check('empty batch refused',()=>assert.rejects(create(db,'a','empty','p','a',[],now)));
+await check('duplicate assets refused',()=>assert.rejects(create(db,'a','dup','p','a',['x','x'],now)));
+await check('nested asset refused',()=>assert.rejects(create(db,'a','nested','p','a',['x/y'],now)));
+await check('missing product refused',()=>assert.rejects(create(db,'a','missing','absent','a',['x'],now)));
+await check('new review must use owner key',()=>assert.rejects(create(db,'a','wrong-key','p','foreign',['x'],now)));
+await review('legacy').set({userId:'a',productId:'p',rating:3,helpfulUsers:['voter'],helpfulCount:1,sellerReply:{text:'Reply'},imageUrls:['https://fixture.invalid/old.jpg']});
+await check('owned legacy review draft allowed',()=>create(db,'a','legacy-draft','p','legacy',['x'],now));
+await check('foreign existing review refused',()=>assert.rejects(create(db,'b','foreign-review','p','legacy',['x'],now)));
+await check('open draft cannot publish',()=>assert.rejects(publish(db,'a','d',content,now)));
+await check('mismatched verified path refused',()=>assert.rejects(ready(db,'a','d',[{path:'elsewhere',url:'https://fixture.invalid/x',generation:'1'}],now)));
+await ready(db,'a','d',[{path:'review_drafts/a/d/photo.jpg',url:'https://fixture.invalid/a',generation:'1'}],now);
+await check('receipt mutation refused',()=>assert.rejects(ready(db,'a','d',[{path:'review_drafts/a/d/photo.jpg',url:'https://fixture.invalid/b',generation:'2'}],now)));
+await check('atomic publication links review and draft',async()=>{assert.equal((await publish(db,'a','d',content,now)).stillCurrent,true);assert.equal((await draft('d').get()).data().state,'linked');assert.equal((await review('a').get()).data().photoDraftId,'d');});
+await check('uncertain receipt retry resolves idempotently',async()=>{await publish(db,'a','d',content,expiry+100);assert.deepEqual((await review('a').get()).data().imageUrls,['https://fixture.invalid/a']);});
+await check('idempotency different content refused',()=>assert.rejects(publish(db,'a','d',{...content,rating:1},now)));
+await check('linked photos never offered for cleanup',async()=>assert.deepEqual(await cleanup(db,'a','d',true,expiry+100),{claimed:false,paths:[]}));
+await review('a').update({imageUrls:[]});
+await check('old receipt detects removed photos without resurrecting them',async()=>{assert.equal((await publish(db,'a','d',content,now)).stillCurrent,false);assert.deepEqual((await review('a').get()).data().imageUrls,[]);});
+await review('a').update({photoDraftId:'later'});
+await check('old receipt reports later edit without overwriting',async()=>{assert.equal((await publish(db,'a','d',content,now)).stillCurrent,false);assert.equal((await review('a').get()).data().photoDraftId,'later');});
+await check('foreign cleanup refused',()=>assert.rejects(cleanup(db,'b','d',true,now)));
+await staged('gc');
+await check('active lease cleanup requires explicit abandonment',()=>assert.rejects(cleanup(db,'gc','gc',false,now)));
+await check('abandon claims exact recorded paths',async()=>assert.deepEqual((await cleanup(db,'gc','gc',true,now)).paths,['review_drafts/gc/gc/photo.jpg']));
+await check('cleanup retry is idempotent',async()=>assert.equal((await cleanup(db,'gc','gc',false,now)).claimed,true));
+await check('late publish after cleanup claim refused',()=>assert.rejects(publish(db,'gc','gc',content,now)));
+await check('cleanup tombstone cannot be readied again',()=>assert.rejects(ready(db,'gc','gc',[{path:'review_drafts/gc/gc/photo.jpg',url:'https://fixture.invalid/gc.jpg',generation:'1'}],now)));
+await staged('expired');
+await check('expiry boundary refuses publish',()=>assert.rejects(publish(db,'expired','expired',content,expiry)));
+await check('expiry permits cleanup without abandon',async()=>assert.equal((await cleanup(db,'expired','expired',false,expiry)).claimed,true));
+await staged('late-clock');
+await check('clock rechecked after asynchronous reads',async()=>{let calls=0;await assert.rejects(publish(db,'late-clock','late-clock',content,()=>++calls<3?now:expiry));});
+await ready(db,'a','legacy-draft',[{path:'review_drafts/a/legacy-draft/x.jpg',url:'https://fixture.invalid/new.jpg',generation:'1'}],now);
+await check('publication preserves votes reply and old photos',async()=>{await publish(db,'a','legacy-draft',content,now);const r=(await review('legacy').get()).data();assert.equal(r.helpfulCount,1);assert.deepEqual(r.sellerReply,{text:'Reply'});assert.deepEqual(r.imageUrls,['https://fixture.invalid/new.jpg','https://fixture.invalid/old.jpg']);});
+await staged('race');
+await check('concurrent publish and cleanup serialize to one outcome',async()=>{const outcomes=await Promise.allSettled([publish(db,'race','race',content,now),cleanup(db,'race','race',true,now)]);const d=(await draft('race').get()).data(),r=await review('race').get();if(d.state==='linked'){assert.equal(r.exists,true);assert.equal(outcomes[1].value?.claimed,false);}else{assert.equal(d.state,'cleanup');assert.equal(r.exists,false);assert.equal(outcomes[0].status,'rejected');}});
+await staged('malformed-expiry'); await draft('malformed-expiry').update({expiresAt:expiry+100});
+await check('corrupted lease duration refused',()=>assert.rejects(publish(db,'malformed-expiry','malformed-expiry',content,now)));
+await staged('malformed-state'); await draft('malformed-state').update({state:'unknown'});
+await check('corrupted draft state refused',()=>assert.rejects(cleanup(db,'malformed-state','malformed-state',true,now)));
+await staged('malformed-images'); await review('malformed-images').set({userId:'malformed-images',productId:'p',imageUrls:null});
+await check('explicit null existing photos not silently replaced',()=>assert.rejects(publish(db,'malformed-images','malformed-images',content,now)));
+await check('null review content refused',()=>assert.rejects(publish(db,'a','d',null,now)));
+await create(db,'bad-generation','bad-generation','p','bad-generation',['photo'],now);
+await check('zero object generation refused',()=>assert.rejects(ready(db,'bad-generation','bad-generation',[{path:'review_drafts/bad-generation/bad-generation/photo.jpg',url:'https://fixture.invalid/x',generation:'0'}],now)));
+console.log(`SUMMARY ${passed} passed ${failed} failed`);if(failed)process.exitCode=1;
+}
+main().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>admin.app().delete());

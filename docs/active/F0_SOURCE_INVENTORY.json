@@ -9,9 +9,9 @@
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1139,
+    "collection_accesses": 1148,
     "filter_order_cursor_sites": 896,
-    "source_files": 825
+    "source_files": 826
   },
   "files": [
     {
@@ -41105,6 +41105,283 @@
       "filter_order_cursor_sites": [],
       "path": "functions/src/seller/payoutNotifications.ts",
       "sha256": "c624785259b68fba5dd95467ccf3bb0c73d82c5d315d2a2dff2cca0836c89086"
+    },
+    {
+      "callable_sites": [],
+      "collection_accesses": [
+        {
+          "chain": [
+            {
+              "line": 33,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 33,
+              "method": "doc"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 33,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 36,
+              "literal": "products",
+              "method": "collection"
+            },
+            {
+              "line": 36,
+              "method": "doc"
+            }
+          ],
+          "collection": "products",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "line": 36,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            15,
+            32,
+            140
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 36,
+              "literal": "products",
+              "method": "collection"
+            },
+            {
+              "line": 36,
+              "method": "doc"
+            }
+          ],
+          "collection": "products",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "line": 36,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            15,
+            32,
+            140
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 36,
+              "literal": "reviews",
+              "method": "collection"
+            },
+            {
+              "line": 36,
+              "method": "doc"
+            }
+          ],
+          "collection": "reviews",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "line": 36,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            14,
+            16,
+            19,
+            26
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 51,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 51,
+              "method": "doc"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 51,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 68,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 68,
+              "method": "doc"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 68,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 69,
+              "literal": "products",
+              "method": "collection"
+            },
+            {
+              "line": 69,
+              "method": "doc"
+            }
+          ],
+          "collection": "products",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "line": 69,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            15,
+            32,
+            140
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 69,
+              "literal": "reviews",
+              "method": "collection"
+            },
+            {
+              "line": 69,
+              "method": "doc"
+            }
+          ],
+          "collection": "reviews",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "line": 69,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            14,
+            16,
+            19,
+            26
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 91,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 91,
+              "method": "doc"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 91,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
+        }
+      ],
+      "filter_order_cursor_sites": [],
+      "path": "functions/src/seller/reviewPhotoDraftCore.ts",
+      "sha256": "908136e87013fbb0fc702bb73497aba584e07f1751942fdc95f17affcded54f3"
     },
     {
       "callable_sites": [],
