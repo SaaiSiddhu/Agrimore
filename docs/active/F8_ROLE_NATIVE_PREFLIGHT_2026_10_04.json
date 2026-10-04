@@ -235,5 +235,23 @@
     "No native configuration/cloud registration created or amended",
     "Declared source capabilities do not establish installed app entitlements or APNs credentials",
     "Existing binaries and earlier compiler evidence retain their original dates and working-tree provenance"
-  ]
+  ],
+  "verification": {
+    "sourceHashChecks": 31,
+    "currentSourceAndNativeSDKPresenceMatch": true,
+    "postcommitGateSource": "b6d7847f",
+    "gateTerminalExit": 0,
+    "gateFailedCount": 0,
+    "fiveAppAnalysisErrors": 0,
+    "nativeBuildsOrDeviceRuns": 0,
+    "storageSequence": [
+      "941MiB initial native-build deferral",
+      "4688MiB recovered source snapshot",
+      "ENOSPC before scope/commit process start",
+      "684MiB retry scope and five-path commit succeeded"
+    ],
+    "latestFreeBytes": 2183168000,
+    "cleanupOrDeletionByAgent": false,
+    "limits": "Preflight and repository gate only; no role native compile/device/permission/APNs/Maps/provider/signing proof"
+  }
 }
