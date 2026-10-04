@@ -282,7 +282,8 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   // call after Firestore data is already gone — see the idempotency note
   // below for why re-running these is harmless).
   // ============================================================
-  const walletSnap = await db.collection("wallets").doc(uid).get();
+  const walletRef = db.collection("wallets").doc(uid);
+  const walletSnap = await walletRef.get();
   const balancePaise = walletSnap.exists ? payoutBalancePaise(walletSnap.data()?.balance) : 0;
   if (balancePaise === null || balancePaise < 0) {
     throw new functions.https.HttpsError("failed-precondition", "Your wallet balance needs review before deleting your account.");
@@ -382,7 +383,8 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   // otherwise rerun the idempotent personal-data sweep.
   // ============================================================
   const userSnap = await db.collection("users").doc(uid).get();
-  const priorAudit = userSnap.exists ? undefined : (await db.collection("account_deletion_audit").doc(uid).get()).data();
+  const auditRef = db.collection("account_deletion_audit").doc(uid);
+  const priorAudit = userSnap.exists ? undefined : (await auditRef.get()).data();
   const alreadyDeletedFirestore = !userSnap.exists && validDeletionAudit(priorAudit, uid, authTime);
   let hardDeletedCount = 0;
   let anonymizedOrdersCount = 0;
@@ -409,7 +411,6 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     wasAssociate = employeeSnap.exists;
 
     const hardDeleteRefs: FirebaseFirestore.DocumentReference[] = [
-      db.collection("wallets").doc(uid),
       db.collection("carts").doc(uid),
       db.collection("wishlists").doc(uid),
       ...addressesSnap.docs.map((d) => d.ref),
@@ -430,7 +431,7 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     anonymizedOrdersCount = orderRefs.length;
 
     await deleteRefsInChunks(hardDeleteRefs);
-    hardDeletedCount = hardDeleteRefs.length + 1; // Last profile marker below.
+    hardDeletedCount = hardDeleteRefs.length + 2; // Final wallet/profile commit below.
 
     // Audit record — Cloud-Functions-only by construction: this is a
     // brand-new collection with no matching firestore.rules block, and
@@ -439,7 +440,7 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     // (firestore.rules is explicitly out of scope this phase). Contains
     // ONLY counts/booleans — no name, email, phone, or address, which
     // would defeat the deletion this record is documenting.
-    await db.collection("account_deletion_audit").doc(uid).set({
+    await auditRef.set({
       uid,
       deletedAt: FieldValue.serverTimestamp(),
       hardDeletedDocCount: hardDeletedCount + seller.hardDeleted,
@@ -453,10 +454,25 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       riderAnonymizedOrdersCount: rider.anonymizedOrders,
       anonymizedReviewsCount,
     });
-    // Only after every Firestore personal-data step and durable audit succeeds.
-    // A failed/unknown response leaves enough evidence for a safe retry.
-    await userSnap.ref.delete();
   }
+
+  // Recheck inside the SAME transaction that removes wallet and profile.
+  // Earlier zero/refusal snapshots cannot justify deleting a later refund.
+  // Also run on partial-deletion retries; a missing profile alone skips no money check.
+  await db.runTransaction(async tx => {
+    const [currentWallet, currentProfile, currentAudit] = await Promise.all([
+      tx.get(walletRef), tx.get(userSnap.ref), tx.get(auditRef),
+    ]);
+    if (!validDeletionAudit(currentAudit.data(), uid, authTime)) {
+      throw new functions.https.HttpsError("failed-precondition", "Account data could not be confirmed. Please try again.");
+    }
+    const currentPaise = currentWallet.exists ? payoutBalancePaise(currentWallet.data()?.balance) : 0;
+    if (currentPaise !== 0) {
+      throw new functions.https.HttpsError("failed-precondition", "Your wallet balance changed. Review it before deleting your account.");
+    }
+    tx.delete(walletRef);
+    tx.delete(currentProfile.ref);
+  });
 
   // ============================================================
   // Auth user deletion — ALWAYS last, and always attempted (even on a
