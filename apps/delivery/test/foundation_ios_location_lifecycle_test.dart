@@ -13,8 +13,6 @@ import 'package:geolocator/geolocator.dart';
 // Installed endorsed SDK: actual channel serialization, synthetic OS replies.
 // ignore: depend_on_referenced_packages
 import 'package:geolocator_apple/geolocator_apple.dart';
-// ignore: depend_on_referenced_packages
-import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // No native GPS/device/permission grant/Firestore/provider network proof.

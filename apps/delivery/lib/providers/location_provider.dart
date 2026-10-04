@@ -275,15 +275,19 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     _positionSubscription = Geolocator.getPositionStream(
             locationSettings: _settingsFor(samplingProfile))
         .listen((position) {
-      if (generation != null && (!_requestCurrent(generation) || !_isTracking))
+      if (generation != null &&
+          (!_requestCurrent(generation) || !_isTracking)) {
         return;
+      }
       _currentPosition = position;
       _hasUnsentFix = true;
       notifyListeners();
       _maybeUpload();
     }, onError: (Object e) {
-      if (generation != null && (!_requestCurrent(generation) || !_isTracking))
+      if (generation != null &&
+          (!_requestCurrent(generation) || !_isTracking)) {
         return;
+      }
       // Location switched off mid-shift: keep the service; the heartbeat
       // re-sends the last fix and the rider sees the error.
       debugPrint('Position stream error: $e');
