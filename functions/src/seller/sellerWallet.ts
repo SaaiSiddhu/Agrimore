@@ -259,6 +259,44 @@ export type CloseVerdict =
   | { kind: "refused"; reason: "not_found" | "not_requested" | "not_yours" | "payout_change_pending" | "no_destination"
       | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" | "method_mismatch" | "legacy_destination_unresolved" };
 
+/** Firestore document IDs, not paths or coercible values. */
+function validMemberId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= 1500 && !value.includes("/") &&
+    value !== "." && value !== ".." && !/^__.*__$/.test(value) &&
+    Buffer.from(value, "utf8").toString("utf8") === value;
+}
+
+/** Validate the declared set before starting any linked document reads. */
+function withdrawalMemberIds(d: FirebaseFirestore.DocumentData): string[] | null {
+  const ids: unknown = d.payoutIds;
+  if (!validMemberId(d.sellerId) || !Array.isArray(ids) || ids.length === 0 ||
+      ids.length > MAX_PAYOUTS_PER_WITHDRAWAL || !ids.every(validMemberId) ||
+      new Set(ids).size !== ids.length ||
+      !Number.isSafeInteger(d.amountPaise) || d.amountPaise <= 0 ||
+      (Object.prototype.hasOwnProperty.call(d, "payoutCount") && d.payoutCount !== ids.length)) return null;
+  return ids;
+}
+
+/** Preserve per-row legacy rounding; malformed explicit net never uses the alias. */
+function validWithdrawalMembers(
+  d: FirebaseFirestore.DocumentData, withdrawalId: string,
+  payouts: FirebaseFirestore.DocumentSnapshot[]
+): boolean {
+  let sum = 0;
+  for (const p of payouts) {
+    const pd = p.data();
+    if (!pd || pd.sellerId !== d.sellerId || pd.withdrawalId !== withdrawalId || pd.status !== "requested") return false;
+    const amount = Object.prototype.hasOwnProperty.call(pd, "netAmount") ? pd.netAmount : pd.amount;
+    if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) return false;
+    const paise = toPaise(amount);
+    if (!Number.isSafeInteger(paise) || paise <= 0) return false;
+    sum += paise;
+    if (!Number.isSafeInteger(sum)) return false;
+  }
+  return sum === d.amountPaise;
+}
+
 /**
  * ADMR-84: whether `full` is a genuinely complete, internally consistent destinationFull
  * snapshot — never just "is it a non-null object". A withdrawal predating ADMR-77 (or one with a
@@ -306,17 +344,15 @@ export async function markWithdrawalPaidCore(
     const amountPaise = Number(d.amountPaise ?? 0);
     if (d.status === "paid" && d.paymentReference === ref) return { kind: "already", sellerId, amountPaise, paidTo: d.paidTo ?? {} };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
-    const ids: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
+    const ids = withdrawalMemberIds(d);
+    if (ids === null) return { kind: "refused", reason: "payout_mismatch" };
     const [acc, ...payouts] = await Promise.all([
       tx.get(walletRef(db, sellerId)),
       ...ids.map((pid) => tx.get(db.collection("seller_payouts").doc(pid))),
     ]);
     const a = acc.data() ?? {};
     if (typeof a.payoutChangePending === "string" && a.payoutChangePending) return { kind: "refused", reason: "payout_change_pending" };
-    for (const p of payouts) {
-      const pd = p.data();
-      if (!pd || pd.withdrawalId !== withdrawalId || pd.status !== "requested") return { kind: "refused", reason: "payout_mismatch" };
-    }
+    if (!validWithdrawalMembers(d, withdrawalId, payouts)) return { kind: "refused", reason: "payout_mismatch" };
     const dest = d.destination as Record<string, unknown> | undefined;
     if (!dest) return { kind: "refused", reason: "no_destination" };
     if (dest.method !== method) return { kind: "refused", reason: "method_mismatch" };
@@ -347,16 +383,15 @@ export async function closeWithdrawalCore(
     const target = byAdmin ? "rejected" : "cancelled";
     if (d.status === target) return { kind: "already", sellerId, amountPaise: Number(d.amountPaise ?? 0) };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
-    const ids: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
+    const ids = withdrawalMemberIds(d);
+    if (ids === null) return { kind: "refused", reason: "payout_mismatch" };
     const [acc, ...payouts] = await Promise.all([
       tx.get(walletRef(db, sellerId)), ...ids.map((pid) => tx.get(db.collection("seller_payouts").doc(pid))),
     ]);
+    if (!validWithdrawalMembers(d, withdrawalId, payouts)) return { kind: "refused", reason: "payout_mismatch" };
     const at = Timestamp.fromMillis(nowMs);
     for (const p of payouts) {
-      const pd = p.data();
-      if (pd && pd.withdrawalId === withdrawalId && pd.status === "requested") {
-        tx.update(p.ref, { status: "pending", withdrawalId: FieldValue.delete(), updatedAt: at });
-      }
+      tx.update(p.ref, { status: "pending", withdrawalId: FieldValue.delete(), updatedAt: at });
     }
     tx.update(wRef, byAdmin
       ? { status: "rejected", rejectedAt: at, reviewedBy: actor.adminUid, rejectionReason: reason, updatedAt: at }
