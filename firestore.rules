@@ -444,7 +444,8 @@ service cloud.firestore {
         // overwritten with the truth by onProductReviewWrite.
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
           reviewRatingInRange() && reviewVotesInitiallyEmpty() &&
-          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
+          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy',
+            'photoDraftId', 'photoActivationState']);
         
         // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
         // this checked only the EXISTING document's userId, not whether the
@@ -453,15 +454,20 @@ service cloud.firestore {
         // SELLER-ACCOUNT-1a: nor touch the seller's reply or server stamps.
         allow update: if isAuthenticated() && (
           (resource.data.userId == request.auth.uid &&
+           resource.data.get('photoActivationState', 'complete') == 'complete' &&
            request.resource.data.userId == resource.data.userId &&
            reviewRatingInRange() &&
            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
              'sellerReply', 'sellerId', 'productName', 'supersededBy',
+             'photoDraftId', 'photoActivationState',
              'helpfulUsers', 'unhelpfulUsers', 'helpfulCount', 'unhelpfulCount'
            ])) || reviewSelfVoteOnly());
         
-        // Users can delete their own reviews, admins can delete any
-        allow delete: if isAuthenticated() && 
+        // Managed photos require trusted activation recovery before content edits or deletion.
+        // Votes remain actor-only while pending. Server markers are never client-writable.
+        // Once complete, users can delete their own reviews and admins can delete any.
+        allow delete: if isAuthenticated() &&
+          resource.data.get('photoActivationState', 'complete') == 'complete' &&
           (resource.data.userId == request.auth.uid || isAdmin());
       }
       

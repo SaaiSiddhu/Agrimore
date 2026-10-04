@@ -23,6 +23,7 @@ function owned(s: admin.firestore.DocumentSnapshot, actor: string): Data {
 }
 function editable(r: admin.firestore.DocumentSnapshot, actor: string, product: string, review: string) {
  const v = r.data(); if (r.exists ? (!v || v.userId !== actor || v.productId !== product || v.supersededBy != null) : review !== actor) fail("permission-denied", "Review unavailable for this owner.");
+ if (v && v.photoActivationState !== undefined && v.photoActivationState !== "complete") fail("failed-precondition", "Review photo activation requires recovery.");
 }
 function validReceipts(d: Data, receipts: readonly PhotoReceipt[]) {
  return Array.isArray(receipts) && receipts.length === d.paths.length && receipts.every((r, i) => r != null && r.path === d.paths[i] && typeof r.url === "string" && r.url.startsWith("https://") && typeof r.generation === "string" && /^[1-9]\d*$/.test(r.generation));
@@ -117,8 +118,8 @@ export async function publishPhotoDraft(db: Db, actor: string, draft: string, va
    const old = previous && Object.prototype.hasOwnProperty.call(previous, "imageUrls") ? previous.imageUrls : [];
    if (!Array.isArray(old) || old.some((v: unknown) => typeof v !== "string")) fail("failed-precondition", "Invalid existing photos.");
    const imageUrls = [...new Set([...d.receipts.map((v: PhotoReceipt) => v.url), ...old])];
-   tx.set(ref, { ...content, userId: actor, productId: d.productId, imageUrls, photoDraftId: draft, updatedAt: admin.firestore.Timestamp.fromMillis(at), ...(!r.exists ? { createdAt: admin.firestore.Timestamp.fromMillis(at) } : {}) }, { merge: true });
-   tx.update(dr, { state: "linked", contentHash: hash, linkedAt: at });
+   tx.set(ref, { ...content, userId: actor, productId: d.productId, imageUrls, photoDraftId: draft, ...(frozen ? { photoActivationState: "pending" } : {}), updatedAt: admin.firestore.Timestamp.fromMillis(at), ...(!r.exists ? { createdAt: admin.firestore.Timestamp.fromMillis(at) } : {}) }, { merge: true });
+   tx.update(dr, { state: "linked", contentHash: hash, linkedAt: at, ...(frozen ? { photoActivationState: "pending" } : {}) });
    return { state: "linked", reviewId: d.reviewId, stillCurrent: true };
  });
 }

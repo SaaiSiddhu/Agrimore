@@ -3,7 +3,7 @@
   "config_sha256": {
     "firebase.json": "59f20f8a2c2c1e3d8f417d58ebfce6b876887287c63236d9f690bebdeafe25ff",
     "firestore.indexes.json": "2160797d594d1c119a8ccf28fef882b5be2102f3366e993148dc0cb4fe8e039e",
-    "firestore.rules": "c85bdb495060959a3cf35a14451dbe2e789cabe024a9f4e910c86e7198ec8863",
+    "firestore.rules": "d63638892081029b419c508ae62cc3839fe58572ec6ad36ec3921f17c38f3fae",
     "functions/package.json": "d88e403f99ee502b1816a126dabc8352d48356fd79fd5a4c745eff6811a40146",
     "storage.rules": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
   },
@@ -41119,12 +41119,12 @@
         {
           "chain": [
             {
-              "line": 33,
+              "line": 34,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 33,
+              "line": 34,
               "method": "doc"
             }
           ],
@@ -41133,7 +41133,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 33,
+          "line": 34,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41142,12 +41142,12 @@
         {
           "chain": [
             {
-              "line": 36,
+              "line": 37,
               "literal": "products",
               "method": "collection"
             },
             {
-              "line": 36,
+              "line": 37,
               "method": "doc"
             }
           ],
@@ -41166,7 +41166,7 @@
             26,
             27
           ],
-          "line": 36,
+          "line": 37,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             15,
@@ -41179,12 +41179,12 @@
         {
           "chain": [
             {
-              "line": 36,
+              "line": 37,
               "literal": "products",
               "method": "collection"
             },
             {
-              "line": 36,
+              "line": 37,
               "method": "doc"
             }
           ],
@@ -41203,7 +41203,7 @@
             26,
             27
           ],
-          "line": 36,
+          "line": 37,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             15,
@@ -41216,12 +41216,12 @@
         {
           "chain": [
             {
-              "line": 36,
+              "line": 37,
               "literal": "reviews",
               "method": "collection"
             },
             {
-              "line": 36,
+              "line": 37,
               "method": "doc"
             }
           ],
@@ -41235,7 +41235,7 @@
             31,
             32
           ],
-          "line": 36,
+          "line": 37,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             14,
@@ -41249,12 +41249,12 @@
         {
           "chain": [
             {
-              "line": 51,
+              "line": 52,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 51,
+              "line": 52,
               "method": "doc"
             }
           ],
@@ -41263,7 +41263,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 51,
+          "line": 52,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41272,12 +41272,12 @@
         {
           "chain": [
             {
-              "line": 86,
+              "line": 87,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 86,
+              "line": 87,
               "method": "doc"
             }
           ],
@@ -41286,30 +41286,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 86,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [],
-          "scope": "collection",
-          "unresolved": true
-        },
-        {
-          "chain": [
-            {
-              "line": 105,
-              "literal": null,
-              "method": "collection"
-            },
-            {
-              "line": 105,
-              "method": "doc"
-            }
-          ],
-          "collection": null,
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [],
-          "line": 105,
+          "line": 87,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41319,11 +41296,34 @@
           "chain": [
             {
               "line": 106,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 106,
+              "method": "doc"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 106,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 107,
               "literal": "products",
               "method": "collection"
             },
             {
-              "line": 106,
+              "line": 107,
               "method": "doc"
             }
           ],
@@ -41342,7 +41342,7 @@
             26,
             27
           ],
-          "line": 106,
+          "line": 107,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             15,
@@ -41355,12 +41355,12 @@
         {
           "chain": [
             {
-              "line": 106,
+              "line": 107,
               "literal": "reviews",
               "method": "collection"
             },
             {
-              "line": 106,
+              "line": 107,
               "method": "doc"
             }
           ],
@@ -41374,7 +41374,7 @@
             31,
             32
           ],
-          "line": 106,
+          "line": 107,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             14,
@@ -41388,12 +41388,12 @@
         {
           "chain": [
             {
-              "line": 130,
+              "line": 131,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 130,
+              "line": 131,
               "method": "doc"
             }
           ],
@@ -41402,7 +41402,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 130,
+          "line": 131,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41411,16 +41411,16 @@
         {
           "chain": [
             {
-              "line": 144,
+              "line": 145,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 144,
+              "line": 145,
               "method": "doc"
             },
             {
-              "line": 144,
+              "line": 145,
               "method": "get"
             }
           ],
@@ -41429,7 +41429,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 144,
+          "line": 145,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41438,16 +41438,16 @@
         {
           "chain": [
             {
-              "line": 153,
+              "line": 154,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 153,
+              "line": 154,
               "method": "doc"
             },
             {
-              "line": 153,
+              "line": 154,
               "method": "get"
             }
           ],
@@ -41456,7 +41456,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 153,
+          "line": 154,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41465,12 +41465,12 @@
         {
           "chain": [
             {
-              "line": 177,
+              "line": 178,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 177,
+              "line": 178,
               "method": "doc"
             }
           ],
@@ -41479,7 +41479,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 177,
+          "line": 178,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41488,12 +41488,12 @@
         {
           "chain": [
             {
-              "line": 177,
+              "line": 178,
               "literal": "review_photo_upload_limits",
               "method": "collection"
             },
             {
-              "line": 177,
+              "line": 178,
               "method": "doc"
             }
           ],
@@ -41502,7 +41502,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 177,
+          "line": 178,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41511,12 +41511,12 @@
         {
           "chain": [
             {
-              "line": 194,
+              "line": 195,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 194,
+              "line": 195,
               "method": "doc"
             }
           ],
@@ -41525,7 +41525,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 194,
+          "line": 195,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41534,12 +41534,12 @@
         {
           "chain": [
             {
-              "line": 205,
+              "line": 206,
               "literal": null,
               "method": "collection"
             },
             {
-              "line": 205,
+              "line": 206,
               "method": "doc"
             }
           ],
@@ -41548,7 +41548,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 205,
+          "line": 206,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [],
           "scope": "collection",
@@ -41557,7 +41557,7 @@
       ],
       "filter_order_cursor_sites": [],
       "path": "functions/src/seller/reviewPhotoDraftCore.ts",
-      "sha256": "61803a8488b3fd2367dab9e041123f928b865a8d8f08598e300540f6edd04fec"
+      "sha256": "090161798abca5eb1132f2570a895bbab09dca2879804469e5bb68f84d2ed04c"
     },
     {
       "callable_sites": [],
@@ -51170,612 +51170,612 @@
     },
     {
       "file": "firestore.rules",
-      "line": 469,
+      "line": 475,
       "local_path": "/reviewStats/{statsId}"
     },
     {
       "file": "firestore.rules",
-      "line": 751,
+      "line": 757,
       "local_path": "/orders/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 815,
+      "line": 821,
       "local_path": "/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 837,
+      "line": 843,
       "local_path": "/timeline/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 878,
+      "line": 884,
       "local_path": "/secrets/{secretId}"
     },
     {
       "file": "firestore.rules",
-      "line": 889,
+      "line": 895,
       "local_path": "/categories/{categoryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 897,
+      "line": 903,
       "local_path": "/subcategories/{subId}"
     },
     {
       "file": "firestore.rules",
-      "line": 906,
+      "line": 912,
       "local_path": "/coupons/{couponId}"
     },
     {
       "file": "firestore.rules",
-      "line": 923,
+      "line": 929,
       "local_path": "/coupon_redemptions/{redemptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 931,
+      "line": 937,
       "local_path": "/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 953,
+      "line": 959,
       "local_path": "/banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 981,
+      "line": 987,
       "local_path": "/sponsored_banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 995,
+      "line": 1001,
       "local_path": "/section_banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1009,
+      "line": 1015,
       "local_path": "/campaigns/{campaignId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1072,
+      "line": 1078,
       "local_path": "/sellers/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1091,
+      "line": 1097,
       "local_path": "/products/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1125,
+      "line": 1131,
       "local_path": "/seller_payout_details/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1139,
+      "line": 1145,
       "local_path": "/seller_withdrawals/{withdrawalId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1143,
+      "line": 1149,
       "local_path": "/seller_payout_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1147,
+      "line": 1153,
       "local_path": "/seller_wallets/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1249,
+      "line": 1255,
       "local_path": "/employees/{employeeId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1283,
+      "line": 1289,
       "local_path": "/employee_payout_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1287,
+      "line": 1293,
       "local_path": "/employee_wallets/{employeeId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1295,
+      "line": 1301,
       "local_path": "/loyalty/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1303,
+      "line": 1309,
       "local_path": "/loyalty_tiers/{tierId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1311,
+      "line": 1317,
       "local_path": "/app_config/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1344,
+      "line": 1350,
       "local_path": "/settings/access"
     },
     {
       "file": "firestore.rules",
-      "line": 1347,
+      "line": 1353,
       "local_path": "/settings/wallet_config"
     },
     {
       "file": "firestore.rules",
-      "line": 1355,
+      "line": 1361,
       "local_path": "/settings/location_settings"
     },
     {
       "file": "firestore.rules",
-      "line": 1361,
+      "line": 1367,
       "local_path": "/settings/home_grocery_strip_config"
     },
     {
       "file": "firestore.rules",
-      "line": 1370,
+      "line": 1376,
       "local_path": "/settings/home_section_order"
     },
     {
       "file": "firestore.rules",
-      "line": 1379,
+      "line": 1385,
       "local_path": "/settings/associate_onboarding"
     },
     {
       "file": "firestore.rules",
-      "line": 1382,
+      "line": 1388,
       "local_path": "/settings/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1398,
+      "line": 1404,
       "local_path": "/notifications/{notificationId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1403,
+      "line": 1409,
       "local_path": "/notification_history/{notificationId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1410,
+      "line": 1416,
       "local_path": "/analytics/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1428,
+      "line": 1434,
       "local_path": "/logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1450,
+      "line": 1456,
       "local_path": "/feature_flags/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1458,
+      "line": 1464,
       "local_path": "/compliance_config/{programId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1465,
+      "line": 1471,
       "local_path": "/compliance_audit_log/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1486,
+      "line": 1492,
       "local_path": "/benefit_programs/{programId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1491,
+      "line": 1497,
       "local_path": "/benefit_enrollments/{enrollmentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1500,
+      "line": 1506,
       "local_path": "/benefit_accruals/{accrualId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1509,
+      "line": 1515,
       "local_path": "/product_credit_ledger/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1521,
+      "line": 1527,
       "local_path": "/product_credit_balances/{customerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1533,
+      "line": 1539,
       "local_path": "/product_credit_holds/{holdId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1542,
+      "line": 1548,
       "local_path": "/wishlists/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1547,
+      "line": 1553,
       "local_path": "/items/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1555,
+      "line": 1561,
       "local_path": "/carts/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1560,
+      "line": 1566,
       "local_path": "/items/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1568,
+      "line": 1574,
       "local_path": "/otp_codes/{email}"
     },
     {
       "file": "firestore.rules",
-      "line": 1576,
+      "line": 1582,
       "local_path": "/phone_otp_codes/{phone}"
     },
     {
       "file": "firestore.rules",
-      "line": 1587,
+      "line": 1593,
       "local_path": "/invoices/{invoiceId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1594,
+      "line": 1600,
       "local_path": "/seller_invoice_counters/{counterId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1598,
+      "line": 1604,
       "local_path": "/auth_test_mode/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1601,
+      "line": 1607,
       "local_path": "/auth_test_mode_log/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1612,
+      "line": 1618,
       "local_path": "/otp_delivery_failures/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1625,
+      "line": 1631,
       "local_path": "/otp_ip_limits/{hashedIp}"
     },
     {
       "file": "firestore.rules",
-      "line": 1632,
+      "line": 1638,
       "local_path": "/addresses/{addressId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1655,
+      "line": 1661,
       "local_path": "/auth_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1669,
+      "line": 1675,
       "local_path": "/bestseller_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1680,
+      "line": 1686,
       "local_path": "/category_section_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1694,
+      "line": 1700,
       "local_path": "/home_product_sections/{sectionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1716,
+      "line": 1722,
       "local_path": "/auth_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1782,
+      "line": 1788,
       "local_path": "/wallets/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1807,
+      "line": 1813,
       "local_path": "/wallet_transactions/{transactionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1826,
+      "line": 1832,
       "local_path": "/wallet_topups/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1843,
+      "line": 1849,
       "local_path": "/ai_connections/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1854,
+      "line": 1860,
       "local_path": "/ai_connection_status/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1867,
+      "line": 1873,
       "local_path": "/rfqs/{rfqId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1880,
+      "line": 1886,
       "local_path": "/referrals/{referralId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1943,
+      "line": 1949,
       "local_path": "/delivery_partners/{partnerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1975,
+      "line": 1981,
       "local_path": "/delivery_tasks/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1996,
+      "line": 2002,
       "local_path": "/live/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2044,
+      "line": 2050,
       "local_path": "/delivery_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2054,
+      "line": 2060,
       "local_path": "/delivery_dispatch/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2061,
+      "line": 2067,
       "local_path": "/vendors/{vendorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2071,
+      "line": 2077,
       "local_path": "/threads/{threadId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2123,
+      "line": 2129,
       "local_path": "/messages/{messageId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2149,
+      "line": 2155,
       "local_path": "/seller_stats_daily/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2156,
+      "line": 2162,
       "local_path": "/seller_stats_contrib/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2171,
+      "line": 2177,
       "local_path": "/rider_incidents/{incidentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2179,
+      "line": 2185,
       "local_path": "/delivery_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2184,
+      "line": 2190,
       "local_path": "/rider_incident_limits/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2193,
+      "line": 2199,
       "local_path": "/rider_support_tickets/{ticketId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2198,
+      "line": 2204,
       "local_path": "/rider_earnings/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2202,
+      "line": 2208,
       "local_path": "/rider_accounts/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2206,
+      "line": 2212,
       "local_path": "/rider_cash_ledger/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2210,
+      "line": 2216,
       "local_path": "/rider_bank_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2218,
+      "line": 2224,
       "local_path": "/rider_identity_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2227,
+      "line": 2233,
       "local_path": "/document_review_submissions/{submissionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2231,
+      "line": 2237,
       "local_path": "/rider_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2256,
+      "line": 2262,
       "local_path": "/seller_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2295,
+      "line": 2301,
       "local_path": "/employee_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2320,
+      "line": 2326,
       "local_path": "/inventory_alerts/{alertId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2333,
+      "line": 2339,
       "local_path": "/razorpay_orders/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2343,
+      "line": 2349,
       "local_path": "/verified_payments/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2359,
+      "line": 2365,
       "local_path": "/onboarding_handoffs/{code}"
     },
     {
       "file": "firestore.rules",
-      "line": 2366,
+      "line": 2372,
       "local_path": "/payment_security_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2396,
+      "line": 2402,
       "local_path": "/onboarding_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2403,
+      "line": 2409,
       "local_path": "/onboarding_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2410,
+      "line": 2416,
       "local_path": "/associate_refund_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2420,
+      "line": 2426,
       "local_path": "/webhook_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2436,
+      "line": 2442,
       "local_path": "/onboarding_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2452,
+      "line": 2458,
       "local_path": "/seller_ai_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2464,
+      "line": 2470,
       "local_path": "/order_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2469,
+      "line": 2475,
       "local_path": "/payment_reconciliation_cursors/{cursorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2476,
+      "line": 2482,
       "local_path": "/checkout_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2488,
+      "line": 2494,
       "local_path": "/commission_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2504,
+      "line": 2510,
       "local_path": "/support_cases/{caseId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2508,
+      "line": 2514,
       "local_path": "/support_case_notes/{noteId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2512,
+      "line": 2518,
       "local_path": "/support_case_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2521,
+      "line": 2527,
       "local_path": "/support_case_evidence/{evidenceId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2539,
+      "line": 2545,
       "local_path": "/subscriptions/{subscriptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2572,
+      "line": 2578,
       "local_path": "/sellerRequests/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2594,
+      "line": 2600,
       "local_path": "/trending_searches/{searchId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2606,
+      "line": 2612,
       "local_path": "/masterProducts/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2618,
+      "line": 2624,
       "local_path": "/centers/{centerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2637,
+      "line": 2643,
       "local_path": "/product_price_mappings/{mappingId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2653,
+      "line": 2659,
       "local_path": "/subscription_plans/{planId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2675,
+      "line": 2681,
       "local_path": "/follows/{followId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2715,
+      "line": 2721,
       "local_path": "/business_posts/{postId}"
     },
     {
