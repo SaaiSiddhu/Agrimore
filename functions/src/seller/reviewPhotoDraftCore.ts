@@ -115,3 +115,58 @@ export async function inspectPhotoCleanup(db: Db, actor: string, draft: string, 
  if (d.state !== "cleanup") fail("failed-precondition", "Photo cleanup not claimed.");
  return { paths: [...d.paths] as string[], expiresAt: d.expiresAt as number, leaseExpired: instant(now) >= d.expiresAt };
 }
+
+function openUpload(d: Data, at: number) {
+ if (d.state !== "open") fail("failed-precondition", "Photo draft closed for upload.");
+ if (at >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+}
+function uploadMap(d: Data): Record<string, Data> {
+ const all = d.uploads === undefined ? {} : d.uploads;
+ if (!all || typeof all !== "object" || Array.isArray(all) || Object.keys(all).length > MAX || Object.entries(all).some(([key, raw]) => {
+   const v = raw as Data;
+   return !v || typeof v !== "object" || !d.paths.includes(v.path) || key !== createHash("sha256").update(v.path).digest("hex") ||
+     !/^[a-f0-9]{64}$/.test(v.inputDigest) || !/^[a-f0-9]{64}$/.test(v.normalizedDigest) || !["bound", "uploaded"].includes(v.state) ||
+     (v.state === "uploaded" && (typeof v.generation !== "string" || !/^[1-9]\d*$/.test(v.generation)));
+ })) fail("failed-precondition", "Invalid upload bindings.");
+ return all;
+}
+/** Owner quota is charged before expensive decoding, even on same-asset retries. */
+export async function chargePhotoUpload(db: Db, actor: string, draft: string, asset: string, now: () => number = Date.now) {
+ id(actor); id(draft); id(asset); instant(now);
+ if (!/^[A-Za-z0-9_-]{1,128}$/.test(asset) || ["__proto__", "prototype", "constructor"].includes(asset)) fail("invalid-argument", "Invalid asset identity.");
+ return db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), limit = db.collection("review_photo_upload_limits").doc(actor);
+   const [s, q] = await Promise.all([tx.get(ref), tx.get(limit)]), d = owned(s, actor), at = instant(now);
+   openUpload(d, at);
+   const path = `review_drafts/${actor}/${draft}/${asset}.jpg`;
+   if (!d.paths.includes(path)) fail("permission-denied", "Asset not leased.");
+   const windowStart = Math.floor(at / 60000) * 60000, old = q.data();
+   if (old && (!Number.isSafeInteger(old.windowStart) || old.windowStart < 0 || old.windowStart % 60000 !== 0 || old.windowStart > windowStart || !Number.isInteger(old.count) || old.count < 0 || old.count > 20)) fail("failed-precondition", "Invalid upload limit.");
+   const count = old?.windowStart === windowStart ? old.count : 0;
+   if (count >= 20) throw new HttpsError("resource-exhausted", "Wait before uploading more photos.");
+   tx.set(limit, { windowStart, count: count + 1 });
+   return path;
+ });
+}
+export async function bindPhotoUpload(db: Db, actor: string, draft: string, path: string, inputDigest: string, normalizedDigest: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ if (!/^[a-f0-9]{64}$/.test(inputDigest) || !/^[a-f0-9]{64}$/.test(normalizedDigest)) fail("invalid-argument", "Invalid upload binding.");
+ await db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), d = owned(await tx.get(ref), actor); openUpload(d, instant(now));
+   if (!d.paths.includes(path)) fail("permission-denied", "Asset not leased.");
+   const all = uploadMap(d), key = createHash("sha256").update(path).digest("hex"), old = all[key];
+   if (old) { if (old.inputDigest !== inputDigest || old.normalizedDigest !== normalizedDigest) fail("already-exists", "Asset content already bound."); return; }
+   tx.update(ref, { uploads: { ...all, [key]: { path, inputDigest, normalizedDigest, state: "bound" } } });
+ });
+}
+export async function confirmPhotoUpload(db: Db, actor: string, draft: string, path: string, normalizedDigest: string, generation: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ if (typeof generation !== "string" || !/^[1-9]\d*$/.test(generation)) fail("invalid-argument", "Invalid upload generation.");
+ await db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), d = owned(await tx.get(ref), actor); openUpload(d, instant(now));
+   const all = uploadMap(d), key = createHash("sha256").update(path).digest("hex"), old = all[key];
+   if (!old || old.path !== path || old.normalizedDigest !== normalizedDigest) fail("failed-precondition", "Upload binding unavailable.");
+   if (old.state === "uploaded") { if (old.generation !== generation) fail("failed-precondition", "Upload generation changed."); return; }
+   tx.update(ref, { uploads: { ...all, [key]: { ...old, state: "uploaded", generation } } });
+ });
+}

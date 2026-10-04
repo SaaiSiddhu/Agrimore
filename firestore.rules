@@ -2,6 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Private review upload state is server-only; no client read/write grants.
+    match /review_photo_drafts/{draftId} { allow read, write: if false; }
+    match /review_photo_upload_limits/{ownerId} { allow read, write: if false; }
+
     
     // ============================================
     // HELPER FUNCTIONS
