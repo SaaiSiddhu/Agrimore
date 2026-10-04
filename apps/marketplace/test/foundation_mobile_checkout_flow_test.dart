@@ -299,16 +299,82 @@ void main() {
     expect(requests.where((r) => r['functionName'] == 'createRazorpayOrder'),
         isEmpty);
   });
-  test('expired quoted unpaid recovery checks capture but never reopens SDK',
-      () async {
-    final draft = await journal.prepare({
-      ...intent(paid: true),
-      'deliveryQuoteId': 'fixture_quote',
-      'deliveryQuoteExpiresAtMs': DateTime.now().millisecondsSinceEpoch - 1,
+  for (final pricingKind in ['delivery', 'credit']) {
+    final pricingIdKey =
+        pricingKind == 'delivery' ? 'deliveryQuoteId' : 'productCreditHoldId';
+    final pricingDeadlineKey = pricingKind == 'delivery'
+        ? 'deliveryQuoteExpiresAtMs'
+        : 'productCreditHoldExpiresAtMs';
+    test(
+        '$pricingKind expired quoted unpaid recovery checks capture but never reopens SDK',
+        () async {
+      final draft = await journal.prepare({
+        ...intent(paid: true),
+        pricingIdKey: 'fixture_quote',
+        pricingDeadlineKey: DateTime.now().millisecondsSinceEpoch - 1,
+      });
+      final request = await journal.attachGateway(draft.ownerId,
+          draft.requestId, PaymentCheckoutOrder.fromResponse(gateway));
+      transport = (call) async => [
+            {
+              'success': true,
+              'verified': false,
+              'outcome': 'unconfirmed',
+              'orderId': gateway['orderId'],
+              'keyId': gateway['keyId'],
+              'amountPaise': 10000,
+              'currency': 'INR',
+            }
+          ];
+      await flow.restore();
+      await flow.resume(customer: customer);
+      expect(sdkOpens, isEmpty);
+      expect(
+          requests.map((r) => r['functionName']), ['recoverCheckoutPayment']);
+      expect((await journal.pending())!.requestId, request.requestId);
+      expect((await journal.pending())!.stage, 'awaiting_payment');
+      expect(errors, isNotEmpty);
     });
-    final request = await journal.attachGateway(draft.ownerId, draft.requestId,
-        PaymentCheckoutOrder.fromResponse(gateway));
-    transport = (call) async => [
+    for (final expiry in <Object?>[null, 'invalid', 1.5, 9007199254740992]) {
+      test(
+          '$pricingKind quoted initial payment rejects malformed deadline $expiry before transport',
+          () async {
+        await flow.start(intent: {
+          ...intent(paid: true),
+          pricingIdKey: 'fixture_quote',
+          pricingDeadlineKey: expiry,
+        }, amount: 100, customer: customer);
+        expect(requests, isEmpty);
+        expect(sdkOpens, isEmpty);
+        expect(await journal.pending(), isNull);
+        expect(errors, isNotEmpty);
+      });
+    }
+    test(
+        '$pricingKind valid quote opens native payment with immutable deadline',
+        () async {
+      await flow.start(intent: {
+        ...intent(paid: true),
+        pricingIdKey: 'fixture_quote',
+        pricingDeadlineKey: nowMs + 600000,
+      }, amount: 100, customer: customer);
+      await awaitConfirmation();
+      expect(sdkOpens, hasLength(1));
+      expect(confirmations.single.intent[pricingDeadlineKey], nowMs + 600000);
+    });
+    test(
+        '$pricingKind deadline reached during capture lookup blocks unpaid reopening',
+        () async {
+      final draft = await journal.prepare({
+        ...intent(paid: true),
+        pricingIdKey: 'fixture_quote',
+        pricingDeadlineKey: nowMs + 100,
+      });
+      await journal.attachGateway(draft.ownerId, draft.requestId,
+          PaymentCheckoutOrder.fromResponse(gateway));
+      transport = (call) async {
+        nowMs += 100;
+        return [
           {
             'success': true,
             'verified': false,
@@ -319,114 +385,105 @@ void main() {
             'currency': 'INR',
           }
         ];
-    await flow.restore();
-    await flow.resume(customer: customer);
-    expect(sdkOpens, isEmpty);
-    expect(requests.map((r) => r['functionName']), ['recoverCheckoutPayment']);
-    expect((await journal.pending())!.requestId, request.requestId);
-    expect((await journal.pending())!.stage, 'awaiting_payment');
-    expect(errors, isNotEmpty);
-  });
-  for (final expiry in <Object?>[null, 'invalid', 1.5, 9007199254740992]) {
+      };
+      await flow.resume(customer: customer);
+      expect(sdkOpens, isEmpty);
+      expect(
+          requests.map((r) => r['functionName']), ['recoverCheckoutPayment']);
+      expect((await journal.pending())!.stage, 'awaiting_payment');
+      expect(errors, isNotEmpty);
+    });
     test(
-        'quoted initial payment rejects malformed deadline $expiry before transport',
+        '$pricingKind expired quote still recovers captured payment when server refuses fulfilment',
+        () async {
+      final draft = await journal.prepare({
+        ...intent(paid: true),
+        pricingIdKey: 'fixture_quote',
+        pricingDeadlineKey: nowMs - 1,
+      });
+      await journal.attachGateway(draft.ownerId, draft.requestId,
+          PaymentCheckoutOrder.fromResponse(gateway));
+      transport = (call) async => call['functionName'] == 'createOrder'
+          ? ['failed-precondition', 'Synthetic expired quote', null]
+          : [capture];
+      await flow.resume(customer: customer);
+      expect(sdkOpens, isEmpty);
+      expect(requests.map((r) => r['functionName']), [
+        'recoverCheckoutPayment',
+        'recoverCheckoutPayment',
+        'recoverCheckoutPayment',
+        'createOrder'
+      ]);
+      final saved = (await journal.pending())!;
+      expect(saved.payment!['paymentId'], 'pay_flow_fixture');
+      expect(saved.requestId, draft.requestId);
+      expect(confirmations, isEmpty);
+      expect(errors, isNotEmpty);
+    });
+    test(
+        '$pricingKind deadline reached while creating gateway preserves order without opening SDK',
+        () async {
+      transport = (call) async {
+        nowMs += 100;
+        return [gateway];
+      };
+      await flow.start(intent: {
+        ...intent(paid: true),
+        pricingIdKey: 'fixture_quote',
+        pricingDeadlineKey: nowMs + 100,
+      }, amount: 100, customer: customer);
+      await awaitError();
+      expect(sdkOpens, isEmpty);
+      expect(requests.map((r) => r['functionName']), ['createRazorpayOrder']);
+      expect(
+          (await journal.pending())!.gateway!['orderId'], gateway['orderId']);
+      expect(errors, isNotEmpty);
+    });
+  }
+  for (final expiredKind in ['delivery', 'credit']) {
+    test('both constraints reject when only $expiredKind has expired',
         () async {
       await flow.start(intent: {
         ...intent(paid: true),
-        'deliveryQuoteId': 'fixture_quote',
-        'deliveryQuoteExpiresAtMs': expiry,
+        'deliveryQuoteId': 'fixture_delivery',
+        'deliveryQuoteExpiresAtMs':
+            nowMs + (expiredKind == 'delivery' ? 0 : 1000),
+        'productCreditHoldId': 'fixture_hold',
+        'productCreditHoldExpiresAtMs':
+            nowMs + (expiredKind == 'credit' ? 0 : 1000),
       }, amount: 100, customer: customer);
       expect(requests, isEmpty);
       expect(sdkOpens, isEmpty);
       expect(await journal.pending(), isNull);
-      expect(errors, isNotEmpty);
     });
   }
-  test('valid quote opens native payment with immutable deadline', () async {
+  test('both valid constraints persist without replacing frozen hold',
+      () async {
     await flow.start(intent: {
       ...intent(paid: true),
-      'deliveryQuoteId': 'fixture_quote',
-      'deliveryQuoteExpiresAtMs': nowMs + 600000,
+      'deliveryQuoteId': 'fixture_delivery',
+      'deliveryQuoteExpiresAtMs': nowMs + 1000,
+      'productCreditHoldId': 'fixture_hold',
+      'productCreditHoldExpiresAtMs': nowMs + 1800000,
     }, amount: 100, customer: customer);
     await awaitConfirmation();
     expect(sdkOpens, hasLength(1));
-    expect(confirmations.single.intent['deliveryQuoteExpiresAtMs'],
-        nowMs + 600000);
+    expect(confirmations.single.intent['productCreditHoldId'], 'fixture_hold');
+    expect(confirmations.single.intent['productCreditHoldExpiresAtMs'],
+        nowMs + 1800000);
   });
-  test('deadline reached during capture lookup blocks unpaid reopening',
-      () async {
-    final draft = await journal.prepare({
-      ...intent(paid: true),
-      'deliveryQuoteId': 'fixture_quote',
-      'deliveryQuoteExpiresAtMs': nowMs + 100,
+  for (final holdId in <Object?>['', 12, 'bad/path']) {
+    test('malformed credit hold $holdId cannot initiate payment', () async {
+      await flow.start(intent: {
+        ...intent(paid: true),
+        'productCreditHoldId': holdId,
+        'productCreditHoldExpiresAtMs': nowMs + 1800000,
+      }, amount: 100, customer: customer);
+      expect(requests, isEmpty);
+      expect(sdkOpens, isEmpty);
+      expect(await journal.pending(), isNull);
     });
-    await journal.attachGateway(draft.ownerId, draft.requestId,
-        PaymentCheckoutOrder.fromResponse(gateway));
-    transport = (call) async {
-      nowMs += 100;
-      return [
-        {
-          'success': true,
-          'verified': false,
-          'outcome': 'unconfirmed',
-          'orderId': gateway['orderId'],
-          'keyId': gateway['keyId'],
-          'amountPaise': 10000,
-          'currency': 'INR',
-        }
-      ];
-    };
-    await flow.resume(customer: customer);
-    expect(sdkOpens, isEmpty);
-    expect(requests.map((r) => r['functionName']), ['recoverCheckoutPayment']);
-    expect((await journal.pending())!.stage, 'awaiting_payment');
-    expect(errors, isNotEmpty);
-  });
-  test(
-      'expired quote still recovers captured payment when server refuses fulfilment',
-      () async {
-    final draft = await journal.prepare({
-      ...intent(paid: true),
-      'deliveryQuoteId': 'fixture_quote',
-      'deliveryQuoteExpiresAtMs': nowMs - 1,
-    });
-    await journal.attachGateway(draft.ownerId, draft.requestId,
-        PaymentCheckoutOrder.fromResponse(gateway));
-    transport = (call) async => call['functionName'] == 'createOrder'
-        ? ['failed-precondition', 'Synthetic expired quote', null]
-        : [capture];
-    await flow.resume(customer: customer);
-    expect(sdkOpens, isEmpty);
-    expect(requests.map((r) => r['functionName']), [
-      'recoverCheckoutPayment',
-      'recoverCheckoutPayment',
-      'recoverCheckoutPayment',
-      'createOrder'
-    ]);
-    final saved = (await journal.pending())!;
-    expect(saved.payment!['paymentId'], 'pay_flow_fixture');
-    expect(saved.requestId, draft.requestId);
-    expect(confirmations, isEmpty);
-    expect(errors, isNotEmpty);
-  });
-  test(
-      'deadline reached while creating gateway preserves order without opening SDK',
-      () async {
-    transport = (call) async {
-      nowMs += 100;
-      return [gateway];
-    };
-    await flow.start(intent: {
-      ...intent(paid: true),
-      'deliveryQuoteId': 'fixture_quote',
-      'deliveryQuoteExpiresAtMs': nowMs + 100,
-    }, amount: 100, customer: customer);
-    await awaitError();
-    expect(sdkOpens, isEmpty);
-    expect(requests.map((r) => r['functionName']), ['createRazorpayOrder']);
-    expect((await journal.pending())!.gateway!['orderId'], gateway['orderId']);
-    expect(errors, isNotEmpty);
-  });
+  }
   test('unavailable provider lookup preserves attempt and opens no SDK',
       () async {
     final request = await awaiting();

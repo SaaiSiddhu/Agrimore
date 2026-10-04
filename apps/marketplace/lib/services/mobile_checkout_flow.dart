@@ -145,17 +145,30 @@ class MobileCheckoutFlow {
     }
   }
 
-  // Advisory device deadline only: createOrder still validates server time and
-  // the quote fingerprint. Never change the frozen payable to renew a quote.
-  bool _pricingAllowsPayment(Map<String, dynamic> intent) {
-    if (intent['deliveryQuoteId'] == null) return true;
-    final expiry = intent['deliveryQuoteExpiresAtMs'];
+  // Advisory device deadlines only: createOrder still validates server time,
+  // hold state and cart fingerprints. Never renew or change a frozen payable.
+  bool _deadlineAllowsPayment(Object? expiry) {
     return expiry is num &&
         expiry.isFinite &&
         expiry > 0 &&
         expiry <= 9007199254740991 &&
         expiry == expiry.truncateToDouble() &&
         _nowMs() < expiry;
+  }
+
+  bool _pricingAllowsPayment(Map<String, dynamic> intent) {
+    if (intent['deliveryQuoteId'] != null &&
+        !_deadlineAllowsPayment(intent['deliveryQuoteExpiresAtMs'])) {
+      return false;
+    }
+    final holdId = intent['productCreditHoldId'];
+    if (holdId != null &&
+        (holdId is! String ||
+            !RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(holdId) ||
+            !_deadlineAllowsPayment(intent['productCreditHoldExpiresAtMs']))) {
+      return false;
+    }
+    return true;
   }
 
   Future<void> start({
