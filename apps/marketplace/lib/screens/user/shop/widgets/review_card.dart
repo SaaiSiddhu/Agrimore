@@ -258,18 +258,52 @@ class ReviewCard extends StatelessWidget {
   }
 
   Widget _buildFooter(BuildContext context, Color lightTextColor) {
-    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
-    final userId =
-        Provider.of<AuthService>(context, listen: false).currentUserId;
+    final reviewProvider = context.watch<ReviewProvider>();
+    final service = context.read<AuthService>();
+    final auth = context.watch<app_auth.AuthProvider>();
+    final userId = service.currentUserId;
+    final epoch = auth.sessionVersion;
+    final productId = review.productId;
+    final reviewId = review.reviewId;
+    final route = ModalRoute.of(context);
+    bool current() =>
+        context.mounted &&
+        userId != null &&
+        (route?.isCurrent ?? false) &&
+        identical(context.read<ReviewProvider>(), reviewProvider) &&
+        identical(context.read<AuthService>(), service) &&
+        identical(context.read<app_auth.AuthProvider>(), auth) &&
+        auth.isSessionCurrent(userId, epoch) &&
+        service.currentUserId == userId &&
+        context.widget is ReviewCard &&
+        (context.widget as ReviewCard).review.productId == productId &&
+        (context.widget as ReviewCard).review.reviewId == reviewId;
+    final busy = reviewProvider.isVoting(productId, reviewId, userId);
+    Future<void> vote(bool helpful) async {
+      if (userId == null ||
+          !current() ||
+          reviewProvider.isVoting(productId, reviewId, userId)) {
+        return;
+      }
+      try {
+        await reviewProvider.markHelpful(productId, reviewId, userId, helpful,
+            isSessionCurrent: current);
+      } catch (_) {
+        if (context.mounted && current()) {
+          SnackbarHelper.showError(
+              context, 'Could not save your vote. Try again.');
+        }
+      }
+    }
 
-    bool isHelpful = review.helpfulUsers.contains(userId);
-    bool isUnhelpful = review.unhelpfulUsers.contains(userId);
+    final isHelpful = review.helpfulUsers.contains(userId);
+    final isUnhelpful = review.unhelpfulUsers.contains(userId);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
-          'Helpful?',
+          busy ? 'Saving vote...' : 'Helpful?',
           style: TextStyle(
               fontSize: 12, color: lightTextColor, fontWeight: FontWeight.w500),
         ),
@@ -283,12 +317,7 @@ class ReviewCard extends StatelessWidget {
           color: isHelpful
               ? (isDark ? AppColors.primaryLight : AppColors.primary)
               : lightTextColor,
-          onTap: () {
-            if (userId != null) {
-              reviewProvider.markHelpful(
-                  review.productId, review.reviewId, userId, true);
-            }
-          },
+          onTap: current() && !busy ? () => vote(true) : null,
         ),
         const SizedBox(width: 8),
         _buildHelpfulButton(
@@ -298,12 +327,7 @@ class ReviewCard extends StatelessWidget {
               ? Icons.thumb_down_alt_rounded
               : Icons.thumb_down_alt_outlined,
           color: isUnhelpful ? AppColors.error : lightTextColor,
-          onTap: () {
-            if (userId != null) {
-              reviewProvider.markHelpful(
-                  review.productId, review.reviewId, userId, false);
-            }
-          },
+          onTap: current() && !busy ? () => vote(false) : null,
         ),
       ],
     );
@@ -314,7 +338,7 @@ class ReviewCard extends StatelessWidget {
     required String text,
     required IconData icon,
     required Color color,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,

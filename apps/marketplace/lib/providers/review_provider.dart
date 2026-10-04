@@ -237,55 +237,25 @@ class ReviewProvider extends ChangeNotifier {
       _authorWrite(
           (writer) => writer.delete(productId, reviewId), isSessionCurrent);
 
-  // Mark as helpful
+  final Set<(String, String, String)> _pendingVotes = {};
+  bool isVoting(String productId, String reviewId, String? actor) =>
+      actor != null && _pendingVotes.contains((productId, reviewId, actor));
+
+  // Votes share transaction/session ownership and observable SDK failures.
   Future<void> markHelpful(
-    String productId,
-    String reviewId,
-    String userId,
-    bool isHelpful,
-  ) async {
+      String productId, String reviewId, String userId, bool isHelpful,
+      {bool Function()? isSessionCurrent}) async {
+    final target = (productId, reviewId, userId);
+    if (!_pendingVotes.add(target)) {
+      throw ValidationException('A vote for this review is already pending.');
+    }
     try {
-      final reviewRef = _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .doc(reviewId);
-
-      final reviewDoc = await reviewRef.get();
-      if (!reviewDoc.exists) return;
-
-      final review = ReviewModel.fromMap(
-        reviewDoc.data() as Map<String, dynamic>,
-        reviewDoc.id,
-      );
-
-      List<String> helpfulUsers = List.from(review.helpfulUsers);
-      List<String> unhelpfulUsers = List.from(review.unhelpfulUsers);
-
-      if (isHelpful) {
-        if (helpfulUsers.contains(userId)) {
-          helpfulUsers.remove(userId);
-        } else {
-          helpfulUsers.add(userId);
-          unhelpfulUsers.remove(userId);
-        }
-      } else {
-        if (unhelpfulUsers.contains(userId)) {
-          unhelpfulUsers.remove(userId);
-        } else {
-          unhelpfulUsers.add(userId);
-          helpfulUsers.remove(userId);
-        }
-      }
-
-      await reviewRef.update({
-        'helpfulUsers': helpfulUsers,
-        'unhelpfulUsers': unhelpfulUsers,
-        'helpfulCount': helpfulUsers.length,
-        'unhelpfulCount': unhelpfulUsers.length,
-      });
-    } catch (e) {
-      debugPrint('Error marking helpful: $e');
+      await _authorWrite(
+          (writer) => writer.vote(productId, reviewId, userId, isHelpful),
+          isSessionCurrent);
+    } finally {
+      _pendingVotes.remove(target);
+      if (!_statsDisposed) notifyListeners();
     }
   }
 

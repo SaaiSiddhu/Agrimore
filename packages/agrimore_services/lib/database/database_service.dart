@@ -792,59 +792,8 @@ class DatabaseService {
       _reviewWriter.delete(productId, reviewId);
 
   Future<void> markReviewHelpful(
-    String productId,
-    String reviewId,
-    String userId,
-    bool isHelpful,
-  ) async {
-    try {
-      final reviewRef = _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .doc(reviewId);
-
-      final reviewDoc = await reviewRef.get();
-      if (!reviewDoc.exists) {
-        throw DataNotFoundException('Review not found');
-      }
-
-      final review = ReviewModel.fromMap(
-          reviewDoc.data() as Map<String, dynamic>, reviewId);
-
-      List<String> helpfulUsers = List.from(review.helpfulUsers);
-      List<String> unhelpfulUsers = List.from(review.unhelpfulUsers);
-
-      if (isHelpful) {
-        if (helpfulUsers.contains(userId)) {
-          helpfulUsers.remove(userId);
-        } else {
-          helpfulUsers.add(userId);
-          unhelpfulUsers.remove(userId);
-        }
-      } else {
-        if (unhelpfulUsers.contains(userId)) {
-          unhelpfulUsers.remove(userId);
-        } else {
-          unhelpfulUsers.add(userId);
-          helpfulUsers.remove(userId);
-        }
-      }
-
-      await reviewRef.update({
-        'helpfulUsers': helpfulUsers,
-        'unhelpfulUsers': unhelpfulUsers,
-        'helpfulCount': helpfulUsers.length,
-        'unhelpfulCount': unhelpfulUsers.length,
-      });
-
-      debugPrint(
-          '✅ Review marked as ${isHelpful ? 'helpful' : 'unhelpful'}: $reviewId');
-    } catch (e) {
-      debugPrint('❌ Error marking helpful: $e');
-      throw DatabaseException('Failed to mark helpful: ${e.toString()}');
-    }
-  }
+    String productId, String reviewId, String userId, bool isHelpful,
+  ) => _reviewWriter.vote(productId, reviewId, userId, isHelpful);
 
   Stream<List<ReviewModel>> getUserReviews(String userId) {
     try {

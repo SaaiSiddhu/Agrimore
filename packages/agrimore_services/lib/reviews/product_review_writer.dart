@@ -1,7 +1,7 @@
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Author content only. Product/seller aggregates and review trust metadata
+/// Author content and authenticated self-votes. Product/seller aggregates and review trust metadata
 /// remain owned by onProductReviewWrite; this writer never updates them.
 class ProductReviewWriter {
   ProductReviewWriter(
@@ -82,6 +82,76 @@ class ProductReviewWriter {
     // A dispatched SDK commit cannot be undone; suppress a stale receipt.
     _guard(owner);
     return id;
+  }
+
+  List<String> _voteUsers(Map<String, dynamic> data, String key) {
+    final raw = data.containsKey(key) ? data[key] : const <String>[];
+    if (raw is! List || raw.any((v) => v is! String || !_validId(v))) {
+      throw DatabaseException('The review votes are unavailable.');
+    }
+    final users = List<String>.from(raw);
+    if (users.toSet().length != users.length) {
+      throw DatabaseException('The review votes are unavailable.');
+    }
+    return users;
+  }
+
+  Future<void> vote(
+      String productId, String reviewId, String actor, bool isHelpful) async {
+    final owner = _open(actor);
+    _target(productId, reviewId);
+    final ref = _firestore
+        .collection('products')
+        .doc(productId)
+        .collection('reviews')
+        .doc(reviewId);
+    // Freeze the initial toggle intent; SDK retries re-read other voters,
+    // but must not invert our selection if another device changes our vote.
+    bool? selected;
+    await _firestore.runTransaction<void>((tx) async {
+      _guard(owner);
+      final snapshot = await tx.get(ref);
+      _guard(owner);
+      final data = snapshot.data();
+      if (!snapshot.exists || data == null) {
+        throw DataNotFoundException('The review is no longer available.');
+      }
+      final author = data['userId'];
+      if (data['productId'] != productId ||
+          author is! String ||
+          !_validId(author) ||
+          data['supersededBy'] != null) {
+        throw DatabaseException('The review is unavailable for voting.');
+      }
+      final yes = _voteUsers(data, 'helpfulUsers');
+      final no = _voteUsers(data, 'unhelpfulUsers');
+      final yesCount =
+          data.containsKey('helpfulCount') ? data['helpfulCount'] : 0;
+      final noCount =
+          data.containsKey('unhelpfulCount') ? data['unhelpfulCount'] : 0;
+      if (yesCount is! int ||
+          noCount is! int ||
+          yesCount != yes.length ||
+          noCount != no.length ||
+          yes.toSet().intersection(no.toSet()).isNotEmpty) {
+        throw DatabaseException('The review votes are unavailable.');
+      }
+      selected ??= !(isHelpful ? yes : no).contains(owner);
+      yes.remove(owner);
+      no.remove(owner);
+      if (selected!) {
+        (isHelpful ? yes : no).add(owner);
+      }
+      _guard(owner);
+      tx.update(ref, {
+        'helpfulUsers': yes,
+        'unhelpfulUsers': no,
+        'helpfulCount': yes.length,
+        'unhelpfulCount': no.length,
+      });
+    });
+    // The SDK may already have committed. Refuse a stale receipt, never undo it.
+    _guard(owner);
   }
 
   Future<void> delete(String productId, String reviewId) async {
