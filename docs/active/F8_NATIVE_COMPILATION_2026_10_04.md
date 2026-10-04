@@ -49,3 +49,12 @@ SDK-generated AppFrameworkInfo minimum was removed by the tool, and SPM framewor
 - Android native builds, owner upload-keystore rotation/signing, real devices and release identity/manifest verification remain OPEN. An independent owner Android compiler process was observed and left untouched; it is not this scope's build evidence.
 
 Postcommit foundation gate is pending until recorded below. Full F0–F9 goal stays ACTIVE.
+
+
+## Generated build analyzer boundary
+
+Initial postcommit default gate at d341f2e6 completed exit1/failed1. Marketplace analysis scanned FlutterFire source/examples/tests downloaded by SPM into build/ios/SourcePackages/checkouts and reported5782 errors,356warnings356infos; all5782 errors were under generated build, zero outside. Other checks were not treated as a broad gate pass. An incorrect relative-path edit attempt did not change options; its subsequent analyzer run still saw generated code and is excluded from final evidence.
+
+Marketplace analysis_options.yaml now excludes only generated build/**. No app/library/test subtree or diagnostic/lint rule is excluded; zero tracked files match the new exclusion. Fresh full marketplace analysis completes with0errors/127warnings278infos (tool exit1 on diagnostics), the exact pre-native app-source baseline. Evidence /tmp/agrimore-native-marketplace-analyze-exact-final.log. Native release inputs/artifact remain unchanged by this analysis-only configuration. Fresh postcommit default gate still required and pending until recorded below.
+
+Security/native configuration review PASS_WITH_FINDINGS: existing live customer SDK registration only; no roles/rules/permissions/providers/cloud creation or live data changes. Ignored client plist stays excluded from commits; public client values are not printed. Source-file scope classifier reports none for these native/config paths; security review applied explicitly despite that classifier limitation. No UI layout changes/native screenshot claim. Hybrid transitive migration/minimum15, signing/clean-tree provenance, other apps and provider/device/push/simulator adoption stay release gates.
