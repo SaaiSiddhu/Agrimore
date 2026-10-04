@@ -4269,5 +4269,19 @@
     "Parent block hashes include nested children; counts are not counts of independent vulnerabilities.",
     "Four live-only Firestore helper definitions implement legacy forward rider transitions. Retain compatibility decision; no live exploit test.",
     "Owner stock/index/catalogue WIP unchanged. All F0-F9 acceptance OPEN."
-  ]
+  ],
+  "verification": {
+    "sourceReportCommit": "4e43272c",
+    "standardPostcommitGateExit": 0,
+    "standardPostcommitGateFailed": 0,
+    "runtime": "official isolated Node22.23.3/npm10.9.9",
+    "log": "/tmp/agrimore-active-rules-recovery-postcommit-gate.log",
+    "allFiveAnalyzerErrors": 0,
+    "deliveryWarnings": 0,
+    "deliveryInfos": 0,
+    "ledgerWarnings": 0,
+    "sourceInventoryCheckExit": 0,
+    "ownerIndexHashPreserved": true,
+    "limits": "Documentation-only; no new cloud/device/provider/restore/authorization test. Failed fresh database/index-state reads remain UNKNOWN."
+  }
 }
