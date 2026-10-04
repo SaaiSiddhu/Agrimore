@@ -428,7 +428,15 @@ export async function requestBankChangeCore(db: Db, riderId: string, data: unkno
   });
 }
 
-export type BankReviewVerdict = { kind: "approved" | "rejected"; released: number } | { kind: "refused"; reason: "not_found" | "not_pending" | "reason_required" };
+export type BankReviewVerdict = { kind: "approved" | "rejected"; released: number } | { kind: "refused"; reason: "not_found" | "not_pending" | "reason_required" | "bank_review_state" };
+
+/** A stored request owner must be one Firestore document ID, not a path. */
+function validBankReviewRiderId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= 1500 && !value.includes("/") &&
+    value !== "." && value !== ".." && !/^__.*__$/.test(value) &&
+    Buffer.from(value, "utf8").toString("utf8") === value;
+}
 
 export async function reviewBankChangeCore(
   db: Db, adminUid: string, requestId: string, approve: boolean, reason: string | null, nowMs: number
@@ -440,12 +448,22 @@ export async function reviewBankChangeCore(
     if (!req.exists) return { kind: "refused", reason: "not_found" };
     const r = req.data()!;
     if (r.status !== "pending") return { kind: "refused", reason: "not_pending" };
-    const riderId = r.riderId as string;
+    if (!validBankReviewRiderId(r.riderId)) return { kind: "refused", reason: "bank_review_state" };
+    const riderId = r.riderId;
     const partnerRef = db.collection("delivery_partners").doc(riderId);
+    const accRef = riderAccountRef(db, riderId);
+    const [partner, acc] = await Promise.all([tx.get(partnerRef), tx.get(accRef)]);
+    const account = acc.data() ?? {};
+    if (!partner.exists || !acc.exists || account.bankChangePending !== requestId ||
+        (Object.prototype.hasOwnProperty.call(account, "riderId") && account.riderId !== riderId)) {
+      return { kind: "refused", reason: "bank_review_state" };
+    }
+    const validated = approve ? validateBankDetails(r) : null;
+    if (approve && !validated?.ok) return { kind: "refused", reason: "bank_review_state" };
     const held = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "on_hold");
-    const [partner, holds] = await Promise.all([tx.get(partnerRef), tx.get(held)]);
+    const holds = await tx.get(held);
     const at = Timestamp.fromMillis(nowMs);
-    const details = {
+    const details = validated?.ok ? validated.value : {
       accountHolderName: r.accountHolderName ?? null,
       bankAccountNumber: r.bankAccountNumber ?? null,
       ifscCode: r.ifscCode ?? null,
@@ -458,7 +476,7 @@ export async function reviewBankChangeCore(
       reviewedBy: adminUid, reviewedAt: at, rejectionReason: approve ? null : reason, updatedAt: at,
     });
     if (approve) tx.update(partnerRef, { ...details, bankDetailsUpdatedAt: at });
-    tx.set(riderAccountRef(db, riderId), { riderId, bankChangePending: null, updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, bankChangePending: null, updatedAt: at }, { merge: true });
     let released = 0;
     if (hasPayoutDestination(destination)) {
       for (const h of holds.docs) {
@@ -546,6 +564,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   already_pending: "A change is already waiting for review",
   not_found: "Request not found",
   not_pending: "This request has already been reviewed",
+  bank_review_state: "This bank change needs review against the rider's current payout records",
   reason_required: "Give a reason for rejecting (3–200 characters)",
 };
 function refuse(reason: string): never {

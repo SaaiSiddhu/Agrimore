@@ -86,6 +86,7 @@ String riderMoneyRefusal(String code, String? reason) => switch (reason) {
       'bad_amount' => 'Enter an amount greater than zero.',
       'bad_reference' => 'Enter a receipt or reference (2–64 characters).',
       'not_pending' => 'This request has already been reviewed.',
+      'bank_review_state' => 'This bank change does not match the rider\'s current payout records. Check the request and account before reviewing it.',
       'not_found' => 'Request not found — it may have been removed.',
       'reason_required' => 'Give a reason for rejecting (3–200 characters).',
       _ => code == 'permission-denied'
