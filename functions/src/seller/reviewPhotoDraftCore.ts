@@ -57,16 +57,55 @@ export async function readyPhotoDraft(db: Db, actor: string, draft: string, veri
    tx.update(ref, { state: "ready", receipts });
  });
 }
-export async function publishPhotoDraft(db: Db, actor: string, draft: string, value: ReviewPhotoContent, now: number | (() => number) = Date.now) {
- id(actor); id(draft); instant(now);
+function photoContent(value: ReviewPhotoContent): ReviewPhotoContent {
  if (value == null || typeof value !== "object") fail("invalid-argument", "Invalid review content.");
  const content = { rating: value.rating, title: value.title, comment: value.comment, userName: value.userName, userAvatar: value.userAvatar };
  if (!Number.isInteger(content.rating) || content.rating < 1 || content.rating > 5 || [content.title, content.comment, content.userName, content.userAvatar].some(v => typeof v !== "string") || content.title.length > 200 || content.comment.length > 10000 || content.userName.length > 200 || content.userAvatar.length > 4096) fail("invalid-argument", "Invalid review content.");
- const hash = createHash("sha256").update(JSON.stringify(content)).digest("hex");
+ return content;
+}
+function contentHash(content: ReviewPhotoContent) { return createHash("sha256").update(JSON.stringify(content)).digest("hex"); }
+function intentHash(content: ReviewPhotoContent) { return createHash("sha256").update(JSON.stringify({ rating: content.rating, title: content.title, comment: content.comment })).digest("hex"); }
+function frozenContent(d: Data): ReviewPhotoContent | undefined {
+ if (d.publication === undefined) return undefined;
+ const p = d.publication;
+ if (!p || typeof p !== "object" || Array.isArray(p) || p.version !== 1 || !p.content ||
+   typeof p.content !== "object" || Array.isArray(p.content) || Object.keys(p.content).length !== 5) fail("failed-precondition", "Invalid publication snapshot.");
+ let content: ReviewPhotoContent;
+ try { content = photoContent(p.content); } catch { fail("failed-precondition", "Invalid publication snapshot."); }
+ if (p.contentHash !== contentHash(content) || p.intentHash !== intentHash(content)) fail("failed-precondition", "Invalid publication snapshot.");
+ return content;
+}
+/** Trusted-server boundary only. Caller supplies authoritative profile fields, never client identity.
+ * Freeze before object preparation; retries compare user intent and retain the first profile.
+ * This creates no download capability and does not publish a review.
+ */
+export async function freezePhotoContent(db: Db, actor: string, draft: string, value: ReviewPhotoContent, now: number | (() => number) = Date.now) {
+ id(actor); id(draft); instant(now);
+ const proposed = photoContent(value);
+ return db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), d = owned(await tx.get(ref), actor), at = instant(now);
+   if (!["open", "ready", "linked"].includes(d.state)) fail("failed-precondition", "Photo draft closed for publication.");
+   if (d.state !== "linked" && at >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+   const frozen = frozenContent(d);
+   if (frozen) {
+     if (intentHash(frozen) !== intentHash(proposed)) fail("already-exists", "Draft submission already bound.");
+     return frozen;
+   }
+   // Historical linked drafts cannot acquire a new snapshot after publication.
+   if (d.state === "linked") fail("failed-precondition", "Published draft has no submission snapshot.");
+   tx.update(ref, { publication: { version: 1, content: proposed, contentHash: contentHash(proposed), intentHash: intentHash(proposed) } });
+   return proposed;
+ });
+}
+export async function publishPhotoDraft(db: Db, actor: string, draft: string, value: ReviewPhotoContent, now: number | (() => number) = Date.now) {
+ id(actor); id(draft); instant(now);
+ const content = photoContent(value), hash = contentHash(content);
  return db.runTransaction(async tx => {
    let at = instant(now);
    const dr = db.collection(COLL).doc(draft), s = await tx.get(dr), d = owned(s, actor);
    const ref = db.collection("products").doc(d.productId).collection("reviews").doc(d.reviewId), r = await tx.get(ref);
+   const frozen = frozenContent(d);
+   if (frozen && contentHash(frozen) !== hash) fail("already-exists", "Publication must use frozen submission.");
    if (d.state === "linked") { if (d.contentHash !== hash) fail("already-exists", "Draft published with different content."); const current = r.data(); return { state: "linked", reviewId: d.reviewId, stillCurrent: current?.photoDraftId === draft && Array.isArray(current.imageUrls) && Array.isArray(d.receipts) && d.receipts.every((v: PhotoReceipt) => current.imageUrls.includes(v.url)) }; }
    at = instant(now);
    // Load-bearing cleanup tombstone: no late publication after deletion claim.
