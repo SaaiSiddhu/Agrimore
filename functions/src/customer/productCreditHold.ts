@@ -363,6 +363,9 @@ export const quoteOrderWithCredit = onCall(
         holdId,
         deliveryQuoteId: data?.deliveryQuoteId ?? null,
         expiresAt: expiresAtTimestamp ? expiresAtTimestamp.toDate().toISOString() : null,
+        // Frozen native recovery metadata, derived from the SAME server hold
+        // timestamp. Device admission is advisory; settlement rechecks Firestore.
+        productCreditHoldExpiresAtMs: expiresAtTimestamp ? expiresAtTimestamp.toMillis() : null,
         reasons,
       };
     });

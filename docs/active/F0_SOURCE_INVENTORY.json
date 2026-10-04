@@ -34022,12 +34022,12 @@
         {
           "chain": [
             {
-              "line": 401,
+              "line": 404,
               "literal": "product_credit_holds",
               "method": "collection"
             },
             {
-              "line": 401,
+              "line": 404,
               "method": "doc"
             }
           ],
@@ -34038,7 +34038,7 @@
           "index_candidate_ids": [
             76
           ],
-          "line": 401,
+          "line": 404,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             62
@@ -34049,12 +34049,12 @@
         {
           "chain": [
             {
-              "line": 420,
+              "line": 423,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 420,
+              "line": 423,
               "method": "doc"
             }
           ],
@@ -34063,7 +34063,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 420,
+          "line": 423,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -34123,7 +34123,7 @@
         }
       ],
       "path": "functions/src/customer/productCreditHold.ts",
-      "sha256": "f3253f07d84188965e44e80f9f58c35f9da900e3baaaebabfefce86aaa268415"
+      "sha256": "805820ce8842fc6f729b5b4011382e4dee02cb8806dc6b0317f61cfb1640d10b"
     },
     {
       "callable_sites": [],
