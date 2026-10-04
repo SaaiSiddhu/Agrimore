@@ -33468,21 +33468,17 @@
         {
           "chain": [
             {
-              "line": 230,
+              "line": 280,
               "literal": "product_credit_ledger",
               "method": "collection"
             },
             {
-              "line": 230,
+              "line": 280,
               "literal": "customerId",
               "method": "where",
               "operators": [
                 "=="
               ]
-            },
-            {
-              "line": 230,
-              "method": "get"
             }
           ],
           "collection": "product_credit_ledger",
@@ -33493,7 +33489,7 @@
             18,
             75
           ],
-          "line": 230,
+          "line": 280,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             60
@@ -33504,12 +33500,12 @@
         {
           "chain": [
             {
-              "line": 275,
+              "line": 281,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 275,
+              "line": 281,
               "method": "doc"
             }
           ],
@@ -33518,7 +33514,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 275,
+          "line": 281,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33529,12 +33525,12 @@
         {
           "chain": [
             {
-              "line": 276,
+              "line": 282,
               "literal": "compliance_audit_log",
               "method": "collection"
             },
             {
-              "line": 276,
+              "line": 282,
               "method": "doc"
             }
           ],
@@ -33543,7 +33539,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 276,
+          "line": 282,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             56
@@ -33554,12 +33550,12 @@
         {
           "chain": [
             {
-              "line": 344,
+              "line": 364,
               "literal": "compliance_audit_log",
               "method": "collection"
             },
             {
-              "line": 344,
+              "line": 364,
               "method": "add"
             }
           ],
@@ -33568,7 +33564,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 344,
+          "line": 364,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             56
@@ -33579,12 +33575,12 @@
         {
           "chain": [
             {
-              "line": 365,
+              "line": 385,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 365,
+              "line": 385,
               "method": "get"
             }
           ],
@@ -33593,7 +33589,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 365,
+          "line": 385,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33664,7 +33660,7 @@
           "method": "limit"
         },
         {
-          "line": 230,
+          "line": 280,
           "literal": "customerId",
           "method": "where",
           "operators": [
@@ -33673,7 +33669,7 @@
         }
       ],
       "path": "functions/src/customer/productCreditExpiry.ts",
-      "sha256": "f2fce24299c700cf14154971428e0ae404687358d48cab4c0e05862a63835bcd"
+      "sha256": "3fdb4a66c17c5d1c84896dc0fce3eca5bcb692c66c913a8232ffff8e546a04c7"
     },
     {
       "callable_sites": [],

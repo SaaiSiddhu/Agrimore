@@ -35,7 +35,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { auditEntry, resolveIsAdmin } from "../admin/complianceGate";
-import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
+import { appendLedgerEntry, toProjectionFields, LEDGER_ENTRY_TYPES } from "./productCreditLedger";
 
 const MAX_EXPIRY_ENTRIES_PER_RUN = 500;
 
@@ -223,15 +223,19 @@ export const releaseExpiredProductCreditHolds = functions.pubsub
     return { processed: docs.length, released, skipped, truncated };
   });
 
-async function computeLedgerSumAvailable(
-  db: admin.firestore.Firestore,
-  customerId: string
-): Promise<number> {
-  const ledgerSnap = await db.collection("product_credit_ledger").where("customerId", "==", customerId).get();
+function computeLedgerSumAvailable(
+  ledgerSnap: FirebaseFirestore.QuerySnapshot
+): number {
   let available = 0;
   for (const doc of ledgerSnap.docs) {
     const entry = doc.data();
-    const amount = typeof entry.amount === "number" ? entry.amount : 0;
+    if (!LEDGER_ENTRY_TYPES.includes(entry.type) || typeof entry.amount !== "number" ||
+        !Number.isFinite(entry.amount) || entry.amount < 0 ||
+        (entry.type === "ADJUSTMENT" && !["credit", "debit"].includes(entry.metadata?.direction)) ||
+        (entry.type === "REDEMPTION" && entry.relatedEntryId != null && typeof entry.relatedEntryId !== "string")) {
+      throw new HttpsError("failed-precondition", "Product Credit ledger needs review before reconciliation.");
+    }
+    const amount = entry.amount;
     switch (entry.type) {
       case "CREDIT":
       case "RELEASE":
@@ -239,6 +243,10 @@ async function computeLedgerSumAvailable(
         available += amount;
         break;
       case "REDEMPTION":
+        // A related HOLD already reduced available. Match the canonical
+        // appendLedgerEntry arithmetic; only a direct spend reduces it here.
+        if (!entry.relatedEntryId) available -= amount;
+        break;
       case "EXPIRY":
       case "HOLD":
         available -= amount;
@@ -248,7 +256,11 @@ async function computeLedgerSumAvailable(
         break;
     }
   }
-  return Math.round(available * 100) / 100;
+  const paise = Math.round(available * 100);
+  if (!Number.isSafeInteger(paise) || paise < 0) {
+    throw new HttpsError("failed-precondition", "Product Credit ledger needs review before reconciliation.");
+  }
+  return paise / 100;
 }
 
 interface ReconcileResult {
@@ -265,35 +277,43 @@ async function reconcileOneCustomer(
   actorEmail: string | null,
   reason: string
 ): Promise<ReconcileResult | null> {
-  // Non-transactional pre-read of the full ledger — the ledger is
-  // append-only, so a new entry landing between this read and the
-  // transaction below only means this run under-counts a just-arrived
-  // entry, which the NEXT reconciliation run picks up. Acceptable for a
-  // maintenance/reporting operation, not a security enforcement point.
-  const computedAvailable = await computeLedgerSumAvailable(db, customerId);
-
+  const ledgerQuery = db.collection("product_credit_ledger").where("customerId", "==", customerId);
   const projectionRef = db.collection("product_credit_balances").doc(customerId);
   const auditRef = db.collection("compliance_audit_log").doc();
 
   return db.runTransaction(async (tx) => {
-    const projectionSnap = await tx.get(projectionRef);
+    // Ledger and projection must share this transaction's snapshot. A stale
+    // pre-read can offset a legitimate interleaved credit/hold with an adjustment.
+    const [ledgerSnap, projectionSnap] = await Promise.all([
+      tx.get(ledgerQuery), tx.get(projectionRef),
+    ]);
+    const computedAvailable = computeLedgerSumAvailable(ledgerSnap);
     const currentProjection = toProjectionFields(projectionSnap.data());
+    if (!Number.isFinite(currentProjection.available) || currentProjection.available < 0 ||
+        !Number.isSafeInteger(Math.round(currentProjection.available * 100))) {
+      throw new HttpsError("failed-precondition", "Product Credit balance needs review before reconciliation.");
+    }
     const drift = Math.round((currentProjection.available - computedAvailable) * 100) / 100;
 
     if (Math.abs(drift) < 0.01) {
       return null;
     }
 
-    // Correct via an explicit ADJUSTMENT entry — never by silently
-    // overwriting the projection (D4).
+    // Repair the cache, not the customer's economic ledger. A nonzero
+    // adjustment would move ledger truth too and cause drift on the next run.
+    // Preserve D4's explicit immutable adjustment/audit with zero monetary effect.
     appendLedgerEntry(tx, db, {
       customerId,
       enrollmentId: "",
       type: "ADJUSTMENT",
-      amount: Math.abs(drift),
-      currentProjection,
+      amount: 0,
+      currentProjection: { ...currentProjection, available: computedAvailable },
       description: `Reconciliation: projection.available (${currentProjection.available}) vs ledger sum (${computedAvailable})`,
-      metadata: { direction: drift > 0 ? "debit" : "credit", reconciliation: true },
+      metadata: {
+        direction: drift > 0 ? "debit" : "credit", reconciliation: true,
+        projectionRepair: true, previousProjectionAvailable: currentProjection.available,
+        ledgerAvailable: computedAvailable, drift,
+      },
     });
 
     tx.set(
