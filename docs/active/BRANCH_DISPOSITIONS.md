@@ -571,3 +571,6 @@ F8/F2 native identity amendment before edit: marketplace Runner/Info.plist OAuth
 
 
 F8 analyzer scope amendment before edit (2026-10-04): postcommit gate at d341f2e6 failed1; all5782 marketplace errors are inside generated build/ios/SourcePackages/checkouts/flutterfire, zero errors outside generated build tree. Include exact marketplace analysis_options.yaml to exclude generated build/** only; no app/test/library source exclusions or lint/error suppression. Native compiler pass remains valid, initial foundation gate explicitly failed until corrected and rerun. Preserve owner WIP.
+
+
+F8 compiler continuation disposition: implementationd341f2e6 plus analyzerboundary0b70cbd0 locally BUILT+SELF_GATED; exact-final unsigned marketplace iOS release passed184.7s/118.1MB, artifactarm64/customerbundle/minimum15/SDK+OAuthmatch/unsigned verified. Fresh defaultgatefailed0/five analyzers0errors, earlierfirstgatefailed1 generateddeps retained. Full F8/five-app signing/device/provider/push/clean-release and owner gates remain OPEN; no phase VERIFIED/merge/release claim. Native report F8_NATIVE_COMPILATION_2026_10_04.md.
