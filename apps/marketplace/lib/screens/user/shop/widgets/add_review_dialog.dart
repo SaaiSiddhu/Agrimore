@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/auth_provider.dart' as app_auth;
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
@@ -18,12 +19,20 @@ class AddReviewDialog extends StatefulWidget {
   final String productId;
   final String productName;
   final ReviewModel? reviewToEdit;
+  final Future<bool> Function(String, String)? purchaseCheck;
+  final Future<List<XFile>> Function()? pickImages;
+  final Future<String> Function(String, Uint8List)? uploadImage;
+  final DatabaseService Function(bool Function())? databaseFactory;
 
   const AddReviewDialog({
     Key? key,
     required this.productId,
     required this.productName,
     this.reviewToEdit,
+    this.purchaseCheck,
+    this.pickImages,
+    this.uploadImage,
+    this.databaseFactory,
   }) : super(key: key);
 
   @override
@@ -43,11 +52,69 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
   // --- Purchase Verification ---
   bool _isCheckingPurchase = true;
   bool _hasPurchased = false;
-  bool _didCheckPurchase = false; // ✅ Flag to prevent multiple checks
+  bool _didCheckPurchase = false;
+  late final AddReviewDialog _openingWidget;
+  late final app_auth.AuthProvider _openingAuth;
+  late final AuthService _openingService;
+  late final String? _owner;
+  late final int _version;
+  late final String _product;
+  late final ReviewModel? _edit;
+  ModalRoute<dynamic>? _route;
+  bool _expired = false;
+  bool _picking = false;
+  bool get _owns =>
+      mounted &&
+      !_expired &&
+      _owner != null &&
+      _owner.isNotEmpty &&
+      _product.trim() == _product &&
+      _product.isNotEmpty &&
+      !_product.contains('/') &&
+      identical(context.read<app_auth.AuthProvider>(), _openingAuth) &&
+      identical(context.read<AuthService>(), _openingService) &&
+      _openingAuth.isSessionCurrent(_owner, _version) &&
+      _openingService.currentUserId == _owner &&
+      widget.productId == _product &&
+      identical(widget.reviewToEdit, _edit) &&
+      widget.purchaseCheck == _openingWidget.purchaseCheck &&
+      widget.pickImages == _openingWidget.pickImages &&
+      widget.uploadImage == _openingWidget.uploadImage &&
+      widget.databaseFactory == _openingWidget.databaseFactory &&
+      (_edit == null ||
+          (_edit.userId == _owner &&
+              _edit.productId == _product &&
+              _edit.reviewId.isNotEmpty &&
+              !_edit.reviewId.contains('/')));
+  bool get _canAct => _owns && _route?.isCurrent == true;
+  void _expire() {
+    _expired = true;
+    _pickedImages.clear();
+  }
+
+  void _authChanged() {
+    if (mounted && !_owns) setState(_expire);
+  }
+
+  void _close() {
+    if (_canAct) Navigator.pop(context);
+  }
+
+  void _closeExpired() {
+    if (mounted && _route?.isCurrent == true) Navigator.pop(context);
+  }
 
   @override
   void initState() {
     super.initState();
+    _openingWidget = widget;
+    _openingAuth = context.read<app_auth.AuthProvider>();
+    _openingService = context.read<AuthService>();
+    _owner = _openingAuth.currentUser?.uid;
+    _version = _openingAuth.sessionVersion;
+    _product = widget.productId;
+    _edit = widget.reviewToEdit;
+    _openingAuth.addListener(_authChanged);
     _titleController = TextEditingController(
       text: widget.reviewToEdit?.title ?? '',
     );
@@ -55,7 +122,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
       text: widget.reviewToEdit?.comment ?? '',
     );
     _rating = widget.reviewToEdit?.rating ?? 5;
-    
+
     // ❌ DO NOT check purchase here, context is not ready
   }
 
@@ -64,6 +131,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // This runs after initState and has a valid context
+    _route ??= ModalRoute.of(context);
     if (!_didCheckPurchase) {
       _didCheckPurchase = true;
       _checkPurchaseStatus();
@@ -71,211 +139,191 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
   }
 
   @override
+  void didUpdateWidget(covariant AddReviewDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_owns) _expire();
+  }
+
+  @override
   void dispose() {
+    _openingAuth.removeListener(_authChanged);
+    _expire();
     _titleController.dispose();
     _commentController.dispose();
     super.dispose();
   }
 
   Future<void> _checkPurchaseStatus() async {
-    if (!mounted) return;
-    
-    // ✅ This call is now safe
-    final authService = context.read<AuthService>();
-    final currentUserId = authService.getCurrentUserId();
-
-    if (currentUserId == null) {
-      if (mounted) {
-        setState(() {
-          _hasPurchased = false;
-          _isCheckingPurchase = false;
-        });
-      }
-      return;
-    }
-
-    final user = await authService.getUserData(currentUserId);
-    if (user?.role == 'admin') {
-      if (mounted) {
-        setState(() {
-          _hasPurchased = true;
-          _isCheckingPurchase = false;
-        });
-      }
-      return;
-    }
-    
-    if (widget.reviewToEdit != null) {
-       if (mounted) {
-         setState(() {
-          _hasPurchased = widget.reviewToEdit!.isVerifiedPurchase;
-          _isCheckingPurchase = false;
-        });
-       }
-      return;
-    }
-
+    if (!_owns) return;
     try {
-      // ✅ This query points to the root 'orders' collection
-      final ordersSnapshot = await FirebaseFirestore.instance
-          .collection('orders') 
-          .where('userId', isEqualTo: currentUserId)
-          .where('orderStatus', isEqualTo: 'delivered')
-          .get();
-
-      bool found = false;
-      for (var doc in ordersSnapshot.docs) {
-        final orderData = doc.data();
-        final List<dynamic> items = orderData['items'] ?? [];
-        if (items.any((item) => item['productId'] == widget.productId)) {
-          found = true;
-          break;
-        }
+      bool found;
+      if (_edit != null) {
+        found = _edit.isVerifiedPurchase;
+      } else if (widget.purchaseCheck != null) {
+        found = await widget.purchaseCheck!(_owner!, _product);
+      } else {
+        final orders = await FirebaseFirestore.instance
+            .collection('orders')
+            .where('userId', isEqualTo: _owner)
+            .where('orderStatus', isEqualTo: 'delivered')
+            .get();
+        if (!_owns) return;
+        found = orders.docs.any((doc) {
+          final data = doc.data();
+          final items = data['items'];
+          return data['userId'] == _owner &&
+              data['orderStatus'] == 'delivered' &&
+              items is List &&
+              items.any((item) => item is Map && item['productId'] == _product);
+        });
       }
-      
-      if (mounted) {
+      if (_owns) {
         setState(() {
           _hasPurchased = found;
           _isCheckingPurchase = false;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isCheckingPurchase = false);
+    } catch (error) {
+      debugPrint('Review purchase read failed: ${error.runtimeType}');
+      if (_owns) {
+        setState(() {
+          _hasPurchased = false;
+          _isCheckingPurchase = false;
+        });
       }
-      debugPrint('Error checking purchase status: $e');
     }
   }
 
   Future<void> _pickImages() async {
+    if (!_canAct || _isLoading || _picking) return;
+    _picking = true;
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 80,
-        maxWidth: 1024,
-      );
-      if (images.isNotEmpty) {
-        setState(() {
-          _pickedImages.addAll(images);
-        });
+      final images = await (widget.pickImages?.call() ??
+          _picker.pickMultiImage(imageQuality: 80, maxWidth: 1024));
+      if (_canAct && !_isLoading && images.isNotEmpty) {
+        setState(() => _pickedImages.addAll(images));
       }
-    } catch (e) {
-      debugPrint('Error picking images: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to pick images')),
-        );
+    } catch (error) {
+      debugPrint('Review photo selection failed: ${error.runtimeType}');
+      if (mounted && _canAct) {
+        SnackbarHelper.showError(
+            context, 'Could not select photos. Please try again.');
       }
+    } finally {
+      _picking = false;
     }
   }
 
-  Future<List<String>> _uploadReviewImages() async {
-    setState(() => _isLoading = true);
-    List<String> imageUrls = [];
-    final userId = context.read<AuthService>().getCurrentUserId();
-    if (userId == null) return [];
-
-    try {
-      for (int i = 0; i < _pickedImages.length; i++) {
-        final xFile = _pickedImages[i];
-        final fileName = 'review_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
-        final ref = FirebaseStorage.instance.ref(
-          'reviews/${widget.productId}/$userId/$fileName'
-        );
-        
-        // Use bytes for web compatibility
-        final Uint8List bytes = await xFile.readAsBytes();
+  Future<List<String>> _uploadReviewImages(List<XFile> images) async {
+    final urls = <String>[];
+    for (var i = 0; i < images.length; i++) {
+      if (!_canAct) throw AuthException('The review session changed.');
+      final bytes = await images[i].readAsBytes();
+      if (!_canAct) throw AuthException('The review session changed.');
+      final name = 'review_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+      final path = 'reviews/$_product/$_owner/$name';
+      final String url;
+      if (widget.uploadImage != null) {
+        url = await widget.uploadImage!(path, bytes);
+      } else {
+        final ref = FirebaseStorage.instance.ref(path);
         await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-        final downloadUrl = await ref.getDownloadURL();
-        imageUrls.add(downloadUrl);
+        if (!_canAct) throw AuthException('The review session changed.');
+        url = await ref.getDownloadURL();
       }
-    } catch (e) {
-      debugPrint('Error uploading images: $e');
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to upload images. Please try again.')),
-        );
+      if (!_canAct) throw AuthException('The review session changed.');
+      if (url.isEmpty) {
+        throw DatabaseException('The photo upload was not confirmed.');
       }
-      setState(() => _isLoading = false);
-      return []; // Return empty list on failure
+      urls.add(url);
     }
-    
-    return imageUrls;
+    return urls;
   }
 
   Future<void> _submitReview() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_canAct ||
+        _isLoading ||
+        _picking ||
+        !_formKey.currentState!.validate()) {
       return;
     }
-
+    final title = _titleController.text.trim();
+    final comment = _commentController.text.trim();
+    final rating = _rating;
+    final images = List<XFile>.unmodifiable(_pickedImages);
+    final oldImages = List<String>.unmodifiable(_edit?.imageUrls ?? const []);
     setState(() => _isLoading = true);
-
-    final authService = context.read<AuthService>();
-    final databaseService = DatabaseService();
-    final currentUserId = authService.getCurrentUserId();
-    final currentUser = await authService.getUserData(currentUserId!);
-
-    if (currentUser == null) {
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not load user data')),
-        );
-      }
-      setState(() => _isLoading = false);
-      return;
-    }
-
+    bool uploading = false;
     try {
-      // 1. Upload Images
-      List<String> imageUrls = await _uploadReviewImages();
-      
-      // If editing, merge old images with new ones
-      if (widget.reviewToEdit != null) {
-        imageUrls.addAll(widget.reviewToEdit!.imageUrls ?? []);
+      final user = await _openingService.getUserData(_owner!);
+      if (!_canAct) return;
+      if (user.uid != _owner) {
+        throw AuthException('The review profile is unavailable.');
       }
-
-      // 2. Create Review Model
+      uploading = images.isNotEmpty;
+      final urls = await _uploadReviewImages(images);
+      uploading = false;
+      if (!_canAct) return;
       final review = ReviewModel(
-        reviewId: widget.reviewToEdit?.reviewId ?? '',
-        productId: widget.productId,
-        userId: currentUserId,
-        userName: currentUser.name,
-        userAvatar: currentUser.photoUrl ?? '',
-        rating: _rating,
-        title: _titleController.text.trim(),
-        comment: _commentController.text.trim(),
-        createdAt: widget.reviewToEdit?.createdAt ?? DateTime.now(),
+        reviewId: _edit?.reviewId ?? '',
+        productId: _product,
+        userId: _owner,
+        userName: user.name,
+        userAvatar: user.photoUrl ?? '',
+        rating: rating,
+        title: title,
+        comment: comment,
+        createdAt: _edit?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
-        isVerifiedPurchase: _hasPurchased, // ✅ Set automatically
-        imageUrls: imageUrls, // ✅ Add image URLs
+        imageUrls: [...urls, ...oldImages],
+        // Advisory only: the shared content writer excludes this trust field.
+        isVerifiedPurchase: _hasPurchased,
       );
-
-      // 3. Submit to Database
-      if (widget.reviewToEdit != null) {
-        await databaseService.updateReview(review);
+      final service = widget.databaseFactory?.call(() => _canAct) ??
+          DatabaseService(isReviewSessionCurrent: () => _canAct);
+      if (!_canAct) return;
+      if (_edit != null) {
+        await service.updateReview(review);
       } else {
-        await databaseService.addReview(review);
+        final savedId = await service.addReview(review);
+        if (savedId != _owner) {
+          throw DatabaseException('The review save was not confirmed.');
+        }
       }
-
-      if (mounted) {
-        Navigator.pop(context, true); // Pop dialog and signal success
+      if (mounted && _canAct) Navigator.pop(context, true);
+    } catch (error) {
+      debugPrint('Review submit failed: ${error.runtimeType}');
+      if (mounted && _canAct) {
+        SnackbarHelper.showError(
+            context,
+            uploading
+                ? 'Could not upload review photos. Try again or remove the photos.'
+                : 'Could not save your review. Please try again.');
       }
-      
-    } catch (e) {
-      debugPrint('❌ Error submitting review: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
+    } finally {
+      if (_owns) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    context.watch<AuthService>();
+    if (!_owns) {
+      _expire();
+      return Dialog(
+          child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                      'Your session changed. Reopen the review to continue.'),
+                  TextButton(
+                      onPressed: _closeExpired, child: const Text('Close')),
+                ],
+              )));
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
@@ -307,7 +355,9 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.reviewToEdit != null ? 'Edit Your Review' : 'Write a Review',
+                        widget.reviewToEdit != null
+                            ? 'Edit Your Review'
+                            : 'Write a Review',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -342,7 +392,11 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(5, (index) {
                           return GestureDetector(
-                            onTap: () => setState(() => _rating = index + 1),
+                            onTap: () {
+                              if (_canAct && !_isLoading) {
+                                setState(() => _rating = index + 1);
+                              }
+                            },
                             child: Icon(
                               index < _rating
                                   ? Icons.star_rounded
@@ -400,8 +454,11 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                                 ),
                               )
                             : Text(
-                                widget.reviewToEdit != null ? 'Update Review' : 'Submit Review',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                widget.reviewToEdit != null
+                                    ? 'Update Review'
+                                    : 'Submit Review',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700),
                               ),
                       ),
                     ],
@@ -416,13 +473,14 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => Navigator.pop(context),
+                  onTap: _close,
                   borderRadius: BorderRadius.circular(30),
                   child: Container(
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2C2C2C) : Colors.grey[200],
+                      color:
+                          isDark ? const Color(0xFF2C2C2C) : Colors.grey[200],
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -443,7 +501,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                     filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1E1E1E) : Colors.white).withValues(alpha: 0.9),
+                        color: (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+                            .withValues(alpha: 0.9),
                       ),
                       child: Center(
                         child: Column(
@@ -453,7 +512,9 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                             const SizedBox(height: 16),
                             Text(
                               'Loading...',
-                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black87),
                             ),
                           ],
                         ),
@@ -491,13 +552,17 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          enabled: !_isLoading,
           validator: validator,
           maxLines: maxLines,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
+          style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[500]),
-            prefixIcon: Icon(icon, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
+            hintStyle:
+                TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[500]),
+            prefixIcon: Icon(icon,
+                color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
             filled: true,
             fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey[100],
             border: OutlineInputBorder(
@@ -506,7 +571,9 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: isDark ? AppColors.primaryLight : AppColors.primary, width: 2),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -516,7 +583,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.red[600]!, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           ),
         ),
       ],
@@ -550,11 +618,15 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
               ),
               child: Column(
                 children: [
-                  Icon(Icons.add_a_photo_outlined, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 30),
+                  Icon(Icons.add_a_photo_outlined,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      size: 30),
                   const SizedBox(height: 8),
                   Text(
                     'Tap to add photos',
-                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -576,6 +648,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
         scrollDirection: Axis.horizontal,
         itemCount: _pickedImages.length,
         itemBuilder: (context, index) {
+          final image = _pickedImages[index];
           return Padding(
             padding: const EdgeInsets.only(right: 10.0),
             child: Stack(
@@ -585,7 +658,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                   height: 90,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                    border: Border.all(
+                        color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
@@ -594,8 +668,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                         ? Image.network(
                             _pickedImages[index].path,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => 
-                              const Icon(Icons.image, color: Colors.grey),
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.image, color: Colors.grey),
                           )
                         // On mobile, use Image.network with file path
                         : FutureBuilder<Uint8List>(
@@ -611,7 +685,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                                 child: SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 ),
                               );
                             },
@@ -623,16 +698,17 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                   right: 4,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _pickedImages.removeAt(index);
-                      });
+                      if (_canAct && !_isLoading) {
+                        setState(() => _pickedImages.remove(image));
+                      }
                     },
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                      child: const Icon(Icons.close_rounded,
+                          color: Colors.white, size: 16),
                     ),
                   ),
                 )

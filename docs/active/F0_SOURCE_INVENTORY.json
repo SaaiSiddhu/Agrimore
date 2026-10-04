@@ -20867,12 +20867,12 @@
         {
           "chain": [
             {
-              "line": 121,
+              "line": 166,
               "literal": "orders",
               "method": "collection"
             },
             {
-              "line": 122,
+              "line": 167,
               "literal": "userId",
               "method": "where",
               "operators": [
@@ -20880,7 +20880,7 @@
               ]
             },
             {
-              "line": 123,
+              "line": 168,
               "literal": "orderStatus",
               "method": "where",
               "operators": [
@@ -20888,7 +20888,7 @@
               ]
             },
             {
-              "line": 124,
+              "line": 169,
               "method": "get"
             }
           ],
@@ -20908,7 +20908,7 @@
             52,
             53
           ],
-          "line": 121,
+          "line": 166,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             18
@@ -20919,7 +20919,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 122,
+          "line": 167,
           "literal": "userId",
           "method": "where",
           "operators": [
@@ -20927,7 +20927,7 @@
           ]
         },
         {
-          "line": 123,
+          "line": 168,
           "literal": "orderStatus",
           "method": "where",
           "operators": [
@@ -20936,7 +20936,7 @@
         }
       ],
       "path": "apps/marketplace/lib/screens/user/shop/widgets/add_review_dialog.dart",
-      "sha256": "bd173bc7a1bec33637dbf87bd9fe38b06f018b9d9929964c3bc259f1b694f6f6"
+      "sha256": "2a4a857086ef3949a4bc216e2eba6fff2819d9a4d1a305d3e49371a548663abe"
     },
     {
       "callable_sites": [],
