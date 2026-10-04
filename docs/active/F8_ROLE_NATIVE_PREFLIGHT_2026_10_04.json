@@ -1,0 +1,239 @@
+{
+  "classification": "VERIFIED_REPOSITORY_FACT for inspected source; no compile/device/provisioning/APNs proof",
+  "capturedAtUTC": "2026-10-04T17:15:22.886723+00:00",
+  "sourceCommit": "5fdc42536ff87942bb3aafc9a13d32a2899ffb88",
+  "freeBytes": 4915200000,
+  "executionMode": "SINGLE AGENT",
+  "deviceRun": false,
+  "nativeBuildsStartedThisScope": 0,
+  "roles": [
+    {
+      "role": "marketplace",
+      "sourceHashes": {
+        "apps/marketplace/ios/Runner/Info.plist": "6471ee1e6261011410b271b5503e07261238b2cef1cdd22f8ae570cc7f0746c8",
+        "apps/marketplace/ios/Runner.xcodeproj/project.pbxproj": "f790498432e4cfcadab531eaa58d235db33fe6901e7a5bb6e2cc2ada8330e4fe",
+        "apps/marketplace/ios/Podfile": "44a7418c825f258682a8eb446677679676584bcb1bef67310bb129285028c285",
+        "apps/marketplace/lib/main.dart": "cfe9cd63058ae24710403f810b52c04988e7aa7e69804c784898a477c0ade8a8",
+        "apps/marketplace/ios/Runner/AppDelegate.swift": "9b85890451f912a6e95948b0c0863c2bb79030b3191916631c8db9ff029601d8",
+        "apps/marketplace/lib/firebase_options.dart": "9192a2265181a7baf043bfab626e351a97163ab50127ebdacbb6ced02d524729"
+      },
+      "sourceBundleIds": [
+        "com.customer.agrimore",
+        "com.customer.agrimore.RunnerTests"
+      ],
+      "declaredMinimums": [
+        "15.0"
+      ],
+      "podPlatform": [
+        "15.0"
+      ],
+      "nativeFirebasePlistExists": true,
+      "nativeFirebaseBundleMatchesRunner": true,
+      "nativePlistReferencedInProject": true,
+      "dartIOSOptionsPresent": true,
+      "dartIOSBundleMatchesRunner": true,
+      "firebaseInitLineNumbers": [
+        88
+      ],
+      "sourceEntitlementFiles": [],
+      "sourceSigningEntitlementsSettingPresent": false,
+      "sourcePushCapabilityMentioned": false,
+      "sourceBackgroundModes": [],
+      "sourceAllowsArbitraryLoads": true,
+      "sourcePrivacyUsageKeys": [
+        "NSCameraUsageDescription",
+        "NSContactsUsageDescription",
+        "NSLocationAlwaysUsageDescription",
+        "NSLocationWhenInUseUsageDescription",
+        "NSMicrophoneUsageDescription",
+        "NSPhotoLibraryAddUsageDescription",
+        "NSPhotoLibraryUsageDescription"
+      ],
+      "nativeMapsKeyCallPresent": true
+    },
+    {
+      "role": "admin",
+      "sourceHashes": {
+        "apps/admin/ios/Runner/Info.plist": "c3cef40e1e9fc7b2008ed00eef910d27f6275dfd124adbdb9e694e8c84dac45c",
+        "apps/admin/ios/Runner.xcodeproj/project.pbxproj": "1087375888f5d519bad6d42ba7a816d993937fa61125c4e7c1bfbf7ab0011101",
+        "apps/admin/ios/Podfile": "db2da28b10a5ac3ed5d42dbf7208ece60fc886bd1f86f14335dde4037ba32350",
+        "apps/admin/lib/main.dart": "4bc019fc34571fae284b0f31fa793b290048d89b186880cef944d5451961b26a",
+        "apps/admin/ios/Runner/AppDelegate.swift": "9418c676adebac7e3f04daa80a7db62066e77f9766c804fd3e5e264124a31f80",
+        "apps/admin/lib/firebase_options.dart": "39911bb374af6edae5eff6223e70b8e0f06a707ce6c4e83c43a6a4688efda045"
+      },
+      "sourceBundleIds": [
+        "com.agroconnect.agroconnect",
+        "com.agroconnect.agroconnect.RunnerTests"
+      ],
+      "declaredMinimums": [
+        "13.0"
+      ],
+      "podPlatform": [],
+      "nativeFirebasePlistExists": false,
+      "nativeFirebaseBundleMatchesRunner": null,
+      "nativePlistReferencedInProject": true,
+      "dartIOSOptionsPresent": true,
+      "dartIOSBundleMatchesRunner": false,
+      "firebaseInitLineNumbers": [
+        79
+      ],
+      "sourceEntitlementFiles": [],
+      "sourceSigningEntitlementsSettingPresent": false,
+      "sourcePushCapabilityMentioned": false,
+      "sourceBackgroundModes": [],
+      "sourceAllowsArbitraryLoads": true,
+      "sourcePrivacyUsageKeys": [
+        "NSCameraUsageDescription",
+        "NSContactsUsageDescription",
+        "NSLocationAlwaysUsageDescription",
+        "NSLocationWhenInUseUsageDescription",
+        "NSMicrophoneUsageDescription",
+        "NSPhotoLibraryAddUsageDescription",
+        "NSPhotoLibraryUsageDescription"
+      ],
+      "nativeMapsKeyCallPresent": false
+    },
+    {
+      "role": "seller",
+      "sourceHashes": {
+        "apps/seller/ios/Runner/Info.plist": "14d25ab01f87b99da3ff1e38824aa35eda35793eff9e7b31db4c0f9c15448900",
+        "apps/seller/ios/Runner.xcodeproj/project.pbxproj": "d921e59b0d25fe7cff2195371983b98bfe983203d05b9b0f4b0062ff5b8470ee",
+        "apps/seller/ios/Podfile": "db2da28b10a5ac3ed5d42dbf7208ece60fc886bd1f86f14335dde4037ba32350",
+        "apps/seller/lib/main.dart": "6a3f6a5db602c14e2461bc2b602f6d8da6aab05caa68929ae79fc7d3c1203d30",
+        "apps/seller/ios/Runner/AppDelegate.swift": "451c6d9ba0a2b3ff43092ea349c60fa79a91f1158b915eb29dbdd357cb95d7b8"
+      },
+      "sourceBundleIds": [
+        "com.agrimore.seller",
+        "com.agrimore.seller.RunnerTests"
+      ],
+      "declaredMinimums": [
+        "13.0"
+      ],
+      "podPlatform": [],
+      "nativeFirebasePlistExists": false,
+      "nativeFirebaseBundleMatchesRunner": null,
+      "nativePlistReferencedInProject": false,
+      "dartIOSOptionsPresent": false,
+      "dartIOSBundleMatchesRunner": null,
+      "firebaseInitLineNumbers": [
+        22,
+        25
+      ],
+      "sourceEntitlementFiles": [],
+      "sourceSigningEntitlementsSettingPresent": false,
+      "sourcePushCapabilityMentioned": false,
+      "sourceBackgroundModes": [],
+      "sourceAllowsArbitraryLoads": false,
+      "sourcePrivacyUsageKeys": [
+        "NSCameraUsageDescription",
+        "NSLocationWhenInUseUsageDescription",
+        "NSPhotoLibraryUsageDescription"
+      ],
+      "nativeMapsKeyCallPresent": false
+    },
+    {
+      "role": "delivery",
+      "sourceHashes": {
+        "apps/delivery/ios/Runner/Info.plist": "f4131ae247238b0c1abaf43056df7dcdeb2868f423bc2e0ddefa021c2da51451",
+        "apps/delivery/ios/Runner.xcodeproj/project.pbxproj": "f7070e18d5533f0ff1ee2ac16acd8e223644e770e0812af9346e49f9ad273ab6",
+        "apps/delivery/ios/Podfile": "a38a01db7e66a700bb337b638bc8aac2a6a78ab5f66ff768844da794b29aa484",
+        "apps/delivery/lib/main.dart": "4614d53eeaa601b4d6d0be8a338f9e88eb02f7e3b265db740b47ada59ec814ff",
+        "apps/delivery/ios/Runner/AppDelegate.swift": "451c6d9ba0a2b3ff43092ea349c60fa79a91f1158b915eb29dbdd357cb95d7b8"
+      },
+      "sourceBundleIds": [
+        "com.agrimore.delivery",
+        "com.agrimore.delivery.RunnerTests"
+      ],
+      "declaredMinimums": [
+        "14.0"
+      ],
+      "podPlatform": [
+        "14.0"
+      ],
+      "nativeFirebasePlistExists": false,
+      "nativeFirebaseBundleMatchesRunner": null,
+      "nativePlistReferencedInProject": false,
+      "dartIOSOptionsPresent": false,
+      "dartIOSBundleMatchesRunner": null,
+      "firebaseInitLineNumbers": [
+        62,
+        66
+      ],
+      "sourceEntitlementFiles": [],
+      "sourceSigningEntitlementsSettingPresent": false,
+      "sourcePushCapabilityMentioned": false,
+      "sourceBackgroundModes": [],
+      "sourceAllowsArbitraryLoads": false,
+      "sourcePrivacyUsageKeys": [
+        "NSCameraUsageDescription",
+        "NSLocationAlwaysAndWhenInUseUsageDescription",
+        "NSLocationWhenInUseUsageDescription",
+        "NSPhotoLibraryUsageDescription"
+      ],
+      "nativeMapsKeyCallPresent": false
+    },
+    {
+      "role": "employee",
+      "sourceHashes": {
+        "apps/employee/ios/Runner/Info.plist": "a18145c12aaf7ea7bd04d6710d5521c24f68aca8850609d3627cffa4f7ad0f25",
+        "apps/employee/ios/Runner.xcodeproj/project.pbxproj": "5aa765b458eab0dc3d1e4dd6ac412f76ff3a31bc3b63edb21d91d5988cef3460",
+        "apps/employee/ios/Podfile": "db2da28b10a5ac3ed5d42dbf7208ece60fc886bd1f86f14335dde4037ba32350",
+        "apps/employee/lib/main.dart": "2ebb042b2b39c73ff2f1201c5cfcb2263e380fd90e525ffd96d5e6ff51c64adf",
+        "apps/employee/ios/Runner/AppDelegate.swift": "451c6d9ba0a2b3ff43092ea349c60fa79a91f1158b915eb29dbdd357cb95d7b8"
+      },
+      "sourceBundleIds": [
+        "com.agrimore.salesassociate",
+        "com.agrimore.salesassociate.RunnerTests"
+      ],
+      "declaredMinimums": [
+        "13.0"
+      ],
+      "podPlatform": [],
+      "nativeFirebasePlistExists": false,
+      "nativeFirebaseBundleMatchesRunner": null,
+      "nativePlistReferencedInProject": false,
+      "dartIOSOptionsPresent": false,
+      "dartIOSBundleMatchesRunner": null,
+      "firebaseInitLineNumbers": [
+        48,
+        51
+      ],
+      "sourceEntitlementFiles": [],
+      "sourceSigningEntitlementsSettingPresent": false,
+      "sourcePushCapabilityMentioned": false,
+      "sourceBackgroundModes": [],
+      "sourceAllowsArbitraryLoads": false,
+      "sourcePrivacyUsageKeys": [],
+      "nativeMapsKeyCallPresent": false
+    }
+  ],
+  "registrationRefresh": {
+    "capturedAtUTC": "2026-10-04T17:14:56.085177+00:00",
+    "exitCode": 0,
+    "scope": "READ_ONLY app registration names/count; no SDK secrets/documents/provider interactions",
+    "status": "SUCCESS",
+    "registeredBundleIds": [
+      "com.customer.agrimore"
+    ],
+    "count": 1
+  },
+  "diskObservation": {
+    "initialFree": "941MiB",
+    "laterFreeMiB": 4688,
+    "filesDeletedByAgent": false,
+    "note": "Capacity recovered independently; initial compile deferral is superseded for disk only, native/owner prerequisites remain."
+  },
+  "deliveryLifecycleSources": {
+    "apps/delivery/lib/location/rider_platform.dart": "310271bbfeffae1e39bba4bf4540cb31045785d45e5398e97679c039e127d7a5",
+    "apps/delivery/lib/providers/location_provider.dart": "bcff964df5b8ae7c4cde1f5adc0e5eb08a0501c20af95d66eb9c45f6241f82ff",
+    "apps/delivery/lib/screens/home/home_map.dart": "c55a2905c7c955d6f8e6ff2326fde7fe7d6f3c7725a5e50f3022631533062a38",
+    "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart": "8eb9247f5f015d79c0d7f3b8e39241fa3906576492ff02367ddb5d2bc0c8b4e2"
+  },
+  "limits": [
+    "Static source/native file presence and sanitized read-only cloud registration metadata only",
+    "No release builds/device tests/signing/provisioning/provider/API transport invoked",
+    "No native configuration/cloud registration created or amended",
+    "Declared source capabilities do not establish installed app entitlements or APNs credentials",
+    "Existing binaries and earlier compiler evidence retain their original dates and working-tree provenance"
+  ]
+}
