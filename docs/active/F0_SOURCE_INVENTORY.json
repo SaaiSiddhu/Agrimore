@@ -43296,12 +43296,12 @@
         {
           "chain": [
             {
-              "line": 217,
+              "line": 225,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 217,
+              "line": 225,
               "method": "doc"
             }
           ],
@@ -43312,7 +43312,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 217,
+          "line": 225,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             31,
@@ -43325,12 +43325,12 @@
         {
           "chain": [
             {
-              "line": 218,
+              "line": 226,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 218,
+              "line": 226,
               "method": "doc"
             }
           ],
@@ -43339,7 +43339,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 218,
+          "line": 226,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43350,12 +43350,12 @@
         {
           "chain": [
             {
-              "line": 297,
+              "line": 300,
               "literal": "seller_withdrawals",
               "method": "collection"
             },
             {
-              "line": 297,
+              "line": 300,
               "method": "doc"
             }
           ],
@@ -43368,7 +43368,7 @@
             57,
             58
           ],
-          "line": 297,
+          "line": 300,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             34
@@ -43379,12 +43379,12 @@
         {
           "chain": [
             {
-              "line": 309,
+              "line": 312,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 309,
+              "line": 312,
               "method": "doc"
             }
           ],
@@ -43396,7 +43396,7 @@
             35,
             36
           ],
-          "line": 309,
+          "line": 312,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             109
@@ -43407,12 +43407,12 @@
         {
           "chain": [
             {
-              "line": 337,
+              "line": 340,
               "literal": "seller_withdrawals",
               "method": "collection"
             },
             {
-              "line": 337,
+              "line": 340,
               "method": "doc"
             }
           ],
@@ -43425,7 +43425,7 @@
             57,
             58
           ],
-          "line": 337,
+          "line": 340,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             34
@@ -43436,12 +43436,12 @@
         {
           "chain": [
             {
-              "line": 349,
+              "line": 352,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 349,
+              "line": 352,
               "method": "doc"
             }
           ],
@@ -43453,7 +43453,7 @@
             35,
             36
           ],
-          "line": 349,
+          "line": 352,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             109
@@ -43464,12 +43464,12 @@
         {
           "chain": [
             {
-              "line": 373,
+              "line": 376,
               "literal": "seller_payout_change_requests",
               "method": "collection"
             },
             {
-              "line": 373,
+              "line": 376,
               "method": "doc"
             }
           ],
@@ -43481,7 +43481,7 @@
             61,
             62
           ],
-          "line": 373,
+          "line": 376,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             35
@@ -43492,12 +43492,12 @@
         {
           "chain": [
             {
-              "line": 377,
+              "line": 380,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 377,
+              "line": 380,
               "method": "doc"
             }
           ],
@@ -43508,7 +43508,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 377,
+          "line": 380,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             31,
@@ -43521,12 +43521,12 @@
         {
           "chain": [
             {
-              "line": 377,
+              "line": 380,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 377,
+              "line": 380,
               "method": "doc"
             }
           ],
@@ -43535,7 +43535,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 377,
+          "line": 380,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43546,12 +43546,12 @@
         {
           "chain": [
             {
-              "line": 400,
+              "line": 403,
               "literal": "seller_payout_change_requests",
               "method": "collection"
             },
             {
-              "line": 400,
+              "line": 403,
               "method": "doc"
             }
           ],
@@ -43563,7 +43563,7 @@
             61,
             62
           ],
-          "line": 400,
+          "line": 403,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             35
@@ -43574,12 +43574,12 @@
         {
           "chain": [
             {
-              "line": 416,
+              "line": 419,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 416,
+              "line": 419,
               "method": "doc"
             }
           ],
@@ -43588,7 +43588,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 416,
+          "line": 419,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43632,7 +43632,7 @@
         }
       ],
       "path": "functions/src/seller/sellerWallet.ts",
-      "sha256": "e21dbbe85876da32bb060dcac0cdcc319f5a6039ef2c81a1853327035513acc7"
+      "sha256": "ff257dd8e308f9599879779b72d23b6e0ec307def733d788acda41c0bfb0ceb5"
     },
     {
       "callable_sites": [],

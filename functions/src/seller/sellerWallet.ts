@@ -213,15 +213,18 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
   const accRef = walletRef(db, sellerId);
   const pendingQ = db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending");
   return db.runTransaction(async (tx): Promise<WithdrawVerdict> => {
-    const [existing, seller, acc, details, pending] = await Promise.all([
-      tx.get(wRef), tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
-      tx.get(db.collection("seller_payout_details").doc(sellerId)), tx.get(pendingQ),
-    ]);
+    // A historical request is its own replay anchor. Later seller, wallet,
+    // destination or pending-payout changes must not add reads to that retry.
+    const existing = await tx.get(wRef);
     if (existing.exists) {
       const e = existing.data()!;
       if (e.sellerId !== sellerId) return { kind: "refused", reason: "bad_request_id" };
       return { kind: "already", id, amountPaise: Number(e.amountPaise ?? 0), count: Number(e.payoutCount ?? 0) };
     }
+    const [seller, acc, details, pending] = await Promise.all([
+      tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
+      tx.get(db.collection("seller_payout_details").doc(sellerId)), tx.get(pendingQ),
+    ]);
     if (!seller.exists) return { kind: "refused", reason: "not_a_seller" };
     const a = acc.data() ?? {};
     if (typeof a.payoutChangePending === "string" && a.payoutChangePending) return { kind: "refused", reason: "payout_change_pending" };
