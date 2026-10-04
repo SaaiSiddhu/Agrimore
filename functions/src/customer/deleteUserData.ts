@@ -118,6 +118,7 @@ import * as admin from "firebase-admin";
 // this phase's scope and not something this phase's testing covered.
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { deleteRiderData, deleteStorageFolder, riderDeletionRefusal } from "../delivery/riderAccountDeletion";
+import { payoutBalancePaise } from "../employee/employeePayoutMoney";
 
 const db = admin.firestore();
 const auth = admin.auth();
@@ -282,8 +283,12 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   // below for why re-running these is harmless).
   // ============================================================
   const walletSnap = await db.collection("wallets").doc(uid).get();
-  const balance = (walletSnap.data()?.balance as number | undefined) ?? 0;
-  if (balance > 0) {
+  const balancePaise = walletSnap.exists ? payoutBalancePaise(walletSnap.data()?.balance) : 0;
+  if (balancePaise === null || balancePaise < 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Your wallet balance needs review before deleting your account.");
+  }
+  const balance = balancePaise / 100;
+  if (balancePaise > 0) {
     throw new functions.https.HttpsError(
       "failed-precondition",
       `You still have a wallet balance of Rs ${balance.toFixed(2)}. Withdraw or spend it before deleting your account.`
@@ -306,9 +311,14 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     .collection("employee_payouts")
     .where("employeeId", "==", uid)
     .get();
-  const pendingPayoutCount = pendingPayoutsSnap.docs.filter((d) =>
-    PENDING_PAYOUT_STATUSES.has(String(d.data().status || "").toLowerCase())
-  ).length;
+  const pendingPayoutCount = pendingPayoutsSnap.docs.filter((d) => {
+    const value = d.data().status;
+    const status = typeof value === "string" ? value.toLowerCase() : "";
+    if (!PENDING_PAYOUT_STATUSES.has(status) && !["paid", "rejected"].includes(status)) {
+      throw new functions.https.HttpsError("failed-precondition", "Your payout record needs review before deleting your account.");
+    }
+    return PENDING_PAYOUT_STATUSES.has(status);
+  }).length;
   if (pendingPayoutCount > 0) {
     throw new functions.https.HttpsError(
       "failed-precondition",
@@ -331,14 +341,31 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
         "Deliver or cancel them before deleting your account."
     );
   }
-  const owed = sellerPayoutsSnap.docs
-    // SELLER-WALLET-1: money in a withdrawal not yet paid is still owed.
-    .filter((d) => ["pending", "requested"].includes(String(d.data().status || "").toLowerCase()))
-    .reduce((sum, d) => sum + Number(d.data().netAmount ?? d.data().amount ?? 0), 0);
-  if (owed > 0) {
+  const unsettled = sellerPayoutsSnap.docs.filter((row) => {
+    const value = row.data().status;
+    const status = typeof value === "string" ? value.toLowerCase() : "";
+    if (!["pending", "requested", "paid"].includes(status)) {
+      throw new functions.https.HttpsError("failed-precondition", "Your seller settlement record needs review before deleting your account.");
+    }
+    return status !== "paid";
+  });
+  if (unsettled.length > 0) {
+    // Unsettled state itself blocks deletion: zero, malformed or negative rows
+    // cannot cancel one another or stand in for confirmed settlement.
+    let owedPaise = 0;
+    for (const row of unsettled) {
+      const d = row.data();
+      const amount = payoutBalancePaise(Object.prototype.hasOwnProperty.call(d, "netAmount") ? d.netAmount : d.amount);
+      if (amount === null || amount < 0 || !Number.isSafeInteger(owedPaise + amount)) {
+        throw new functions.https.HttpsError("failed-precondition", "Your seller settlement record needs review before deleting your account.");
+      }
+      owedPaise += amount;
+    }
     throw new functions.https.HttpsError(
       "failed-precondition",
-      `AgriMore still owes you Rs ${owed.toFixed(2)} in settlements. Wait until it is paid before deleting your account.`
+      owedPaise > 0
+        ? `AgriMore still owes you Rs ${(owedPaise / 100).toFixed(2)} in settlements. Wait until it is paid before deleting your account.`
+        : "You have a seller settlement waiting for review. Wait until it is resolved before deleting your account."
     );
   }
 
