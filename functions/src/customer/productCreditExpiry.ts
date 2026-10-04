@@ -33,11 +33,45 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
 import { auditEntry, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields, LEDGER_ENTRY_TYPES } from "./productCreditLedger";
 
 const MAX_EXPIRY_ENTRIES_PER_RUN = 500;
+
+interface CreditExpiryCursor {
+  version: number;
+  lastExpiresAt: Timestamp | null;
+  lastEntryId: string | null;
+}
+
+function parseCreditExpiryCursor(data: FirebaseFirestore.DocumentData | undefined): CreditExpiryCursor | null {
+  if (!data) return null;
+  const reset = data.lastExpiresAt === null && data.lastEntryId === null;
+  if (!Number.isSafeInteger(data.version) || data.version < 1 || data.version >= Number.MAX_SAFE_INTEGER ||
+      (!reset && (!(data.lastExpiresAt instanceof Timestamp) ||
+        typeof data.lastEntryId !== "string" || !data.lastEntryId || data.lastEntryId.includes("/")))) {
+    throw new Error("Invalid Product Credit expiry cursor");
+  }
+  return data as CreditExpiryCursor;
+}
+
+async function advanceCreditExpiryCursor(
+  db: FirebaseFirestore.Firestore, ref: FirebaseFirestore.DocumentReference,
+  expectedVersion: number, last: FirebaseFirestore.QueryDocumentSnapshot | null
+): Promise<boolean> {
+  const expiresAt = last ? last.get("expiresAt") : null;
+  if (last && !(expiresAt instanceof Timestamp)) throw new Error("Invalid Product Credit expiry timestamp");
+  return db.runTransaction(async tx => {
+    const current = parseCreditExpiryCursor((await tx.get(ref)).data());
+    if ((current?.version ?? 0) !== expectedVersion) return false;
+    tx.set(ref, {
+      version: expectedVersion + 1, lastExpiresAt: expiresAt,
+      lastEntryId: last?.id ?? null, updatedAt: Timestamp.now(),
+    });
+    return true;
+  });
+}
 
 async function expireOneCreditEntry(
   db: admin.firestore.Firestore,
@@ -99,13 +133,18 @@ export const expireProductCredits = functions.pubsub
   .onRun(async () => {
     const db = admin.firestore();
     const now = Timestamp.now();
+    const cursorRef = db.collection("product_credit_expiry_cursors").doc("credits");
+    const cursor = parseCreditExpiryCursor((await cursorRef.get()).data());
 
-    const dueSnap = await db
+    const baseQuery = db
       .collection("product_credit_ledger")
       .where("type", "==", "CREDIT")
       .where("expiresAt", "<=", now)
-      .limit(MAX_EXPIRY_ENTRIES_PER_RUN + 1)
-      .get();
+      .orderBy("expiresAt", "asc").orderBy(FieldPath.documentId(), "asc")
+      .limit(MAX_EXPIRY_ENTRIES_PER_RUN + 1);
+    const dueSnap = await (cursor?.lastExpiresAt
+      ? baseQuery.startAfter(cursor.lastExpiresAt, cursor.lastEntryId)
+      : baseQuery).get();
 
     const truncated = dueSnap.size > MAX_EXPIRY_ENTRIES_PER_RUN;
     const docs = truncated ? dueSnap.docs.slice(0, MAX_EXPIRY_ENTRIES_PER_RUN) : dueSnap.docs;
@@ -124,6 +163,12 @@ export const expireProductCredits = functions.pubsub
       if (outcome === "expired") expired++;
       else skipped++;
     }
+
+    // Advance only after the complete page succeeds. A failure replays safely
+    // through immutable expiry idempotency. Reset at cycle end so entries added
+    // behind the cursor or previously unavailable credits are revisited.
+    await advanceCreditExpiryCursor(db, cursorRef, cursor?.version ?? 0,
+      truncated ? docs[docs.length - 1] : null);
 
     console.log(
       `[ProductCreditExpiry] processed=${docs.length} expired=${expired} skipped=${skipped} truncated=${truncated}`

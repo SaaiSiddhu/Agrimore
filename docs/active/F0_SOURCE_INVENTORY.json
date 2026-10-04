@@ -3,14 +3,14 @@
   "config_sha256": {
     "firebase.json": "59f20f8a2c2c1e3d8f417d58ebfce6b876887287c63236d9f690bebdeafe25ff",
     "firestore.indexes.json": "2160797d594d1c119a8ccf28fef882b5be2102f3366e993148dc0cb4fe8e039e",
-    "firestore.rules": "e88403103bac7e60cd78179ba5c47a4856d30a6e8a2753adb6d4a134c4aa4c3a",
+    "firestore.rules": "24792d194641910d546224988b6cd676b1df5d93a8d932426208b9bf0210d208",
     "functions/package.json": "d88e403f99ee502b1816a126dabc8352d48356fd79fd5a4c745eff6811a40146",
     "storage.rules": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1171,
-    "filter_order_cursor_sites": 897,
+    "collection_accesses": 1172,
+    "filter_order_cursor_sites": 900,
     "source_files": 832
   },
   "files": [
@@ -33279,12 +33279,12 @@
         {
           "chain": [
             {
-              "line": 51,
+              "line": 85,
               "literal": "product_credit_ledger",
               "method": "collection"
             },
             {
-              "line": 52,
+              "line": 86,
               "literal": "relatedEntryId",
               "method": "where",
               "operators": [
@@ -33292,7 +33292,7 @@
               ]
             },
             {
-              "line": 53,
+              "line": 87,
               "literal": "type",
               "method": "where",
               "operators": [
@@ -33300,7 +33300,7 @@
               ]
             },
             {
-              "line": 54,
+              "line": 88,
               "method": "limit"
             }
           ],
@@ -33312,7 +33312,7 @@
             18,
             75
           ],
-          "line": 51,
+          "line": 85,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             60
@@ -33323,12 +33323,12 @@
         {
           "chain": [
             {
-              "line": 69,
+              "line": 103,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 69,
+              "line": 103,
               "method": "doc"
             }
           ],
@@ -33337,7 +33337,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 69,
+          "line": 103,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33348,12 +33348,35 @@
         {
           "chain": [
             {
-              "line": 104,
+              "line": 136,
+              "literal": "product_credit_expiry_cursors",
+              "method": "collection"
+            },
+            {
+              "line": 136,
+              "method": "doc"
+            }
+          ],
+          "collection": "product_credit_expiry_cursors",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 136,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 140,
               "literal": "product_credit_ledger",
               "method": "collection"
             },
             {
-              "line": 105,
+              "line": 141,
               "literal": "type",
               "method": "where",
               "operators": [
@@ -33361,7 +33384,7 @@
               ]
             },
             {
-              "line": 106,
+              "line": 142,
               "literal": "expiresAt",
               "method": "where",
               "operators": [
@@ -33369,39 +33392,47 @@
               ]
             },
             {
-              "line": 107,
-              "method": "limit"
+              "direction": "ASCENDING",
+              "line": 143,
+              "literal": "expiresAt",
+              "method": "orderBy"
             },
             {
-              "line": 108,
-              "method": "get"
+              "direction": "ASCENDING",
+              "line": 143,
+              "literal": null,
+              "method": "orderBy"
+            },
+            {
+              "line": 144,
+              "method": "limit"
             }
           ],
           "collection": "product_credit_ledger",
           "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
+            "classification": "DYNAMIC_QUERY_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [
             18,
             75
           ],
-          "line": 104,
+          "line": 140,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             60
           ],
           "scope": "collection",
-          "unresolved": false
+          "unresolved": true
         },
         {
           "chain": [
             {
-              "line": 160,
+              "line": 205,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 160,
+              "line": 205,
               "method": "doc"
             }
           ],
@@ -33410,7 +33441,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 160,
+          "line": 205,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33421,12 +33452,12 @@
         {
           "chain": [
             {
-              "line": 196,
+              "line": 241,
               "literal": "product_credit_holds",
               "method": "collection"
             },
             {
-              "line": 197,
+              "line": 242,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -33434,7 +33465,7 @@
               ]
             },
             {
-              "line": 198,
+              "line": 243,
               "literal": "expiresAt",
               "method": "where",
               "operators": [
@@ -33442,11 +33473,11 @@
               ]
             },
             {
-              "line": 199,
+              "line": 244,
               "method": "limit"
             },
             {
-              "line": 200,
+              "line": 245,
               "method": "get"
             }
           ],
@@ -33457,7 +33488,7 @@
           "index_candidate_ids": [
             76
           ],
-          "line": 196,
+          "line": 241,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             62
@@ -33468,12 +33499,12 @@
         {
           "chain": [
             {
-              "line": 280,
+              "line": 325,
               "literal": "product_credit_ledger",
               "method": "collection"
             },
             {
-              "line": 280,
+              "line": 325,
               "literal": "customerId",
               "method": "where",
               "operators": [
@@ -33489,7 +33520,7 @@
             18,
             75
           ],
-          "line": 280,
+          "line": 325,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             60
@@ -33500,12 +33531,12 @@
         {
           "chain": [
             {
-              "line": 281,
+              "line": 326,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 281,
+              "line": 326,
               "method": "doc"
             }
           ],
@@ -33514,7 +33545,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 281,
+          "line": 326,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33525,12 +33556,12 @@
         {
           "chain": [
             {
-              "line": 282,
+              "line": 327,
               "literal": "compliance_audit_log",
               "method": "collection"
             },
             {
-              "line": 282,
+              "line": 327,
               "method": "doc"
             }
           ],
@@ -33539,7 +33570,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 282,
+          "line": 327,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             56
@@ -33550,12 +33581,12 @@
         {
           "chain": [
             {
-              "line": 364,
+              "line": 409,
               "literal": "compliance_audit_log",
               "method": "collection"
             },
             {
-              "line": 364,
+              "line": 409,
               "method": "add"
             }
           ],
@@ -33564,7 +33595,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 364,
+          "line": 409,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             56
@@ -33575,12 +33606,12 @@
         {
           "chain": [
             {
-              "line": 385,
+              "line": 430,
               "literal": "product_credit_balances",
               "method": "collection"
             },
             {
-              "line": 385,
+              "line": 430,
               "method": "get"
             }
           ],
@@ -33589,7 +33620,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 385,
+          "line": 430,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             61
@@ -33600,7 +33631,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 52,
+          "line": 86,
           "literal": "relatedEntryId",
           "method": "where",
           "operators": [
@@ -33608,7 +33639,7 @@
           ]
         },
         {
-          "line": 53,
+          "line": 87,
           "literal": "type",
           "method": "where",
           "operators": [
@@ -33616,11 +33647,11 @@
           ]
         },
         {
-          "line": 54,
+          "line": 88,
           "method": "limit"
         },
         {
-          "line": 105,
+          "line": 141,
           "literal": "type",
           "method": "where",
           "operators": [
@@ -33628,7 +33659,7 @@
           ]
         },
         {
-          "line": 106,
+          "line": 142,
           "literal": "expiresAt",
           "method": "where",
           "operators": [
@@ -33636,11 +33667,27 @@
           ]
         },
         {
-          "line": 107,
+          "direction": "ASCENDING",
+          "line": 143,
+          "literal": "expiresAt",
+          "method": "orderBy"
+        },
+        {
+          "direction": "ASCENDING",
+          "line": 143,
+          "literal": null,
+          "method": "orderBy"
+        },
+        {
+          "line": 144,
           "method": "limit"
         },
         {
-          "line": 197,
+          "line": 146,
+          "method": "startAfter"
+        },
+        {
+          "line": 242,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -33648,7 +33695,7 @@
           ]
         },
         {
-          "line": 198,
+          "line": 243,
           "literal": "expiresAt",
           "method": "where",
           "operators": [
@@ -33656,11 +33703,11 @@
           ]
         },
         {
-          "line": 199,
+          "line": 244,
           "method": "limit"
         },
         {
-          "line": 280,
+          "line": 325,
           "literal": "customerId",
           "method": "where",
           "operators": [
@@ -33669,7 +33716,7 @@
         }
       ],
       "path": "functions/src/customer/productCreditExpiry.ts",
-      "sha256": "3fdb4a66c17c5d1c84896dc0fce3eca5bcb692c66c913a8232ffff8e546a04c7"
+      "sha256": "366b5bfab5d4709eb4af437d0160db974442eb7d703d685819cf109323314b20"
     },
     {
       "callable_sites": [],
@@ -51604,692 +51651,692 @@
     },
     {
       "file": "firestore.rules",
-      "line": 233,
+      "line": 235,
       "local_path": "/users/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 251,
+      "line": 253,
       "local_path": "/addresses/{addressId}"
     },
     {
       "file": "firestore.rules",
-      "line": 255,
+      "line": 257,
       "local_path": "/wishlist/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 259,
+      "line": 261,
       "local_path": "/cart/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 272,
+      "line": 274,
       "local_path": "/settings/notifications"
     },
     {
       "file": "firestore.rules",
-      "line": 290,
+      "line": 292,
       "local_path": "/notifications/{notificationId}"
     },
     {
       "file": "firestore.rules",
-      "line": 300,
+      "line": 302,
       "local_path": "/chats/{chatId}"
     },
     {
       "file": "firestore.rules",
-      "line": 303,
+      "line": 305,
       "local_path": "/messages/{messageId}"
     },
     {
       "file": "firestore.rules",
-      "line": 308,
+      "line": 310,
       "local_path": "/loyalty/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 313,
+      "line": 315,
       "local_path": "/recently_viewed/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 323,
+      "line": 325,
       "local_path": "/scratchCards/{cardId}"
     },
     {
       "file": "firestore.rules",
-      "line": 336,
+      "line": 338,
       "local_path": "/transactions/{transactionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 350,
+      "line": 352,
       "local_path": "/recent_searches/{searchId}"
     },
     {
       "file": "firestore.rules",
-      "line": 375,
+      "line": 377,
       "local_path": "/{path=**}/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 417,
+      "line": 419,
       "local_path": "/products/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 438,
+      "line": 440,
       "local_path": "/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 476,
+      "line": 478,
       "local_path": "/reviewStats/{statsId}"
     },
     {
       "file": "firestore.rules",
-      "line": 758,
+      "line": 760,
       "local_path": "/orders/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 822,
+      "line": 824,
       "local_path": "/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 844,
+      "line": 846,
       "local_path": "/timeline/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 885,
+      "line": 887,
       "local_path": "/secrets/{secretId}"
     },
     {
       "file": "firestore.rules",
-      "line": 896,
+      "line": 898,
       "local_path": "/categories/{categoryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 904,
+      "line": 906,
       "local_path": "/subcategories/{subId}"
     },
     {
       "file": "firestore.rules",
-      "line": 913,
+      "line": 915,
       "local_path": "/coupons/{couponId}"
     },
     {
       "file": "firestore.rules",
-      "line": 930,
+      "line": 932,
       "local_path": "/coupon_redemptions/{redemptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 938,
+      "line": 940,
       "local_path": "/reviews/{reviewId}"
     },
     {
       "file": "firestore.rules",
-      "line": 960,
+      "line": 962,
       "local_path": "/banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 988,
+      "line": 990,
       "local_path": "/sponsored_banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1002,
+      "line": 1004,
       "local_path": "/section_banners/{bannerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1016,
+      "line": 1018,
       "local_path": "/campaigns/{campaignId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1079,
+      "line": 1081,
       "local_path": "/sellers/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1098,
+      "line": 1100,
       "local_path": "/products/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1132,
+      "line": 1134,
       "local_path": "/seller_payout_details/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1146,
+      "line": 1148,
       "local_path": "/seller_withdrawals/{withdrawalId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1150,
+      "line": 1152,
       "local_path": "/seller_payout_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1154,
+      "line": 1156,
       "local_path": "/seller_wallets/{sellerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1256,
+      "line": 1258,
       "local_path": "/employees/{employeeId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1290,
+      "line": 1292,
       "local_path": "/employee_payout_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1294,
+      "line": 1296,
       "local_path": "/employee_wallets/{employeeId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1302,
+      "line": 1304,
       "local_path": "/loyalty/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1310,
+      "line": 1312,
       "local_path": "/loyalty_tiers/{tierId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1318,
+      "line": 1320,
       "local_path": "/app_config/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1351,
+      "line": 1353,
       "local_path": "/settings/access"
     },
     {
       "file": "firestore.rules",
-      "line": 1354,
+      "line": 1356,
       "local_path": "/settings/wallet_config"
     },
     {
       "file": "firestore.rules",
-      "line": 1362,
+      "line": 1364,
       "local_path": "/settings/location_settings"
     },
     {
       "file": "firestore.rules",
-      "line": 1368,
+      "line": 1370,
       "local_path": "/settings/home_grocery_strip_config"
     },
     {
       "file": "firestore.rules",
-      "line": 1377,
+      "line": 1379,
       "local_path": "/settings/home_section_order"
     },
     {
       "file": "firestore.rules",
-      "line": 1386,
+      "line": 1388,
       "local_path": "/settings/associate_onboarding"
     },
     {
       "file": "firestore.rules",
-      "line": 1389,
+      "line": 1391,
       "local_path": "/settings/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1405,
+      "line": 1407,
       "local_path": "/notifications/{notificationId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1410,
+      "line": 1412,
       "local_path": "/notification_history/{notificationId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1417,
+      "line": 1419,
       "local_path": "/analytics/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1435,
+      "line": 1437,
       "local_path": "/logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1457,
+      "line": 1459,
       "local_path": "/feature_flags/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1465,
+      "line": 1467,
       "local_path": "/compliance_config/{programId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1472,
+      "line": 1474,
       "local_path": "/compliance_audit_log/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1493,
+      "line": 1495,
       "local_path": "/benefit_programs/{programId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1498,
+      "line": 1500,
       "local_path": "/benefit_enrollments/{enrollmentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1507,
+      "line": 1509,
       "local_path": "/benefit_accruals/{accrualId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1516,
+      "line": 1518,
       "local_path": "/product_credit_ledger/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1528,
+      "line": 1530,
       "local_path": "/product_credit_balances/{customerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1540,
+      "line": 1542,
       "local_path": "/product_credit_holds/{holdId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1549,
+      "line": 1551,
       "local_path": "/wishlists/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1554,
+      "line": 1556,
       "local_path": "/items/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1562,
+      "line": 1564,
       "local_path": "/carts/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1567,
+      "line": 1569,
       "local_path": "/items/{itemId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1575,
+      "line": 1577,
       "local_path": "/otp_codes/{email}"
     },
     {
       "file": "firestore.rules",
-      "line": 1583,
+      "line": 1585,
       "local_path": "/phone_otp_codes/{phone}"
     },
     {
       "file": "firestore.rules",
-      "line": 1594,
+      "line": 1596,
       "local_path": "/invoices/{invoiceId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1601,
+      "line": 1603,
       "local_path": "/seller_invoice_counters/{counterId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1605,
+      "line": 1607,
       "local_path": "/auth_test_mode/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1608,
+      "line": 1610,
       "local_path": "/auth_test_mode_log/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1619,
+      "line": 1621,
       "local_path": "/otp_delivery_failures/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1632,
+      "line": 1634,
       "local_path": "/otp_ip_limits/{hashedIp}"
     },
     {
       "file": "firestore.rules",
-      "line": 1639,
+      "line": 1641,
       "local_path": "/addresses/{addressId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1662,
+      "line": 1664,
       "local_path": "/auth_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1676,
+      "line": 1678,
       "local_path": "/bestseller_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1687,
+      "line": 1689,
       "local_path": "/category_section_slots/{slotId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1701,
+      "line": 1703,
       "local_path": "/home_product_sections/{sectionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1723,
+      "line": 1725,
       "local_path": "/auth_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1789,
+      "line": 1791,
       "local_path": "/wallets/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1814,
+      "line": 1816,
       "local_path": "/wallet_transactions/{transactionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1833,
+      "line": 1835,
       "local_path": "/wallet_topups/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1850,
+      "line": 1852,
       "local_path": "/ai_connections/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1861,
+      "line": 1863,
       "local_path": "/ai_connection_status/{userId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1874,
+      "line": 1876,
       "local_path": "/rfqs/{rfqId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1887,
+      "line": 1889,
       "local_path": "/referrals/{referralId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1950,
+      "line": 1952,
       "local_path": "/delivery_partners/{partnerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 1982,
+      "line": 1984,
       "local_path": "/delivery_tasks/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2003,
+      "line": 2005,
       "local_path": "/live/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2051,
+      "line": 2053,
       "local_path": "/delivery_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2061,
+      "line": 2063,
       "local_path": "/delivery_dispatch/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2068,
+      "line": 2070,
       "local_path": "/vendors/{vendorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2078,
+      "line": 2080,
       "local_path": "/threads/{threadId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2130,
+      "line": 2132,
       "local_path": "/messages/{messageId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2156,
+      "line": 2158,
       "local_path": "/seller_stats_daily/{docId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2163,
+      "line": 2165,
       "local_path": "/seller_stats_contrib/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2178,
+      "line": 2180,
       "local_path": "/rider_incidents/{incidentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2186,
+      "line": 2188,
       "local_path": "/delivery_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2191,
+      "line": 2193,
       "local_path": "/rider_incident_limits/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2200,
+      "line": 2202,
       "local_path": "/rider_support_tickets/{ticketId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2205,
+      "line": 2207,
       "local_path": "/rider_earnings/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2209,
+      "line": 2211,
       "local_path": "/rider_accounts/{riderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2213,
+      "line": 2215,
       "local_path": "/rider_cash_ledger/{entryId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2217,
+      "line": 2219,
       "local_path": "/rider_bank_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2225,
+      "line": 2227,
       "local_path": "/rider_identity_change_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2234,
+      "line": 2236,
       "local_path": "/document_review_submissions/{submissionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2238,
+      "line": 2240,
       "local_path": "/rider_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2263,
+      "line": 2265,
       "local_path": "/seller_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2302,
+      "line": 2304,
       "local_path": "/employee_payouts/{payoutId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2327,
+      "line": 2329,
       "local_path": "/inventory_alerts/{alertId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2340,
+      "line": 2342,
       "local_path": "/razorpay_orders/{orderId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2350,
+      "line": 2352,
       "local_path": "/verified_payments/{paymentId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2366,
+      "line": 2368,
       "local_path": "/onboarding_handoffs/{code}"
     },
     {
       "file": "firestore.rules",
-      "line": 2373,
+      "line": 2375,
       "local_path": "/payment_security_logs/{logId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2403,
+      "line": 2405,
       "local_path": "/onboarding_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2410,
+      "line": 2412,
       "local_path": "/onboarding_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2417,
+      "line": 2419,
       "local_path": "/associate_refund_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2427,
+      "line": 2429,
       "local_path": "/webhook_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2443,
+      "line": 2445,
       "local_path": "/onboarding_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2459,
+      "line": 2461,
       "local_path": "/seller_ai_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2471,
+      "line": 2473,
       "local_path": "/order_rate_limits/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2476,
+      "line": 2478,
       "local_path": "/payment_reconciliation_cursors/{cursorId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2483,
+      "line": 2485,
       "local_path": "/checkout_requests/{requestId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2495,
+      "line": 2497,
       "local_path": "/commission_exceptions/{exceptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2511,
+      "line": 2513,
       "local_path": "/support_cases/{caseId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2515,
+      "line": 2517,
       "local_path": "/support_case_notes/{noteId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2519,
+      "line": 2521,
       "local_path": "/support_case_events/{eventId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2528,
+      "line": 2530,
       "local_path": "/support_case_evidence/{evidenceId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2546,
+      "line": 2548,
       "local_path": "/subscriptions/{subscriptionId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2579,
+      "line": 2581,
       "local_path": "/sellerRequests/{uid}"
     },
     {
       "file": "firestore.rules",
-      "line": 2601,
+      "line": 2603,
       "local_path": "/trending_searches/{searchId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2613,
+      "line": 2615,
       "local_path": "/masterProducts/{productId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2625,
+      "line": 2627,
       "local_path": "/centers/{centerId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2644,
+      "line": 2646,
       "local_path": "/product_price_mappings/{mappingId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2660,
+      "line": 2662,
       "local_path": "/subscription_plans/{planId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2682,
+      "line": 2684,
       "local_path": "/follows/{followId}"
     },
     {
       "file": "firestore.rules",
-      "line": 2722,
+      "line": 2724,
       "local_path": "/business_posts/{postId}"
     },
     {

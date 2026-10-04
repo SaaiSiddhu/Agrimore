@@ -6,6 +6,8 @@ service cloud.firestore {
     match /review_photo_drafts/{draftId} { allow read, write: if false; }
     match /review_photo_upload_limits/{ownerId} { allow read, write: if false; }
     match /review_photo_rpc_limits/{limitId} { allow read, write: if false; }
+    // Scheduled credit expiry checkpoints are server-owned, including for admins.
+    match /product_credit_expiry_cursors/{cursorId} { allow read, write: if false; }
 
     
     // ============================================
