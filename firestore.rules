@@ -379,6 +379,36 @@ service cloud.firestore {
         request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
     }
 
+    // Vote metadata is actor-only and separate from review author content.
+    // Absent legacy fields mean empty; malformed votes need trusted repair.
+    function reviewVotesValid(data) {
+      let yes = data.get('helpfulUsers', []);
+      let no = data.get('unhelpfulUsers', []);
+      let yesCount = data.get('helpfulCount', 0);
+      let noCount = data.get('unhelpfulCount', 0);
+      return yes is list && no is list && yesCount is int && noCount is int &&
+        yesCount == yes.size() && noCount == no.size() &&
+        yes.toSet().size() == yes.size() && no.toSet().size() == no.size() &&
+        yes.toSet().intersection(no.toSet()).size() == 0;
+    }
+
+    function reviewVotesInitiallyEmpty() {
+      return reviewVotesValid(request.resource.data) &&
+        request.resource.data.get('helpfulCount', 0) == 0 &&
+        request.resource.data.get('unhelpfulCount', 0) == 0;
+    }
+
+    function reviewSelfVoteOnly() {
+      let actor = [request.auth.uid].toSet();
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['helpfulUsers', 'unhelpfulUsers', 'helpfulCount', 'unhelpfulCount']) &&
+        reviewVotesValid(resource.data) && reviewVotesValid(request.resource.data) &&
+        resource.data.get('helpfulUsers', []).toSet().difference(actor) ==
+          request.resource.data.get('helpfulUsers', []).toSet().difference(actor) &&
+        resource.data.get('unhelpfulUsers', []).toSet().difference(actor) ==
+          request.resource.data.get('unhelpfulUsers', []).toSet().difference(actor);
+    }
+
     match /products/{productId} {
       // Anyone can read products (public catalog)
       allow read: if true;
@@ -409,7 +439,7 @@ service cloud.firestore {
         // (sellerId, productName) cannot be forged; isVerifiedPurchase is
         // overwritten with the truth by onProductReviewWrite.
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-          reviewRatingInRange() &&
+          reviewRatingInRange() && reviewVotesInitiallyEmpty() &&
           !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
         
         // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
@@ -417,10 +447,14 @@ service cloud.firestore {
         // update kept it the same — a user editing their own review could
         // rewrite `userId` to someone else's uid, misattributing the review.
         // SELLER-ACCOUNT-1a: nor touch the seller's reply or server stamps.
-        allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == resource.data.userId &&
-          reviewRatingInRange() &&
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
+        allow update: if isAuthenticated() && (
+          (resource.data.userId == request.auth.uid &&
+           request.resource.data.userId == resource.data.userId &&
+           reviewRatingInRange() &&
+           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+             'sellerReply', 'sellerId', 'productName', 'supersededBy',
+             'helpfulUsers', 'unhelpfulUsers', 'helpfulCount', 'unhelpfulCount'
+           ])) || reviewSelfVoteOnly());
         
         // Users can delete their own reviews, admins can delete any
         allow delete: if isAuthenticated() && 
