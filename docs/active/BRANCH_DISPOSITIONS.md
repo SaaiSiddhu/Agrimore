@@ -645,3 +645,6 @@ Recorded cleanup final default gate atbbbaf2ba terminalexit0/failed0 (/tmp/agrim
 
 
 F7 private upload capability audit CLAIMED (2026-10-04), basebbbaf2ba: exact ledger/F0matrix/progress evidence only; external /tmp actual FirebaseJS versus Admin GCS upload demo probe with source Storage rules. Token presence/privateverifier acceptance/anonymous SDK denial and bearerURL accessibility recorded as booleans only; never log/store URLs/tokens. Confirm transport compatibility before authenticated/mobile integration. No application/rules/permission/live/cloud/provider change, privatevisibility provisionalpendingowner; preserveWIP/SINGLE AGENT/originalgoalACTIVE.
+
+
+F7 private upload capability audit SOURCE_AUDIT_VERIFIED: sixactualSDK/demo booleans terminal0, directFirebase tokenURL reachesanonymoussyntheticbytes despiteSDKreaddeny; tokenfree Admin upload passesprivateverifier. Initial404bucketfixture corrected, no token/URLvalues persisted. Evidenceonly/no application/rules/permissions changed. Next bounded authenticated tokenfree serverupload/bytevalidation/quotas/postlink publication+durablemobile recovery mustbeclaimed; fullphoto/fullgoalOPEN. SINGLE AGENT/no livewrites/deploy.
