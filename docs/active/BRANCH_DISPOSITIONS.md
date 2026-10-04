@@ -716,3 +716,6 @@ F2 active account-deletion session and marker correction CLAIMED (2026-10-04), b
 
 
 F2 scope refinement before edit: review anonymization currently catches query/index failure and returns -1, which cannot certify completed personal-data deletion. Same claimed deleteUserData/test paths: make that failure retryable/fail closed before final profile marker, add explicit fault test; missing legacy profile without a valid audit reruns the remaining idempotent sweep. No index/rules/provider change or guarantee of live index availability; local query failure must not silently mark deletion complete.
+
+
+F2 same-file recovery scope refinement before edit: deleteSellerData currently removes seller profile before Storage; after a KYC delete error its retry no longer sees wasSeller and skips remaining objects. Add actual demo object failure/retry regression and move owned seller KYC/storefront deletion before role-document removal, preserving original ownership/prefix selection and financial refusals. No rider helper/rules/permission change; rider helper already deletes KYC before role data. In-flight upload quiescence and exact retry audit-count retention remain broader OPEN lifecycle work.
