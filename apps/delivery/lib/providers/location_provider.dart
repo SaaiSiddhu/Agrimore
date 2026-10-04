@@ -223,6 +223,11 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     _startStream();
     _startHeartbeat();
     await _maybeUpload(force: true);
+    if (!_requestCurrent(generation) ||
+        !_isTracking ||
+        _partnerId != partnerId) {
+      return GoOnlineResult.failed;
+    }
     notifyListeners();
     return GoOnlineResult.started;
   }
@@ -333,6 +338,13 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (!isValidFix(pos.latitude, pos.longitude)) return;
+    final generation = _trackingGeneration;
+    final orderIds = List<String>.of(_activeOrderIds);
+    bool ownsUpload() =>
+        generation == _trackingGeneration &&
+        _isTracking &&
+        _partnerId == uid &&
+        !_native;
     _uploading = true;
     try {
       await _firestore.collection('delivery_partners').doc(uid).update({
@@ -340,9 +352,14 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         'currentLng': pos.longitude,
         'lastLocationUpdate': FieldValue.serverTimestamp(),
       });
+      // The already-issued SDK write cannot be recalled. Its response must
+      // not refresh a newer shift or send the old fix to newly assigned tasks.
+      if (!ownsUpload()) return;
       _lastUploadAt = now;
-      _hasUnsentFix = false;
-      for (final orderId in _activeOrderIds) {
+      if (identical(_currentPosition, pos)) _hasUnsentFix = false;
+      for (final orderId in orderIds) {
+        if (!ownsUpload()) return;
+        if (!_activeOrderIds.contains(orderId)) continue;
         try {
           await _firestore
               .collection('delivery_tasks')
@@ -398,7 +415,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       _hasUnsentFix = true;
       notifyListeners();
       await _maybeUpload(force: true);
-      return true;
+      return _requestCurrent(generation) && _isTracking;
     } catch (e) {
       debugPrint('LocationProvider.refreshNow: $e');
       return false;
