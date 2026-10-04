@@ -356,26 +356,40 @@ export async function buildRiderStatementParts(db: Db, riderId: string, nowMs: n
   return out;
 }
 
+// The account population is one snapshot even while per-rider transactions
+// update balances. Read-only callbacks are not retried by this SDK; economic
+// writes stay in the existing independently anchored per-rider transactions.
+const RIDER_ACCOUNT_PAGE_SIZE = 100;
+
 export async function buildAllStatements(db: Db, nowMs: number) {
-  const accounts = await db.collection("rider_accounts").get();
-  const out = { created: 0, exists: 0, nothing: 0, failed: 0 };
-  for (const a of accounts.docs) {
-    try {
-      for (const v of await buildRiderStatementParts(db, a.id, nowMs)) {
-        out[v.kind === "created" ? "created" : v.kind] += 1;
-        if (v.kind === "created") {
-          // DLV-N1: the inbox says a statement was made — not that money was sent.
-          const p = (await db.collection("rider_payouts").doc(v.id).get()).data() ?? {};
-          await tellRider(db, a.id, statementNotice({ id: v.id, amountPaise: Number(p.amountPaise ?? 0),
-            status: String(p.status ?? ""), holdReason: p.holdReason ?? null }), nowMs);
+  return db.runTransaction(async (readTx) => {
+    const query = db.collection("rider_accounts").select();
+    let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+    const out = { created: 0, exists: 0, nothing: 0, failed: 0 };
+    for (;;) {
+      const pageQuery = last ? query.startAfter(last).limit(RIDER_ACCOUNT_PAGE_SIZE) : query.limit(RIDER_ACCOUNT_PAGE_SIZE);
+      const accounts = await readTx.get(pageQuery);
+      for (const a of accounts.docs) {
+        try {
+          for (const v of await buildRiderStatementParts(db, a.id, nowMs)) {
+            out[v.kind === "created" ? "created" : v.kind] += 1;
+            if (v.kind === "created") {
+              // DLV-N1: the inbox says a statement was made — not that money was sent.
+              const p = (await db.collection("rider_payouts").doc(v.id).get()).data() ?? {};
+              await tellRider(db, a.id, statementNotice({ id: v.id, amountPaise: Number(p.amountPaise ?? 0),
+                status: String(p.status ?? ""), holdReason: p.holdReason ?? null }), nowMs);
+            }
+          }
+        } catch (e) {
+          out.failed += 1;
+          console.error(`[buildRiderStatements] ${a.id}: ${(e as Error)?.message ?? e}`);
         }
       }
-    } catch (e) {
-      out.failed += 1;
-      console.error(`[buildRiderStatements] ${a.id}: ${(e as Error)?.message ?? e}`);
+      if (accounts.size < RIDER_ACCOUNT_PAGE_SIZE) break;
+      last = accounts.docs[accounts.docs.length - 1];
     }
-  }
-  return out;
+    return out;
+  }, { readOnly: true });
 }
 
 export const buildRiderStatements = onSchedule(

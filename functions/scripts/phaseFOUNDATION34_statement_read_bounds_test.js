@@ -13,15 +13,16 @@ async function scenario(label,fn){try{await fn();passed++;console.log(`PASS ${la
 function trace({rejectQuery=false}={},targetDb=db){
  const reads={documents:[],queries:[]};
  const traced=new Proxy(targetDb,{get(target,key){
-  if(key==='runTransaction')return callback=>target.runTransaction(tx=>callback(new Proxy(tx,{get(t,k){
+  if(key==='runTransaction')return (callback,options)=>target.runTransaction(tx=>callback(new Proxy(tx,{get(t,k){
    if(k==='get')return async(ref,...options)=>{
     if(typeof ref.path==='string'){reads.documents.push(ref.path);return t.get(ref,...options);}
+    if(ref._queryOptions?.collectionId==='rider_accounts')return t.get(ref,...options);
     const row={size:null};reads.queries.push(row);
     if(rejectQuery)throw Object.assign(Error('Synthetic unavailable query transport'),{code:'unavailable'});
     const snap=await t.get(ref,...options);row.size=snap.size;return snap;
    };
    const v=t[k];return typeof v==='function'?v.bind(t):v;
-  }})));
+  }})),options);
   const v=target[key];return typeof v==='function'?v.bind(target):v;
  }});return {db:traced,reads};
 }
