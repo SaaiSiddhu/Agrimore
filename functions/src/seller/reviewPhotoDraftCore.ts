@@ -2,7 +2,7 @@
 // generation verification, quotas, rules and client adoption are still required.
 import * as admin from "firebase-admin";
 import { HttpsError } from "firebase-functions/v2/https";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 type Db = admin.firestore.Firestore;
 type Data = Record<string, any>;
 export type PhotoReceipt = { path: string; url: string; generation: string };
@@ -105,6 +105,8 @@ export async function publishPhotoDraft(db: Db, actor: string, draft: string, va
    let at = instant(now);
    const dr = db.collection(COLL).doc(draft), s = await tx.get(dr), d = owned(s, actor);
    const ref = db.collection("products").doc(d.productId).collection("reviews").doc(d.reviewId), r = await tx.get(ref);
+   const managedPlan = photoAccessPlan(d);
+   if (managedPlan && (!validReceipts(d, d.receipts) || JSON.stringify(d.receipts) !== JSON.stringify(managedPlan.assets.map(({ path, generation, url }) => ({ path, generation, url }))))) fail("failed-precondition", "Photo receipts changed from access plan.");
    const frozen = frozenContent(d);
    if (frozen && contentHash(frozen) !== hash) fail("already-exists", "Publication must use frozen submission.");
    if (d.state === "linked") { if (d.contentHash !== hash) fail("already-exists", "Draft published with different content."); const current = r.data(); return { state: "linked", reviewId: d.reviewId, stillCurrent: current?.photoDraftId === draft && Array.isArray(current.imageUrls) && Array.isArray(d.receipts) && d.receipts.every((v: PhotoReceipt) => current.imageUrls.includes(v.url)) }; }
@@ -112,6 +114,7 @@ export async function publishPhotoDraft(db: Db, actor: string, draft: string, va
    // Load-bearing cleanup tombstone: no late publication after deletion claim.
    if (d.state !== "ready") fail("failed-precondition", "Draft not ready for publication.");
    if (at >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+   if (!(await tx.get(db.collection("products").doc(d.productId))).exists) fail("not-found", "Product unavailable.");
    editable(r, actor, d.productId, d.reviewId);
    if (!validReceipts(d, d.receipts)) fail("failed-precondition", "Invalid photo receipts.");
    const previous = r.data();
@@ -208,5 +211,95 @@ export async function confirmPhotoUpload(db: Db, actor: string, draft: string, p
    if (!old || old.path !== path || old.normalizedDigest !== normalizedDigest) fail("failed-precondition", "Upload binding unavailable.");
    if (old.state === "uploaded") { if (old.generation !== generation) fail("failed-precondition", "Upload generation changed."); return; }
    tx.update(ref, { uploads: { ...all, [key]: { ...old, state: "uploaded", generation } } });
+ });
+}
+
+
+export type PhotoUploadBinding = { path: string; inputDigest: string; normalizedDigest: string; generation: string; state: "uploaded" };
+export type PhotoAccessAsset = PhotoUploadBinding & { capability: string; url: string };
+export type PhotoAccessPlan = { version: 1; bucket: string; assets: PhotoAccessAsset[] };
+function uploadedPhotos(d: Data): PhotoUploadBinding[] {
+ const all = uploadMap(d);
+ return d.paths.map((path: string) => {
+   const v = all[createHash("sha256").update(path).digest("hex")];
+   if (!v || v.state !== "uploaded") fail("failed-precondition", "Upload every photo before publishing.");
+   return { path, inputDigest: v.inputDigest, normalizedDigest: v.normalizedDigest, generation: v.generation, state: "uploaded" as const };
+ });
+}
+function accessUrl(bucket: string, path: string, capability: string) {
+ return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(path)}?alt=media&token=${capability}`;
+}
+function photoAccessPlan(d: Data, expectedBucket?: string): PhotoAccessPlan | undefined {
+ if (d.photoAccessPlan === undefined) return undefined;
+ if (!frozenContent(d)) fail("failed-precondition", "Access plan has no frozen submission.");
+ const p = d.photoAccessPlan, uploads = uploadedPhotos(d);
+ if (!["ready", "linked"].includes(d.state) || !p || p.version !== 1 || typeof p.bucket !== "string" || !p.bucket || p.bucket.trim() !== p.bucket ||
+   (expectedBucket !== undefined && p.bucket !== expectedBucket) || !Array.isArray(p.assets) || p.assets.length !== uploads.length ||
+   p.assets.some((a: PhotoAccessAsset, i: number) => !a || typeof a.capability !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(a.capability) ||
+     a.path !== uploads[i].path || a.generation !== uploads[i].generation || a.inputDigest !== uploads[i].inputDigest ||
+     a.normalizedDigest !== uploads[i].normalizedDigest || a.state !== "uploaded" || a.url !== accessUrl(p.bucket, a.path, a.capability)) ||
+   new Set(p.assets.map((a: PhotoAccessAsset) => a.capability)).size !== p.assets.length) fail("failed-precondition", "Invalid photo access plan.");
+ return { version: 1, bucket: p.bucket, assets: p.assets.map((a: PhotoAccessAsset, i: number) => ({ ...uploads[i], capability: a.capability, url: a.url })) };
+}
+/** Internal only; capabilities never cross a request/status response before publication. */
+export async function inspectPhotoPublication(db: Db, actor: string, draft: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ const d = owned(await db.collection(COLL).doc(draft).get(), actor);
+ if (!["open", "ready", "linked"].includes(d.state)) fail("failed-precondition", "Photo draft closed for publication.");
+ if (d.state !== "linked" && instant(now) >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+ return { state: d.state as string, content: frozenContent(d), uploads: uploadedPhotos(d), plan: photoAccessPlan(d), activation: d.photoActivationState as string | undefined };
+}
+/** Caller must verify actual private object bytes before this atomic readiness boundary. */
+export async function preparePhotoAccessPlan(db: Db, actor: string, draft: string, bucket: string, verified: readonly PhotoUploadBinding[], now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ if (typeof bucket !== "string" || !bucket || bucket.trim() !== bucket || !Array.isArray(verified)) fail("invalid-argument", "Invalid photo preparation.");
+ return db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), d = owned(await tx.get(ref), actor), at = instant(now);
+   if (!["open", "ready"].includes(d.state)) fail("failed-precondition", "Photo draft closed for preparation.");
+   if (at >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+   if (!frozenContent(d)) fail("failed-precondition", "Freeze the submission before preparation.");
+   const uploads = uploadedPhotos(d);
+   if (JSON.stringify(uploads) !== JSON.stringify(verified)) fail("failed-precondition", "Verified uploads changed.");
+   const old = photoAccessPlan(d, bucket);
+   if (old) return old;
+   if (d.state !== "open" || d.receipts !== undefined) fail("failed-precondition", "Draft readiness was not managed.");
+   const plan: PhotoAccessPlan = { version: 1, bucket, assets: uploads.map(v => { const capability = randomUUID(); return { ...v, capability, url: accessUrl(bucket, v.path, capability) }; }) };
+   tx.update(ref, { photoAccessPlan: plan, state: "ready", receipts: plan.assets.map(({ path, generation, url }) => ({ path, generation, url })) });
+   return plan;
+ });
+}
+function activationState(d: Data, r: admin.firestore.DocumentSnapshot, actor: string, draft: string, bucket: string) {
+ const plan = photoAccessPlan(d, bucket), content = frozenContent(d), current = r.data();
+ if (d.state !== "linked" || !plan || !content || d.contentHash !== contentHash(content) ||
+   !["pending", "complete"].includes(d.photoActivationState) || !current || current.userId !== actor || current.productId !== d.productId ||
+   current.photoDraftId !== draft || current.supersededBy != null || current.photoActivationState !== d.photoActivationState ||
+   !validReceipts(d, d.receipts) || JSON.stringify(d.receipts) !== JSON.stringify(plan.assets.map(({ path, generation, url }) => ({ path, generation, url }))) ||
+   !Array.isArray(current.imageUrls) || !plan.assets.every(a => current.imageUrls.includes(a.url))) fail("failed-precondition", "Linked photo publication requires recovery.");
+ let currentContent: ReviewPhotoContent;
+ try { currentContent = photoContent(current as ReviewPhotoContent); } catch { fail("failed-precondition", "Linked photo publication requires recovery."); }
+ if (d.photoActivationState === "pending" && contentHash(currentContent) !== contentHash(content)) fail("failed-precondition", "Linked photo content changed.");
+ return { plan, state: d.photoActivationState as "pending" | "complete" };
+}
+/** Read both rows coherently before each Storage mutation. Privileged Admin writes can bypass client locks. */
+export async function inspectPhotoActivation(db: Db, actor: string, draft: string, bucket: string) {
+ id(actor); id(draft);
+ return db.runTransaction(async tx => {
+   const d = owned(await tx.get(db.collection(COLL).doc(draft)), actor);
+   const r = await tx.get(db.collection("products").doc(d.productId).collection("reviews").doc(d.reviewId));
+   return activationState(d, r, actor, draft, bucket);
+ });
+}
+/** Only the trusted activation handler may supply receipts after verifying every capability. */
+export async function finishPhotoActivation(db: Db, actor: string, draft: string, bucket: string, verified: readonly PhotoReceipt[], now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ await db.runTransaction(async tx => {
+   const ref = db.collection(COLL).doc(draft), d = owned(await tx.get(ref), actor);
+   const rr = db.collection("products").doc(d.productId).collection("reviews").doc(d.reviewId), r = await tx.get(rr);
+   const { plan, state } = activationState(d, r, actor, draft, bucket);
+   if (!Array.isArray(verified) || JSON.stringify(verified) !== JSON.stringify(plan.assets.map(({ path, generation, url }) => ({ path, generation, url })))) fail("failed-precondition", "Photo activation not confirmed.");
+   if (state === "complete") return;
+   const at = instant(now);
+   tx.update(ref, { photoActivationState: "complete", photoActivatedAt: at });
+   tx.update(rr, { photoActivationState: "complete" });
  });
 }
