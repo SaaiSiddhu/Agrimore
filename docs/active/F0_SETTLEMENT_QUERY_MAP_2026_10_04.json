@@ -643,7 +643,16 @@
       "log": "/tmp/agrimore-statement-bounds-exact-final.log",
       "scope": "Actual compiled helpers/Admin SDK demo transactions; two scheduler-core notice controls; legacy HTTP notice suite excluded."
     },
-    "standardPostcommitGate": "PENDING"
+    "standardPostcommitGate": {
+      "sourceCommit": "313db577c1d8b7c60b116709a7dcfaa472159b53",
+      "terminalExit": 0,
+      "failedChecks": 0,
+      "node": "22.23.3",
+      "npm": "10.9.9",
+      "log": "/tmp/agrimore-statement-query-postcommit-gate.log",
+      "fiveAppErrors": 0,
+      "deliveryDiagnostics": 0
+    }
   },
   "openRequirements": [
     "Global rider account enumeration paging and scheduler runtime budget",
