@@ -5728,5 +5728,46 @@
     "No live document data, Auth principals, provider calls or function invocation accessed.",
     "No rules release, index readiness query, backup restore, device/native or managed Linux runtime proof in this audit.",
     "No deployment, index writes, orphan deletion, flag changes or owner WIP edits."
-  ]
+  ],
+  "verification": {
+    "standardGateCommit": "ef8377c7450dce38846497f5c2cc48b2b55952e1",
+    "runtime": "v22.23.3",
+    "terminalExit": 0,
+    "failed": 0,
+    "analyzers": {
+      "marketplace": {
+        "errors": 0,
+        "warnings": 127,
+        "infos": 278
+      },
+      "admin": {
+        "errors": 0,
+        "warnings": 74,
+        "infos": 499
+      },
+      "seller": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0
+      },
+      "delivery": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0
+      },
+      "employee": {
+        "errors": 0,
+        "warnings": 2,
+        "infos": 0
+      }
+    },
+    "inventoryCountsUnchanged": {
+      "sourceFiles": 832,
+      "collectionAccesses": 1170,
+      "filterOrderCursorSites": 896,
+      "callableSites": 99
+    },
+    "ownerWorkingIndexHashPreserved": true,
+    "log": "/tmp/agrimore-endpoint-parity-postcommit-gate.log"
+  }
 }
