@@ -269,3 +269,23 @@ Read-only live Android metadata succeeds7registeredpackages. Customer native ign
 
 
 2026-10-04 Android role source/artifact parity: admin/seller/delivery native SDK identity matches registered package and final unsigned APK resource. All3 compiled release packages min24/target35/compile36/version1.0.0+1; owner store/version acceptance unverified. Seller/delivery explicit allowBackup=false now compiles into actual release, cleartextfalse preserved. Artifact nondebuggable/unsigned/integrity/16KB ZIP+64bit ELF checks pass; full defaultgatef66cd091failed0/fiveanalyzers0errors. Source inventory exactcheck825/1141/896/99 refreshed for ownerWIP hashes, notcleanrelease certification. Employee com.agrimore.salesassociate remains absent live registrations, owner identity disposition pending. No provider/device/sign/cloud mutation. Detailed F8_NATIVE_COMPILATION_2026_10_04.md.
+
+
+## Review helpful-vote effective boundary audit — 2026-10-04
+
+VERIFIED_REPOSITORY_FACT: actual ReviewCard helpful/unhelpful taps call ReviewProvider.markHelpful with the rendering userId. Provider and shared DatabaseService.markReviewHelpful separately read products/{productId}/reviews/{reviewId}, derive two arrays through ReviewModel, then update arrays and counters outside a transaction. Provider catches and logs every failure without a failure receipt; footer fire-and-forgets with no session/pending/error boundary. This is an active rendered customer feature, unlike dormant shared filtered review helpers. No composite query/index is involved in a single-document vote.
+
+External probe loaded actual source firestore.rules into isolated demo-agrimore-review-votes Firestore emulator, synthetic author/reader IDs only. No functions/provider/real user data or live rules change. Terminal emulators:exec exit0, script0, emulator shutdown verified. These are observed rule decisions, not a passing secure-protocol suite:
+
+| Action | Effective local source-rule outcome | Disposition |
+|---|---|---|
+| Unauthenticated review read | Allowed | Existing public feed positive control |
+| Reader changes only own helpful vote/counter | Denied | Broken legitimate customer action |
+| Author replaces voter array with another buyer and count999 | Allowed | Untrusted vote/count integrity gap |
+| Author normal comment edit | Allowed | Author editing positive control |
+| Unauthenticated vote | Denied | Authentication boundary control |
+| Author creates review with invented voter/count500 | Allowed | Creation vote/count forgery gap |
+
+Source paths: apps/marketplace/lib/screens/user/shop/widgets/review_card.dart footer; apps/marketplace/lib/providers/review_provider.dart markHelpful; packages/agrimore_services/lib/database/database_service.dart markReviewHelpful; firestore.rules products/reviews create+update. Trace includes every current marketplace markHelpful caller and shared service search; it does not certify all review namespaces. Top-level reviews and order reviews remain separate schemas, never broaden permissions via wildcard. Scripts/logs: /tmp/agrimore-review-vote-audit-contract.md, /tmp/agrimore-review-vote-audit.cjs, /tmp/agrimore-review-vote-audit.firebase.json, /tmp/agrimore-review-vote-audit.log and /tmp/agrimore-review-vote-rule-observations.json. Source hash can be reproduced from current committed rules; dated live mismatch still means no live exploit/outage assertion.
+
+TARGET_IMPLEMENTATION, next bounded fix: authenticated actor may change only their own membership across mutually exclusive vote lists; counters derived from validated memberships, author content/server stamps immutable through vote path. Author create initializes no fabricated votes; author edit preserves existing votes. Shared transaction writer must re-read on SDK retries and fence account/session/target, preserve other voters, propagate safe failures. Active footer must capture opening identity/provider/target and show pending/retry/failure safely. Positive/negative emulator controls plus concurrent/retry/session client tests required. Legacy malformed vote records need explicit refusal/repair disposition, never model-default invention. No new callable/cloud app/deployment inference. Full F0/F7 and original ten-phase goal remain OPEN.
