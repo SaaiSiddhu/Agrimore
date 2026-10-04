@@ -135,6 +135,39 @@ const TERMINAL_ORDER_STATUSES = new Set(["delivered", "completed", "cancelled"])
 // apps/admin's payout management screen.
 const PENDING_PAYOUT_STATUSES = new Set(["requested", "pending"]);
 
+// employeeCommission.ts pays attributed work even after role removal, and
+// reverses previously earned commission on either cancellation status field.
+// Such work must resolve while the owner still has a usable account.
+const COMMISSION_DELIVERED_STATUSES = new Set(["delivered", "completed"]);
+const COMMISSION_REVERSAL_STATUSES = new Set(["cancelled", "refunded", "returned", "rejected"]);
+
+async function requireResolvedAttributedWork(uid: string): Promise<void> {
+  // Do not gate on employees/{uid}: legacy partial deletion can remove it.
+  const orders = await db.collection("orders").where("employeeUid", "==", uid).get();
+  for (const row of orders.docs) {
+    const order = row.data();
+    const values = [order.orderStatus, order.status].filter(value => value !== undefined);
+    if (values.length === 0 || values.some(value => typeof value !== "string" || value.length === 0) ||
+        (order.commissionPaid !== undefined && typeof order.commissionPaid !== "boolean") ||
+        (order.commissionReversed !== undefined && typeof order.commissionReversed !== "boolean")) {
+      throw new functions.https.HttpsError("failed-precondition", "Your attributed order or commission record needs review before deleting your account.");
+    }
+    const statuses = values.map(value => (value as string).toLowerCase());
+    if (statuses.some(status => !COMMISSION_DELIVERED_STATUSES.has(status) && !COMMISSION_REVERSAL_STATUSES.has(status))) {
+      throw new functions.https.HttpsError("failed-precondition", "You have attributed orders still in progress. Wait until they are resolved before deleting your account.");
+    }
+    // Mirror reversal's either-field detection, rather than hiding a pending
+    // reversal behind a stale delivered value in the other status field.
+    if (statuses.some(status => COMMISSION_REVERSAL_STATUSES.has(status))) {
+      if (order.commissionPaid === true && order.commissionReversed !== true) {
+        throw new functions.https.HttpsError("failed-precondition", "Your commission reversal is still pending. Wait until it is resolved before deleting your account.");
+      }
+    } else if (order.commissionPaid !== true) {
+      throw new functions.https.HttpsError("failed-precondition", "Your earned commission is still pending. Wait until it is resolved before deleting your account.");
+    }
+  }
+}
+
 // Firestore batched writes cap at 500 operations. 450 leaves headroom for
 // any other write this callable might add later without silently
 // approaching the hard limit.
@@ -326,6 +359,10 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       "You have a pending payout request. Wait until it is paid before deleting your account."
     );
   }
+
+  // Read-only refusal before any role/personal cleanup. This snapshot guard
+  // does not replace the outstanding shared lifecycle barrier for new writers.
+  await requireResolvedAttributedWork(uid);
 
   // Seller refusals (SELLER-DELETE-1).
   const [sellerOrdersSnap, sellerPayoutsSnap] = await Promise.all([

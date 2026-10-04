@@ -1,0 +1,30 @@
+// Actual demo Auth + Firestore, exported deletion handler with trusted contexts.
+// No HTTP/JWT/production concurrency proof; never contacts payment providers.
+const assert=require('node:assert/strict');
+for(const k of ['FIRESTORE_EMULATOR_HOST','FIREBASE_AUTH_EMULATOR_HOST','FIREBASE_STORAGE_EMULATOR_HOST'])if(!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env[k]||''))throw Error('Loopback emulators required');
+const project=process.env.GCLOUD_PROJECT;if(!/^demo-/.test(project||''))throw Error('Demo project required');process.env.STORAGE_EMULATOR_HOST='http://'+process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+const admin=require('firebase-admin'),app=admin.initializeApp({projectId:project,storageBucket:project+'.appspot.com'}),db=app.firestore(),auth=app.auth(),remove=require('../lib/customer/deleteUserData').deleteUserData;
+let seq=0,passed=0,failed=0;
+async function fixture(role=true){const uid='attributed-work-'+(++seq);await auth.createUser({uid});await db.doc('users/'+uid).set({name:'Synthetic owner'});await db.doc('wallets/'+uid).set({balance:0});if(role)await db.doc('employees/'+uid).set({name:'Synthetic associate',status:'approved'});await db.doc('carts/'+uid+'/items/item').set({quantity:1});return {uid,at:Math.floor(Date.now()/1000),role};}
+const call=u=>remove.run({expectedOwnerId:u.uid},{auth:{uid:u.uid,token:{auth_time:u.at}}});
+async function order(u,fields,other=false){const ref=db.doc('orders/order-'+seq);await ref.set({userId:'different-demo-buyer',employeeUid:other?'different-demo-associate':u.uid,orderStatus:'delivered',status:'delivered',commissionPaid:true,commissionAmount:9,deliveryAddress:{fixture:'Preserve other customer'},...fields});return ref;}
+async function intact(u){assert.equal((await auth.getUser(u.uid)).uid,u.uid);assert.equal((await db.doc('users/'+u.uid).get()).exists,true);assert.equal((await db.doc('wallets/'+u.uid).get()).data().balance,0);assert.equal((await db.doc('employees/'+u.uid).get()).exists,u.role);assert.equal((await db.doc('carts/'+u.uid+'/items/item').get()).exists,true);assert.equal((await db.doc('account_deletion_audit/'+u.uid).get()).exists,false);}
+async function refuse(fields,role=true){const u=await fixture(role),ref=await order(u,fields),before=(await ref.get()).data();let error;try{await call(u);}catch(e){error=e;}if(!error){let authPresent=true;try{await auth.getUser(u.uid);}catch(e){if(e.code==='auth/user-not-found')authPresent=false;else throw e;}console.log('OBSERVED unsafe attributed-work deletion: authPresent='+authPresent+' rolePresent='+(await db.doc('employees/'+u.uid).get()).exists);}assert.equal(error?.code,'failed-precondition');assert.match(error.message,/attributed|commission/i);await intact(u);assert.deepEqual((await ref.get()).data(),before);}
+async function allow(fields,other=false){const u=await fixture(),ref=await order(u,fields,other),before=(await ref.get()).data();assert.equal((await call(u)).success,true);await assert.rejects(()=>auth.getUser(u.uid),e=>e.code==='auth/user-not-found');assert.equal((await db.doc('users/'+u.uid).get()).exists,false);assert.equal((await db.doc('employees/'+u.uid).get()).exists,false);assert.deepEqual((await ref.get()).data(),before);}
+async function check(name,fn){try{await fn();passed++;console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+e.name+' '+e.message);}}
+async function run(){
+ for(const status of ['pending','confirmed','packed','out_for_delivery','unknown'])await check('unfinished attributed '+status+' preserves usable account',()=>refuse({orderStatus:status,status,commissionPaid:false}));
+ for(const status of ['delivered','completed'])for(const paid of [false,null,'true'])await check('earned '+status+' paid marker '+String(paid)+' refuses',()=>refuse({orderStatus:status,status,...(paid===undefined?{commissionPaid:null}:{commissionPaid:paid})}));
+ await check('missing role does not hide unfinished attributed work',()=>refuse({orderStatus:'packed',status:'packed',commissionPaid:false},false));
+ for(const status of ['cancelled','refunded','returned','rejected'])await check('unresolved reversal '+status+' refuses',()=>refuse({orderStatus:status,status,commissionReversed:false}));
+ await check('status cancellation alias fences unresolved reversal',()=>refuse({orderStatus:'delivered',status:'cancelled',commissionReversed:false}));
+ for(const value of [null,9,''])await check('malformed primary state '+String(value)+' refuses',()=>refuse({orderStatus:value}));
+ await check('malformed alias state refuses',()=>refuse({status:9}));
+ await check('attributed query failure keeps personal data and Auth',async()=>{const u=await fixture(),proto=Object.getPrototypeOf(db.collection('orders')),where=proto.where,descriptor=Object.getOwnPropertyDescriptor(proto,'where');let intercepted=0;proto.where=function(field,...args){const q=where.call(this,field,...args);if(this.path==='orders'&&field==='employeeUid'){q.get=async()=>{intercepted++;throw Error('Synthetic attributed query unavailable');};}return q;};try{await assert.rejects(()=>call(u));assert.equal(intercepted,1);await intact(u);}finally{if(descriptor)Object.defineProperty(proto,'where',descriptor);else delete proto.where;}});
+ for(const status of ['delivered','completed'])await check('paid '+status+' history permits deletion without rewriting buyer order',()=>allow({orderStatus:status,status}));
+ for(const status of ['cancelled','refunded','returned','rejected'])await check('resolved reversal '+status+' history permits deletion',()=>allow({orderStatus:status,status,commissionReversed:true}));
+ await check('cancelled never-paid history permits deletion',()=>allow({orderStatus:'cancelled',status:'cancelled',commissionPaid:false}));
+ await check('other associate unfinished work does not block caller',()=>allow({orderStatus:'packed',status:'packed',commissionPaid:false},true));
+ console.log(`SUMMARY ${passed} passed ${failed} failed`);if(failed)process.exitCode=1;
+}
+run().catch(e=>{console.error('Fixture failure: '+e.name+' '+e.message);process.exitCode=1;}).finally(()=>app.delete());
