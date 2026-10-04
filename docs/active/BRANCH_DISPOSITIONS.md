@@ -568,3 +568,6 @@ F8 native claim amendment before fixes (2026-10-04): unsigned Xcode attempt fail
 
 
 F8/F2 native identity amendment before edit: marketplace Runner/Info.plist OAuth return URL does not match the fetched existing registered app SDK configuration (boolean comparison only, values not printed). Include exact Info.plist return-scheme correction and consistent iOS FirebaseOptions optional fields; preserve unrelated URL schemes/permissions/other-platform Firebase blocks. Wait for current compile terminal before editing these inputs. Ignored native client plist stays untracked; no OAuth client/cloud app creation or provider action.
+
+
+F8 analyzer scope amendment before edit (2026-10-04): postcommit gate at d341f2e6 failed1; all5782 marketplace errors are inside generated build/ios/SourcePackages/checkouts/flutterfire, zero errors outside generated build tree. Include exact marketplace analysis_options.yaml to exclude generated build/** only; no app/test/library source exclusions or lint/error suppression. Native compiler pass remains valid, initial foundation gate explicitly failed until corrected and rerun. Preserve owner WIP.
