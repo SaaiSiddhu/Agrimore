@@ -4,7 +4,7 @@ Execution mode: SINGLE AGENT. Subagents, delegation, background agents and workf
 
 ## Scope and verdict
 
-CURRENT_IMPLEMENTATION: marketplace iOS compiles for arm64 device architecture in debug and release with code signing disabled. Final release artifact has the registered customer bundle, matching native Firebase SDK configuration and OAuth return URL, and minimum iOS15. This proves one app compiler path only. F8/five-app signing, store upload, actual device/auth/payment/push/permission/background journeys and F9 connected release acceptance remain OPEN.
+CURRENT_IMPLEMENTATION: marketplace iOS compiles for arm64 device architecture in debug and release with code signing disabled. Marketplace Android now compiles an unsigned release APK with production signing and Crashlytics artifact uploads disabled; final Android gate evidence is recorded below. Final release artifact has the registered customer bundle, matching native Firebase SDK configuration and OAuth return URL, and minimum iOS15. This proves one app compiler path only. F8/five-app signing, store upload, actual device/auth/payment/push/permission/background journeys and F9 connected release acceptance remain OPEN.
 
 The artifact was built from the current foundation branch plus preserved owner WIP, including the shared ProductModel change. It does not certify a clean commit or isolated release tree. No app was installed/launched. No signing, provisioning, Firebase app creation/change, live data writes, deployment or push occurred. Client config values were never printed in evidence.
 
@@ -65,3 +65,39 @@ Security/native configuration review PASS_WITH_FINDINGS: existing live customer 
 Fresh default gate at0b70cbd0 completed exit0/failed0 after analyzer correction (/tmp/agrimore-native-postcommit-gate-final.log). Functions build passes; all five analyzers0errors: marketplace127warnings278infos, admin74/499, seller0/0, delivery0/0, employee2/0. Analysis-integrity/client-secret/secret-binding/fee/deploy/delivery guards, three canonical ratchets and ledger0warnings pass. Source inventory exact check and diff check pass. The earlier d341f2e6 gate failed1 and is superseded for analyzer scope only; its failed result is retained. Native source unchanged after final unsigned release build; the only later implementation change was analysis_options generated-build exclusion, which does not enter the binary. No new synthetic test claimed: native compiler/artifact/SDK equality and full-source analysis are this scope's verification. Prior full marketplace2211 belonged to the feed scope before iOS client/config edits, not a new final-native suite run.
 
 Local native compiler/configuration scope BUILT+SELF_GATED. Full F8/F9 acceptance, clean-tree provenance, signing, runtime/provider/device/adoption and owner release decisions remain OPEN. Goal ACTIVE. Next bounded native work: Android compiler/manifest evidence with production signing and Crashlytics artifact uploads disabled; no ownership/provisioning/live-provider action inferred from prior compilation.
+
+
+## Android unsigned release — 2026-10-04
+
+CURRENT_IMPLEMENTATION: customer Dart Android SDK fields align with the existing registered com.customer.agrimore native configuration. Read-only live apps:list ANDROID succeeds with7 registered packages. Native ignored google-services.json exactly equals fetched sdkconfig and its customer appId matches live registration; original Dart Android appId differed. Five corrected SDK fields match by boolean comparison; source customer iOS/Web/macOS blocks are unchanged. No Firebase app/OAuth client/keystore/provider or live data action occurred. Exact SDK options analyzer completes with no issues.
+
+Verification used external `/tmp/agrimore-unsigned-android.init.gradle`: release signingConfig=null, both mapping/native symbol upload flags false, every Crashlytics upload task disabled and unconditional onlyIf false, task-graph assertions before execution. The first dry run failed safely because the included Flutter Gradle plugin build lacks :app; fixed by applying app signing assertions only to the app graph while preserving upload assertions in every graph. No upload/sign task executed. Final dry run completed exit0 in7m54s after public dependency downloads, verified signing disabled and0 selected upload tasks. Read-only daemon thread diagnostics verified active downloads; the existing handle was preserved, no restart/owner interruption for silence/timeouts.
+
+Actual `./gradlew --init-script /tmp/agrimore-unsigned-android.init.gradle :app:assembleRelease` completed exit0 in3m33s:1181tasks,849executed/135cached/197up-to-date. Guard marker confirms null release signing/zero selected Crashlytics upload tasks. No validateSigningRelease task selected. This compiles normal release optimization/native libraries with upload/signing suppressed only for verification; tracked production signing/upload configuration is unchanged. External init includes no credential values. Its absence makes the command fail before build; do not replace it with an unguarded owner release invocation.
+
+| APK artifact check | Result |
+|---|---|
+| Path | apps/marketplace/build/app/outputs/apk/release/app-release-unsigned.apk; Flutter output copy app-release.apk is also unsigned |
+| Bytes | 120773287 |
+| SHA256 | b8c9f872eb49977ceb864aa32e254366adafdf464051958bc77e9a795162c783 |
+| Identity/version | com.customer.agrimore;1.0.10/build2026092301 |
+| SDK | min24, target36, compile36 |
+| Native ABIs | arm64-v8a,armeabi-v7a,x86_64;9 native libraries |
+| Release flags | Not debuggable; allowBackup=false; usesCleartextTraffic=false |
+| Native SDK | Registered customer appId embedded in resource table |
+| Archive integrity | ZIP corruption check none |
+| Unsigned | apksigner verify exit1 with Missing META-INF/MANIFEST.MF;0v1 signature entries/no v2-v3 signing-block magic |
+| ZIP alignment | Build-tools36 zipalign -c -P16 4 passes exit0 |
+| ELF alignment | Every 64bit PT_LOAD alignment >=16384; no below16KB library |
+
+Read-only aapt2/apksigner/zipalign and ELF header parsing inspect the APK; no install/sign/run/provider call. Actual runtime/16KB device acceptance is not inferred. The artifact includes preserved owner ProductModel WIP and is not a clean isolated release tree. Source version/store-upload eligibility not verified against the store. Native minimum24 unchanged on Android; prior iOS minimum15 change remains separately documented.
+
+Local logs: /tmp/agrimore-native-android-dry-run.log (failed included-build guard), /tmp/agrimore-native-android-dry-run-final.log (passed), /tmp/agrimore-native-android-release.log, /tmp/agrimore-android-sdk-options-analyze.log, /tmp/agrimore-android-unsigned-artifact-facts.json. Manifest/resources/badging/signature/alignment diagnostics remain in /tmp; resource dump contains public client configuration and is never printed or committed. Native SDK configuration stays ignored. No synthetic unit run is claimed; compiler/artifact/live-metadata equality/source analysis are the verification scope. Source inventory825/1141/896/99 exact check passes.
+
+Build warnings retained, not bypassed: Gradle8.12 uses deprecated features, AGP8.7.3 tested through compile35 while app compiles36, KGP2.1.0 future Flutter compatibility warning and embedded SDK Kotlin mismatch, R8 location companion-object warning. No dependency validation bypass/suppression/upgrade issued. Device GPS/payment/background/adoption remain open.
+
+Merged manifest has21 Android permission names, including microphone/location/camera/notification, legacy storage max32, and SDK advertising/attribution/NFC/basic-phone-state entries. This is artifact presence only, not permission grant/request behavior or store declaration acceptance. Source permissions were not broadened by these SDK identity edits; owner privacy/store review remains open.
+
+Additional role-app native audit: admin explicit Android options match its native SDK. Seller/delivery native SDK configuration matches registered package/project, their mobile initialization uses native options (no local firebase_options.dart). Employee source package com.agrimore.salesassociate has a matching native client entry but is absent from the7 live Android registrations; live com.agrimore.employee is distinct. This requires owner registration/restore versus migration disposition, never a silent package rename/app creation. No app was created/renamed or owner artifact adopted. Other role app compiler/device proof remains open.
+
+Final Android postcommit default gate pending until recorded; full F8/F9 and original F0–F9 goal ACTIVE. Next bounded local native work: other registered role Android compile/config checks without signing/uploads; employee registration and four role iOS registrations/signing/device/provider release gates remain owner-controlled.
