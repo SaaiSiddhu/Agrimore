@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/review_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import 'add_review_dialog.dart';
+import 'review_feed.dart';
 import 'review_card.dart'; // ✅ NEW IMPORT
 
 class ReviewsSection extends StatefulWidget {
@@ -50,7 +49,9 @@ class _ReviewsSectionState extends State<ReviewsSection> {
     _statsProduct = product;
     final request = ++_statsRequest;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || request != _statsRequest || product != widget.productId ||
+      if (!mounted ||
+          request != _statsRequest ||
+          product != widget.productId ||
           !identical(context.read<ReviewProvider>(), provider)) {
         return;
       }
@@ -84,8 +85,9 @@ class _ReviewsSectionState extends State<ReviewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = widget.isDark ? AppColors.primaryLight : AppColors.primary;
-    
+    final accentColor =
+        widget.isDark ? AppColors.primaryLight : AppColors.primary;
+
     // ✅ FIXED: Wrapped in a Column with Expanded to prevent layout overflow
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,46 +107,38 @@ class _ReviewsSectionState extends State<ReviewsSection> {
             ),
             TextButton.icon(
               onPressed: _showAddReviewDialog,
-              icon: Icon(Icons.add_comment_outlined, size: 16, color: accentColor),
-              label: Text('Add Review', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.add_comment_outlined,
+                  size: 16, color: accentColor),
+              label: Text('Add Review',
+                  style: TextStyle(
+                      color: accentColor, fontWeight: FontWeight.bold)),
               style: TextButton.styleFrom(
                 backgroundColor: accentColor.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        
+
         // Stats Section
         _buildStatsSection(),
-        
+
         const SizedBox(height: 24),
-        
+
         // Reviews List
         Expanded(
-          child: StreamProvider<List<ReviewModel>>.value(
-            value: Provider.of<ReviewProvider>(context, listen: false)
-                .getReviewsStream(widget.productId),
-            initialData: const [],
-            child: Consumer<List<ReviewModel>>(
-              builder: (context, reviews, child) {
-                if (reviews.isEmpty) {
-                  return _buildEmptyState();
-                }
-                
-                return ListView.builder(
+          child: ReviewFeed(
+            productId: widget.productId,
+            builder: (context, reviews) {
+              if (reviews.isEmpty) return _buildEmptyState();
+              return ListView.builder(
                   physics: const BouncingScrollPhysics(),
                   itemCount: reviews.length,
-                  itemBuilder: (context, index) {
-                    return ReviewCard( // ✅ This widget now exists
-                      review: reviews[index],
-                      isDark: widget.isDark,
-                    );
-                  },
-                );
-              },
-            ),
+                  itemBuilder: (context, index) => ReviewCard(
+                      review: reviews[index], isDark: widget.isDark));
+            },
           ),
         ),
       ],
@@ -160,7 +154,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
             message: 'Review ratings are unavailable right now.',
             useThemeColors: true,
             onRetry: () {
-              if (mounted && product == widget.productId &&
+              if (mounted &&
+                  product == widget.productId &&
                   identical(context.read<ReviewProvider>(), provider)) {
                 provider.loadReviewStats(product);
               }
@@ -174,10 +169,11 @@ class _ReviewsSectionState extends State<ReviewsSection> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.isDark ? Colors.grey[800]! : Colors.grey[200]!)
-          ),
+              color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color:
+                      widget.isDark ? Colors.grey[800]! : Colors.grey[200]!)),
           child: Row(
             children: [
               // Overall Rating
@@ -195,18 +191,23 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (i) => Icon(
-                        i < stats.averageRating.floor() ? Icons.star_rounded : Icons.star_border_rounded,
-                        color: Colors.amber[700],
-                        size: 16,
-                      )),
+                      children: List.generate(
+                          5,
+                          (i) => Icon(
+                                i < stats.averageRating.floor()
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color: Colors.amber[700],
+                                size: 16,
+                              )),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${stats.totalReviews} Reviews',
                       style: TextStyle(
                         fontSize: 12,
-                        color: widget.isDark ? Colors.grey[400] : Colors.grey[600],
+                        color:
+                            widget.isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -240,14 +241,18 @@ class _ReviewsSectionState extends State<ReviewsSection> {
     );
   }
 
-  Widget _buildRatingBar({required int stars, required double percentage, required bool isDark}) {
+  Widget _buildRatingBar(
+      {required int stars, required double percentage, required bool isDark}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
           Text(
             '$stars',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey[400] : Colors.grey[600]),
           ),
           const SizedBox(width: 4),
           Icon(Icons.star, color: Colors.amber[700], size: 12),
@@ -273,16 +278,22 @@ class _ReviewsSectionState extends State<ReviewsSection> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.reviews_outlined, size: 60, color: widget.isDark ? Colors.grey[700] : Colors.grey[300]),
+          Icon(Icons.reviews_outlined,
+              size: 60,
+              color: widget.isDark ? Colors.grey[700] : Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             'No Reviews Yet',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white70 : Colors.black87),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: widget.isDark ? Colors.white70 : Colors.black87),
           ),
           const SizedBox(height: 8),
           Text(
             'Be the first to share your thoughts!',
-            style: TextStyle(color: widget.isDark ? Colors.grey[500] : Colors.grey[600]),
+            style: TextStyle(
+                color: widget.isDark ? Colors.grey[500] : Colors.grey[600]),
           ),
         ],
       ),

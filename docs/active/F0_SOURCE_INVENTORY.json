@@ -11,7 +11,7 @@
     "callable_sites": 99,
     "collection_accesses": 1141,
     "filter_order_cursor_sites": 896,
-    "source_files": 824
+    "source_files": 825
   },
   "files": [
     {
@@ -20665,15 +20665,22 @@
       "callable_sites": [],
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
+      "path": "apps/marketplace/lib/screens/user/shop/widgets/review_feed.dart",
+      "sha256": "1335a9abe47a18fd4b5d3286377f08fdb0c1286b4c7afab789de56da61386849"
+    },
+    {
+      "callable_sites": [],
+      "collection_accesses": [],
+      "filter_order_cursor_sites": [],
       "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section.dart",
-      "sha256": "84e5dbbb477d00be58778b3dc65d9ec23aedad562ac6ce1dcf17b8653c8f1c62"
+      "sha256": "6f81caa2f9a7e27c72c8c46f1ac8e3e005515ac07f789d852e63ebbcadde4f58"
     },
     {
       "callable_sites": [],
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
       "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section_inline.dart",
-      "sha256": "b93597afb6721177218309cde35ae0378db471fe0a4cb9745566fcbf71dcd8d1"
+      "sha256": "89095a569257709fb056ca3da23480ab611f7f5374c32b259b96955b8fab54c4"
     },
     {
       "callable_sites": [],
