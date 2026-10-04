@@ -5,7 +5,7 @@ for(const key of ['FIRESTORE_EMULATOR_HOST','FIREBASE_AUTH_EMULATOR_HOST','FIREB
  if(!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env[key]||''))throw Error('Loopback emulator required.');
 }
 if(process.env.FIREBASE_DEBUG_MODE||process.env.FIREBASE_DEBUG_FEATURES)throw Error('Verification bypass prohibited.');
-const P='demo-agrimore-account-session';process.env.GCLOUD_PROJECT=P;process.env.STORAGE_EMULATOR_HOST='http://'+process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+const P=process.env.GCLOUD_PROJECT;if(!/^demo-/.test(P||''))throw Error('Demo project required.');process.env.STORAGE_EMULATOR_HOST='http://'+process.env.FIREBASE_STORAGE_EMULATOR_HOST;
 const admin=require('firebase-admin'),express=require('express');
 const app=admin.initializeApp({projectId:P,storageBucket:P+'.appspot.com'}),db=app.firestore(),auth=app.auth();
 const remove=require('../lib/customer/deleteUserData').deleteUserData;
@@ -45,15 +45,15 @@ async function run(){
    assert.equal((await call(u,{expectedOwnerId:u.uid})).error,'UNAUTHENTICATED');await unchanged(u);
    // Explicit handler-boundary simulation: decoded identity was captured before lifecycle change.
    // This is NOT actual HTTP admission or a live exploit assertion.
-   await assert.rejects(()=>remove.run({expectedOwnerId:u.uid},{auth:{uid:u.uid,token:u.decoded,rawToken:u.jwt}}),e=>e.code==='failed-precondition');
+   await assert.rejects(()=>remove.run({expectedOwnerId:u.uid},{auth:{uid:u.uid,token:u.decoded,rawToken:u.jwt}}),e=>e.code==='unauthenticated');
    await unchanged(u);
-   console.log('OBSERVATION '+kind+': emulator HTTP rejects; handler accepts preverified context until wallet refusal.');
+   console.log('OBSERVATION '+kind+': emulator HTTP rejects; handler now denies preverified stale context.');
   });
  }
  await check('missing JWT denied before business handler',async()=>{const u=await fixture();assert.equal((await call(null,{expectedOwnerId:u.uid})).error,'UNAUTHENTICATED');await unchanged(u);});
  await check('invalid bearer denied by actual SDK',async()=>{const u=await fixture();assert.equal((await call({jwt:randomUUID()},{expectedOwnerId:u.uid})).error,'UNAUTHENTICATED');await unchanged(u);});
  await check('client auth envelope cannot authenticate caller',async()=>{const u=await fixture();assert.equal((await call(null,{auth:{uid:u.uid},expectedOwnerId:u.uid})).error,'UNAUTHENTICATED');await unchanged(u);});
  await check('fresh JWT cannot select another deletion owner',async()=>{const u=await fixture(),other=await fixture();assert.equal((await call(u,{expectedOwnerId:other.uid})).error,'PERMISSION_DENIED');await unchanged(u);await unchanged(other);});
- console.log(`AUDIT ${passed} observations confirmed; ${failed} failed. Emulator transport denies stale sessions; handler active-session recheck remains OPEN.`);if(failed)process.exitCode=1;
+ console.log(`AUDIT ${passed} observations confirmed; ${failed} failed. Emulator transport denies stale sessions; handler active-session recheck now covered by FOUNDATION26.`);if(failed)process.exitCode=1;
 }
 run().catch(e=>{console.error('Audit failed: '+e.name+' '+e.message);process.exitCode=1;}).finally(async()=>{if(server)await new Promise(resolve=>server.close(resolve));await app.delete();});

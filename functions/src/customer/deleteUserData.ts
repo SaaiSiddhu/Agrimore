@@ -116,7 +116,7 @@ import * as admin from "firebase-admin";
 // entirely. Scoped to this one new file rather than "fixing" the
 // namespace-style call everywhere else in functions/src, which is out of
 // this phase's scope and not something this phase's testing covered.
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { deleteRiderData, deleteStorageFolder, riderDeletionRefusal } from "../delivery/riderAccountDeletion";
 
 const db = admin.firestore();
@@ -179,6 +179,19 @@ async function deleteSellerData(uid: string): Promise<{ wasSeller: boolean; hard
     ...statsSnap.docs.map((d) => d.ref),
     ...settingsSnap.docs.map((d) => d.ref),
   ];
+  // KYC/storefront objects FIRST, while seller role documents still prove
+  // which owned prefixes must be swept. A Storage failure must retain these
+  // markers; otherwise a retry would treat the account as a non-seller.
+  const wasSeller = sellerSnap.exists || requestSnap.exists;
+  let deletedFiles = 0;
+  if (wasSeller) {
+    const bucket = admin.storage().bucket();
+    for (const prefix of [`seller_documents/${uid}/`, `sellers/${uid}/storefront/`]) {
+      const [files] = await bucket.getFiles({ prefix });
+      await Promise.all(files.map((f) => f.delete({ ignoreNotFound: true })));
+      deletedFiles += files.length;
+    }
+  }
   await deleteRefsInChunks(refs);
 
   for (let i = 0; i < productsSnap.docs.length; i += BATCH_CHUNK_SIZE) {
@@ -189,20 +202,6 @@ async function deleteSellerData(uid: string): Promise<{ wasSeller: boolean; hard
     await batch.commit();
   }
 
-  // Storage only for accounts that ever applied to sell (a customer has no
-  // seller files). A failure here fails the call on purpose: this runs
-  // before users/{uid} is deleted, so the caller can simply retry.
-  const wasSeller = sellerSnap.exists || requestSnap.exists;
-  let deletedFiles = 0;
-  if (!wasSeller) {
-    return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
-  }
-  const bucket = admin.storage().bucket();
-  for (const prefix of [`seller_documents/${uid}/`, `sellers/${uid}/storefront/`]) {
-    const [files] = await bucket.getFiles({ prefix });
-    await Promise.all(files.map((f) => f.delete({ ignoreNotFound: true })));
-    deletedFiles += files.length;
-  }
   return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
 }
 
@@ -213,10 +212,10 @@ async function anonymizeReviews(uid: string): Promise<number> {
     // Served by the COLLECTION_GROUP index reviews (userId, createdAt DESC).
     snap = await db.collectionGroup("reviews").where("userId", "==", uid).orderBy("createdAt", "desc").get();
   } catch (e) {
-    // Index not deployed yet: never block the deletion over it; the audit
-    // records -1 so the gap is visible.
-    console.error(`Review anonymisation skipped for ${uid}`, e);
-    return -1;
+    // Without this query, personal review fields cannot be confirmed removed.
+    // Keep the profile/Auth marker so an index or transient failure can be retried.
+    console.error(`Review anonymisation could not be confirmed for ${uid}`, e);
+    throw new functions.https.HttpsError("failed-precondition", "Account data could not be confirmed. Please try again.");
   }
   for (let i = 0; i < snap.docs.length; i += BATCH_CHUNK_SIZE) {
     const batch = db.batch();
@@ -226,6 +225,14 @@ async function anonymizeReviews(uid: string): Promise<number> {
     await batch.commit();
   }
   return snap.size;
+}
+
+/** Only a private, timestamped own audit can certify completed Firestore deletion. */
+function validDeletionAudit(value: FirebaseFirestore.DocumentData | undefined, uid: string, authTime: number): boolean {
+  if (!value || value.uid !== uid || !(value.deletedAt instanceof Timestamp) ||
+      !Number.isSafeInteger(value.anonymizedReviewsCount) || value.anonymizedReviewsCount < 0) return false;
+  const completedAt = value.deletedAt.toMillis();
+  return Number.isFinite(completedAt) && completedAt >= authTime * 1000 && completedAt <= Date.now();
 }
 
 export const deleteUserData = functions.https.onCall(async (data, context) => {
@@ -239,6 +246,34 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   // This hint constrains the action; it never selects the deletion target.
   if (data?.expectedOwnerId !== undefined && data.expectedOwnerId !== uid) {
     throw new functions.https.HttpsError("permission-denied", "Account action does not belong to this account");
+  }
+
+  // Callable SDK production verification does not check revocation by default.
+  // Recheck the principal using the verified auth_time, never client data.
+  const authTime = context.auth.token.auth_time;
+  if (!Number.isSafeInteger(authTime) || authTime < 0) {
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
+  }
+  let principal: admin.auth.UserRecord;
+  try {
+    principal = await auth.getUser(uid);
+  } catch (error) {
+    if ((error as { code?: string }).code === "auth/user-not-found") {
+      // A previously verified token may return its own completed receipt only.
+      // It cannot start/resume deletion, run financial queries, or perform writes.
+      const [profile, audit] = await Promise.all([
+        db.collection("users").doc(uid).get(),
+        db.collection("account_deletion_audit").doc(uid).get(),
+      ]);
+      if (!profile.exists && validDeletionAudit(audit.data(), uid, authTime)) {
+        return { success: true, alreadyDeleted: true, hardDeletedDocCount: 0, anonymizedOrdersCount: 0, wasAssociate: false };
+      }
+    }
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
+  }
+  const validAfter = principal.tokensValidAfterTime === undefined ? 0 : Date.parse(principal.tokensValidAfterTime);
+  if (principal.uid !== uid || principal.disabled || !Number.isFinite(validAfter) || authTime < Math.floor(validAfter / 1000)) {
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
   }
 
   // ============================================================
@@ -315,13 +350,13 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   }
 
   // ============================================================
-  // IDEMPOTENCY: if users/{uid} is already gone, a previous call already
-  // did the Firestore work — skip straight to the (also-idempotent) Auth
-  // deletion below rather than throwing on a retried/duplicated client
-  // call.
+  // A missing profile alone is not completion evidence (legacy partial failures
+  // may have deleted it early). Skip only with a durable private audit as well;
+  // otherwise rerun the idempotent personal-data sweep.
   // ============================================================
   const userSnap = await db.collection("users").doc(uid).get();
-  const alreadyDeletedFirestore = !userSnap.exists;
+  const priorAudit = userSnap.exists ? undefined : (await db.collection("account_deletion_audit").doc(uid).get()).data();
+  const alreadyDeletedFirestore = !userSnap.exists && validDeletionAudit(priorAudit, uid, authTime);
   let hardDeletedCount = 0;
   let anonymizedOrdersCount = 0;
   let wasAssociate = false;
@@ -347,7 +382,6 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     wasAssociate = employeeSnap.exists;
 
     const hardDeleteRefs: FirebaseFirestore.DocumentReference[] = [
-      db.collection("users").doc(uid),
       db.collection("wallets").doc(uid),
       db.collection("carts").doc(uid),
       db.collection("wishlists").doc(uid),
@@ -361,15 +395,15 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       hardDeleteRefs.push(employeeSnap.ref);
     }
 
-    await deleteRefsInChunks(hardDeleteRefs);
-    hardDeletedCount = hardDeleteRefs.length;
-
     // orders.userId == uid only — orders.employeeUid == uid (other
     // customers' purchases this account earned commission on, if it was
     // also an associate) are deliberately never touched here.
     const orderRefs = ordersSnap.docs.map((d) => d.ref);
     await anonymizeOrdersInChunks(orderRefs);
     anonymizedOrdersCount = orderRefs.length;
+
+    await deleteRefsInChunks(hardDeleteRefs);
+    hardDeletedCount = hardDeleteRefs.length + 1; // Last profile marker below.
 
     // Audit record — Cloud-Functions-only by construction: this is a
     // brand-new collection with no matching firestore.rules block, and
@@ -392,6 +426,9 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       riderAnonymizedOrdersCount: rider.anonymizedOrders,
       anonymizedReviewsCount,
     });
+    // Only after every Firestore personal-data step and durable audit succeeds.
+    // A failed/unknown response leaves enough evidence for a safe retry.
+    await userSnap.ref.delete();
   }
 
   // ============================================================

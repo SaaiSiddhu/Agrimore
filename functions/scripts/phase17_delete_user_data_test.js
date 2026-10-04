@@ -18,22 +18,36 @@
 // Run with: node scripts/phase17_delete_user_data_test.js
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
-process.env.GCLOUD_PROJECT = "agrimore-66a4e";
+if (!/^demo-/.test(process.env.GCLOUD_PROJECT || "")) throw Error("Demo project required");
+for (const key of ["FIRESTORE_EMULATOR_HOST", "FIREBASE_AUTH_EMULATOR_HOST", "FIREBASE_STORAGE_EMULATOR_HOST"]) {
+  if (!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env[key] || "")) throw Error("Loopback emulators required");
+}
+process.env.STORAGE_EMULATOR_HOST = "http://" + process.env.FIREBASE_STORAGE_EMULATOR_HOST;
 
 const admin = require("firebase-admin");
 if (admin.apps.length === 0) {
-  admin.initializeApp({ projectId: "agrimore-66a4e" });
+  admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT, storageBucket: process.env.GCLOUD_PROJECT + ".appspot.com" });
 }
 const db = admin.firestore();
 const auth = admin.auth();
 
-const test = require("firebase-functions-test")({ projectId: "agrimore-66a4e" });
+const test = require("firebase-functions-test")({ projectId: process.env.GCLOUD_PROJECT });
 const { deleteUserData } = require("../lib/customer/deleteUserData");
 
 const wrapped = test.wrap(deleteUserData);
 
+const sessionTimes = new Map();
 async function callAndCapture(auth_) {
   try {
+    if (auth_) {
+      try { await auth.getUser(auth_.uid); }
+      catch (e) {
+        if (e.code !== "auth/user-not-found") throw e;
+        if (!(await db.collection("account_deletion_audit").doc(auth_.uid).get()).exists) await auth.createUser({ uid: auth_.uid });
+      }
+      if (!sessionTimes.has(auth_.uid)) sessionTimes.set(auth_.uid, Math.floor(Date.now() / 1000));
+      auth_ = { ...auth_, token: { ...auth_.token, auth_time: sessionTimes.get(auth_.uid) } };
+    }
     // deleteUserData is a v1 onCall — firebase-functions-test's v1 wrap()
     // takes (data, options) as two POSITIONAL arguments, with auth nested
     // under options.auth, unlike v2's single {data, auth} object (see

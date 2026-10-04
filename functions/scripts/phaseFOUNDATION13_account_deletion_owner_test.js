@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 for (const key of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST']) {
   if (!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env[key] || '')) throw new Error(`${key} loopback emulator required`);
 }
-process.env.GCLOUD_PROJECT = 'demo-agrimore-foundation';
+if (!/^demo-/.test(process.env.GCLOUD_PROJECT || '')) throw new Error('Demo project required');
 const admin = require('firebase-admin');
 process.env.STORAGE_EMULATOR_HOST = `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}`;
 admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT, storageBucket: `${process.env.GCLOUD_PROJECT}.appspot.com` });
@@ -11,7 +11,11 @@ const db = admin.firestore(), auth = admin.auth();
 const fft = require('firebase-functions-test')({ projectId: process.env.GCLOUD_PROJECT });
 const remove = fft.wrap(require('../lib/customer/deleteUserData').deleteUserData);
 let sequence = 0, passed = 0, failed = 0;
-const call = (uid, data) => remove(data, { auth: uid ? { uid, token: {} } : undefined });
+const sessionTimes = new Map();
+const call = (uid, data) => {
+  if (uid && !sessionTimes.has(uid)) sessionTimes.set(uid, Math.floor(Date.now() / 1000));
+  return remove(data, { auth: uid ? { uid, token: { auth_time: sessionTimes.get(uid) } } : undefined });
+};
 async function scenario(name, body) {
   try { await body(); passed++; console.log(`PASS ${name}`); }
   catch (e) { failed++; console.log(`FAIL ${name}: ${e.message}`); }
