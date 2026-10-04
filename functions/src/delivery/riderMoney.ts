@@ -293,10 +293,16 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
   const payoutRef = db.collection("rider_payouts").doc(id);
   const accRef = riderAccountRef(db, riderId);
   const partnerRef = db.collection("delivery_partners").doc(riderId);
-  const unsettled = db.collection("rider_earnings").where("riderId", "==", riderId).where("statementId", "==", null);
+  const unsettled = db.collection("rider_earnings")
+    .where("riderId", "==", riderId).where("statementId", "==", null)
+    .where("createdAt", "<", Timestamp.fromMillis(cutoffMs))
+    .orderBy("createdAt", "asc").limit(MAX_LINES_PER_STATEMENT + 1);
   return db.runTransaction(async (tx): Promise<StatementVerdict> => {
-    const [existing, acc, partner, lines] = await Promise.all([tx.get(payoutRef), tx.get(accRef), tx.get(partnerRef), tx.get(unsettled)]);
+    // A completed part is immutable: retry needs only its transaction anchor,
+    // not a new account/destination read or another unsettled-earnings scan.
+    const existing = await tx.get(payoutRef);
     if (existing.exists) return { kind: "exists" };
+    const [acc, partner, lines] = await Promise.all([tx.get(accRef), tx.get(partnerRef), tx.get(unsettled)]);
     const eligible = lines.docs
       .filter((d) => (millis(d.data().createdAt) ?? Infinity) < cutoffMs)
       .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0));

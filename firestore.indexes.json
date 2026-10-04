@@ -1077,6 +1077,24 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "rider_earnings",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "riderId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "statementId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
