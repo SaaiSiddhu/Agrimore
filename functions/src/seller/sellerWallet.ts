@@ -53,14 +53,27 @@ export const walletRef = (db: Db, sellerId: string) => db.collection("seller_wal
 
 export interface WalletSettings { minWithdrawalPaise: number; holdDays: number }
 
-/** settings/seller_wallet: { minWithdrawal (rupees), holdDays } — both optional. */
-export async function loadWalletSettings(db: Db): Promise<WalletSettings> {
-  const d = (await db.collection("settings").doc("seller_wallet").get()).data() ?? {};
+function badSellerMoneyState(): never {
+  throw new HttpsError("failed-precondition", "The seller money record needs review", { reason: "bad_money_state" });
+}
+
+/** Safe paise must retain its value through the existing rupee display. */
+function checkedSellerPaise(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0 || toPaise(fromPaise(value)) !== value) badSellerMoneyState();
+  return value;
+}
+
+function walletSettingsFromData(d: FirebaseFirestore.DocumentData): WalletSettings {
   const min = typeof d.minWithdrawal === "number" && Number.isFinite(d.minWithdrawal) && d.minWithdrawal >= 0
     ? toPaise(d.minWithdrawal) : DEFAULT_MIN_WITHDRAWAL_PAISE;
   const hold = typeof d.holdDays === "number" && Number.isInteger(d.holdDays) && d.holdDays >= 0 && d.holdDays <= 60
     ? d.holdDays : DEFAULT_HOLD_DAYS;
-  return { minWithdrawalPaise: min, holdDays: hold };
+  return { minWithdrawalPaise: checkedSellerPaise(min), holdDays: hold };
+}
+
+/** settings/seller_wallet: { minWithdrawal (rupees), holdDays } — both optional. */
+export async function loadWalletSettings(db: Db): Promise<WalletSettings> {
+  return walletSettingsFromData((await db.collection("settings").doc("seller_wallet").get()).data() ?? {});
 }
 
 const millis = (v: unknown): number | null =>
@@ -68,8 +81,10 @@ const millis = (v: unknown): number | null =>
     : v && typeof (v as { toMillis?: unknown }).toMillis === "function" ? (v as { toMillis: () => number }).toMillis() : null;
 
 const netPaise = (d: FirebaseFirestore.DocumentData) => {
-  const n = typeof d.netAmount === "number" ? d.netAmount : typeof d.amount === "number" ? d.amount : 0;
-  return Number.isFinite(n) && n > 0 ? toPaise(n) : 0;
+  // Only an absent net field can use the legacy alias; corruption is not zero.
+  const n = Object.prototype.hasOwnProperty.call(d, "netAmount") ? d.netAmount : d.amount;
+  if (typeof n !== "number" || !Number.isFinite(n) || n < 0) badSellerMoneyState();
+  return checkedSellerPaise(toPaise(n));
 };
 
 /** Whether a payout row can go into a withdrawal now. */
@@ -178,7 +193,8 @@ export async function walletSummaryCore(db: Db, sellerId: string, nowMs: number)
   for (const p of pending.docs) {
     const d = p.data();
     if (d.withdrawalId) continue;
-    if (isWithdrawable(d, cutoff)) { available += netPaise(d); count += 1; } else held += netPaise(d);
+    if (isWithdrawable(d, cutoff)) { available = checkedSellerPaise(available + netPaise(d)); count += 1; }
+    else held = checkedSellerPaise(held + netPaise(d));
   }
   const w = wallet.data() ?? {};
   return {
@@ -206,8 +222,6 @@ export type WithdrawVerdict =
  */
 export async function requestWithdrawalCore(db: Db, sellerId: string, requestId: unknown, nowMs: number): Promise<WithdrawVerdict> {
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(requestId)) return { kind: "refused", reason: "bad_request_id" };
-  const settings = await loadWalletSettings(db);
-  const cutoff = nowMs - settings.holdDays * 86400000;
   const id = `${sellerId}_${requestId}`;
   const wRef = db.collection("seller_withdrawals").doc(id);
   const accRef = walletRef(db, sellerId);
@@ -221,9 +235,10 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
       if (e.sellerId !== sellerId) return { kind: "refused", reason: "bad_request_id" };
       return { kind: "already", id, amountPaise: Number(e.amountPaise ?? 0), count: Number(e.payoutCount ?? 0) };
     }
-    const [seller, acc, details, pending] = await Promise.all([
+    const [seller, acc, details, pending, settingsDoc] = await Promise.all([
       tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
       tx.get(db.collection("seller_payout_details").doc(sellerId)), tx.get(pendingQ),
+      tx.get(db.collection("settings").doc("seller_wallet")),
     ]);
     if (!seller.exists) return { kind: "refused", reason: "not_a_seller" };
     const a = acc.data() ?? {};
@@ -232,12 +247,19 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
     const destination = payoutDestination(details.data());
     if (!destination) return { kind: "refused", reason: "no_destination" };
     const destinationFull = payoutDestinationFull(details.data());
+    // Configuration and payout selection belong to the same transaction snapshot.
+    // Completed request replays above never depend on a new settings read.
+    const settings = walletSettingsFromData(settingsDoc.data() ?? {});
+    const cutoff = nowMs - settings.holdDays * 86400000;
+    for (const p of pending.docs) {
+      if (!p.data().withdrawalId) netPaise(p.data());
+    }
 
     const rows = pending.docs
       .filter((p) => isWithdrawable(p.data(), cutoff))
       .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0))
       .slice(0, MAX_PAYOUTS_PER_WITHDRAWAL);
-    const amountPaise = rows.reduce((sum, p) => sum + netPaise(p.data()), 0);
+    const amountPaise = rows.reduce((sum, p) => checkedSellerPaise(sum + netPaise(p.data())), 0);
     if (amountPaise <= 0) return { kind: "refused", reason: "nothing_to_withdraw" };
     if (amountPaise < settings.minWithdrawalPaise) return { kind: "refused", reason: "below_minimum" };
 

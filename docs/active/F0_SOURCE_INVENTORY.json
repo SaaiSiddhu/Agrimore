@@ -9,7 +9,7 @@
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1173,
+    "collection_accesses": 1174,
     "filter_order_cursor_sites": 905,
     "source_files": 832
   },
@@ -43118,16 +43118,16 @@
         {
           "chain": [
             {
-              "line": 58,
+              "line": 76,
               "literal": "settings",
               "method": "collection"
             },
             {
-              "line": 58,
+              "line": 76,
               "method": "doc"
             },
             {
-              "line": 58,
+              "line": 76,
               "method": "get"
             }
           ],
@@ -43136,7 +43136,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 58,
+          "line": 76,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             5,
@@ -43154,12 +43154,12 @@
         {
           "chain": [
             {
-              "line": 173,
+              "line": 188,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 173,
+              "line": 188,
               "literal": "sellerId",
               "method": "where",
               "operators": [
@@ -43167,7 +43167,7 @@
               ]
             },
             {
-              "line": 173,
+              "line": 188,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -43175,7 +43175,7 @@
               ]
             },
             {
-              "line": 173,
+              "line": 188,
               "method": "get"
             }
           ],
@@ -43187,7 +43187,7 @@
             35,
             36
           ],
-          "line": 173,
+          "line": 188,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             109
@@ -43198,16 +43198,16 @@
         {
           "chain": [
             {
-              "line": 175,
+              "line": 190,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 175,
+              "line": 190,
               "method": "doc"
             },
             {
-              "line": 175,
+              "line": 190,
               "method": "get"
             }
           ],
@@ -43216,7 +43216,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 175,
+          "line": 190,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43227,12 +43227,12 @@
         {
           "chain": [
             {
-              "line": 212,
+              "line": 226,
               "literal": "seller_withdrawals",
               "method": "collection"
             },
             {
-              "line": 212,
+              "line": 226,
               "method": "doc"
             }
           ],
@@ -43245,7 +43245,7 @@
             57,
             58
           ],
-          "line": 212,
+          "line": 226,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             34
@@ -43256,12 +43256,12 @@
         {
           "chain": [
             {
-              "line": 214,
+              "line": 228,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 214,
+              "line": 228,
               "literal": "sellerId",
               "method": "where",
               "operators": [
@@ -43269,7 +43269,7 @@
               ]
             },
             {
-              "line": 214,
+              "line": 228,
               "literal": "status",
               "method": "where",
               "operators": [
@@ -43285,7 +43285,7 @@
             35,
             36
           ],
-          "line": 214,
+          "line": 228,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             109
@@ -43296,12 +43296,12 @@
         {
           "chain": [
             {
-              "line": 225,
+              "line": 239,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 225,
+              "line": 239,
               "method": "doc"
             }
           ],
@@ -43312,7 +43312,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 225,
+          "line": 239,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             31,
@@ -43325,12 +43325,12 @@
         {
           "chain": [
             {
-              "line": 226,
+              "line": 240,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 226,
+              "line": 240,
               "method": "doc"
             }
           ],
@@ -43339,7 +43339,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 226,
+          "line": 240,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43350,12 +43350,44 @@
         {
           "chain": [
             {
-              "line": 338,
+              "line": 241,
+              "literal": "settings",
+              "method": "collection"
+            },
+            {
+              "line": 241,
+              "method": "doc"
+            }
+          ],
+          "collection": "settings",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 241,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
+            5,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 360,
               "literal": "seller_withdrawals",
               "method": "collection"
             },
             {
-              "line": 338,
+              "line": 360,
               "method": "doc"
             }
           ],
@@ -43368,7 +43400,7 @@
             57,
             58
           ],
-          "line": 338,
+          "line": 360,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             34
@@ -43379,12 +43411,12 @@
         {
           "chain": [
             {
-              "line": 351,
+              "line": 373,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 351,
+              "line": 373,
               "method": "doc"
             }
           ],
@@ -43396,7 +43428,7 @@
             35,
             36
           ],
-          "line": 351,
+          "line": 373,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             109
@@ -43407,12 +43439,12 @@
         {
           "chain": [
             {
-              "line": 376,
+              "line": 398,
               "literal": "seller_withdrawals",
               "method": "collection"
             },
             {
-              "line": 376,
+              "line": 398,
               "method": "doc"
             }
           ],
@@ -43425,7 +43457,7 @@
             57,
             58
           ],
-          "line": 376,
+          "line": 398,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             34
@@ -43436,12 +43468,12 @@
         {
           "chain": [
             {
-              "line": 389,
+              "line": 411,
               "literal": "seller_payouts",
               "method": "collection"
             },
             {
-              "line": 389,
+              "line": 411,
               "method": "doc"
             }
           ],
@@ -43452,38 +43484,38 @@
           "index_candidate_ids": [
             35,
             36
-          ],
-          "line": 389,
-          "review": "MANUAL_REQUIRED",
-          "rule_candidate_ids": [
-            109
-          ],
-          "scope": "collection",
-          "unresolved": false
-        },
-        {
-          "chain": [
-            {
-              "line": 411,
-              "literal": "seller_payout_change_requests",
-              "method": "collection"
-            },
-            {
-              "line": 411,
-              "method": "doc"
-            }
-          ],
-          "collection": "seller_payout_change_requests",
-          "direct_index_review": {
-            "classification": "MANUAL_REVIEW_REQUIRED"
-          },
-          "index_candidate_ids": [
-            61,
-            62
           ],
           "line": 411,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
+            109
+          ],
+          "scope": "collection",
+          "unresolved": false
+        },
+        {
+          "chain": [
+            {
+              "line": 433,
+              "literal": "seller_payout_change_requests",
+              "method": "collection"
+            },
+            {
+              "line": 433,
+              "method": "doc"
+            }
+          ],
+          "collection": "seller_payout_change_requests",
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [
+            61,
+            62
+          ],
+          "line": 433,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [
             35
           ],
           "scope": "collection",
@@ -43492,12 +43524,12 @@
         {
           "chain": [
             {
-              "line": 415,
+              "line": 437,
               "literal": "sellers",
               "method": "collection"
             },
             {
-              "line": 415,
+              "line": 437,
               "method": "doc"
             }
           ],
@@ -43508,7 +43540,7 @@
           "index_candidate_ids": [
             37
           ],
-          "line": 415,
+          "line": 437,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             31,
@@ -43521,12 +43553,12 @@
         {
           "chain": [
             {
-              "line": 415,
+              "line": 437,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 415,
+              "line": 437,
               "method": "doc"
             }
           ],
@@ -43535,7 +43567,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 415,
+          "line": 437,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43546,12 +43578,12 @@
         {
           "chain": [
             {
-              "line": 438,
+              "line": 460,
               "literal": "seller_payout_change_requests",
               "method": "collection"
             },
             {
-              "line": 438,
+              "line": 460,
               "method": "doc"
             }
           ],
@@ -43563,7 +43595,7 @@
             61,
             62
           ],
-          "line": 438,
+          "line": 460,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             35
@@ -43574,12 +43606,12 @@
         {
           "chain": [
             {
-              "line": 454,
+              "line": 476,
               "literal": "seller_payout_details",
               "method": "collection"
             },
             {
-              "line": 454,
+              "line": 476,
               "method": "doc"
             }
           ],
@@ -43588,7 +43620,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 454,
+          "line": 476,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             33
@@ -43599,7 +43631,7 @@
       ],
       "filter_order_cursor_sites": [
         {
-          "line": 173,
+          "line": 188,
           "literal": "sellerId",
           "method": "where",
           "operators": [
@@ -43607,7 +43639,7 @@
           ]
         },
         {
-          "line": 173,
+          "line": 188,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -43615,7 +43647,7 @@
           ]
         },
         {
-          "line": 214,
+          "line": 228,
           "literal": "sellerId",
           "method": "where",
           "operators": [
@@ -43623,7 +43655,7 @@
           ]
         },
         {
-          "line": 214,
+          "line": 228,
           "literal": "status",
           "method": "where",
           "operators": [
@@ -43632,7 +43664,7 @@
         }
       ],
       "path": "functions/src/seller/sellerWallet.ts",
-      "sha256": "b849094feddac46739eaa59d0f372462957d9f3f60567df0a80bc004f1eb0255"
+      "sha256": "6426d64c2ccdd2746a71ced38e770c99730e0dfb8606ccd9227f4edd7990758e"
     },
     {
       "callable_sites": [],
