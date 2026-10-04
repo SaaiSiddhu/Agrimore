@@ -33,6 +33,7 @@
         android:label="Agrimore Delivery"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"

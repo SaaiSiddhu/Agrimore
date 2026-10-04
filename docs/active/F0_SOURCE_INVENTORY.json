@@ -21783,14 +21783,14 @@
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
       "path": "apps/seller/lib/l10n/app_localizations.dart",
-      "sha256": "4435192ce159cf848d00c04a4cc1c906c959ccb9ad73efb1078a3644c6b5bf8b"
+      "sha256": "533ed332673b0b804e78920562b5180b79ee88151abafab274fc4ca0806b147e"
     },
     {
       "callable_sites": [],
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
       "path": "apps/seller/lib/l10n/app_localizations_en.dart",
-      "sha256": "89d1ea0c1dec29f660ba4a2d07b50564d919734fa7788cd00730162b71018275"
+      "sha256": "aeff5abf9f6903ce9f8ab2703e3b89b6c8fc652dcd4b96540921dcc7e61ab1e8"
     },
     {
       "callable_sites": [],
