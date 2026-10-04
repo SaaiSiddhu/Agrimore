@@ -222,6 +222,8 @@ export {
   rejectSellerWithdrawal, requestSellerPayoutChange, cancelSellerPayoutChange, reviewSellerPayoutChange,
 } from "./seller/sellerWallet";
 export { onProductReviewWrite, replyToReview } from "./seller/reviews";
+// Default-off photo rollout. App Check approval/native recovery must precede activation.
+export { createReviewPhotoDraft, uploadReviewPhotoAsset, publishReviewPhotoDraft, getReviewPhotoDraftStatus, cleanupReviewPhotoDraft } from "./seller/reviewPhotoRpc";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)

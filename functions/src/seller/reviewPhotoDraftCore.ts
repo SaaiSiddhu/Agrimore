@@ -303,3 +303,31 @@ export async function finishPhotoActivation(db: Db, actor: string, draft: string
    tx.update(rr, { photoActivationState: "complete" });
  });
 }
+
+/** Owner-only safe RPC projection; never return paths, receipts, profile, hashes or access plans. */
+export async function readPhotoDraftStatus(db: Db, actor: string, draft: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ return db.runTransaction(async tx => {
+   const d = owned(await tx.get(db.collection(COLL).doc(draft)), actor), at = instant(now), uploads = uploadMap(d);
+   const frozen = frozenContent(d), plan = photoAccessPlan(d);
+   let stillCurrent = false, activation: "not_started" | "pending" | "complete" | "recovery_required" = "not_started";
+   if (d.state === "linked") {
+     const r = (await tx.get(db.collection("products").doc(d.productId).collection("reviews").doc(d.reviewId))).data();
+     stillCurrent = !!r && r.userId === actor && r.productId === d.productId && r.photoDraftId === draft && r.supersededBy == null &&
+       validReceipts(d, d.receipts) && Array.isArray(r.imageUrls) && d.receipts.every((v: PhotoReceipt) => r.imageUrls.includes(v.url));
+     const managed = !!plan && !!frozen && d.contentHash === contentHash(frozen) && validReceipts(d, d.receipts) &&
+       JSON.stringify(d.receipts) === JSON.stringify(plan.assets.map(({ path, generation, url }) => ({ path, generation, url })));
+     const completed = managed && d.photoActivationState === "complete" && Number.isSafeInteger(d.photoActivatedAt) &&
+       Number.isSafeInteger(d.linkedAt) && d.linkedAt >= d.createdAt && d.photoActivatedAt >= d.linkedAt &&
+       (!r || r.photoDraftId !== draft || r.photoActivationState === "complete");
+     // A completed receipt survives legitimate later deletion/replacement; it is not a new activation grant.
+     activation = completed ? "complete" : managed && d.photoActivationState === "pending" && r?.photoActivationState === "pending"
+       ? "pending" : "recovery_required";
+   }
+   return { draftId: draft, productId: d.productId as string, reviewId: d.reviewId as string, state: d.state as string,
+     expiresAt: d.expiresAt as number, leaseExpired: at >= d.expiresAt, photoActivationState: activation, stillCurrent,
+     assetIds: d.paths.map((p: string) => p.slice(p.lastIndexOf("/") + 1, -4)),
+     uploadedAssetIds: d.paths.filter((p: string) => uploads[createHash("sha256").update(p).digest("hex")]?.state === "uploaded").map((p: string) => p.slice(p.lastIndexOf("/") + 1, -4)),
+     recoveryRequired: d.state === "cleanup" || (d.state !== "linked" && at >= d.expiresAt) || (d.state === "linked" && activation !== "complete") };
+ });
+}
