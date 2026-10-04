@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/review_provider.dart';
+import '../../../../providers/auth_provider.dart' as app_auth;
+import 'add_review_dialog.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 class ReviewCard extends StatelessWidget {
@@ -61,13 +63,16 @@ class ReviewCard extends StatelessWidget {
             if (review.imageUrls.isNotEmpty)
               _buildReviewImages(context, review.imageUrls),
             // SELLER-ACCOUNT-1a: the seller's public reply.
-            if (review.sellerReplyText != null && review.sellerReplyText!.isNotEmpty) ...[
+            if (review.sellerReplyText != null &&
+                review.sellerReplyText!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.grey[100],
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -75,10 +80,15 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       'Response from the seller',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: textColor),
                     ),
                     const SizedBox(height: 4),
-                    Text(review.sellerReplyText!, style: TextStyle(fontSize: 13, color: textColor, height: 1.4)),
+                    Text(review.sellerReplyText!,
+                        style: TextStyle(
+                            fontSize: 13, color: textColor, height: 1.4)),
                   ],
                 ),
               ),
@@ -95,7 +105,15 @@ class ReviewCard extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, Color lightTextColor) {
     final authService = Provider.of<AuthService>(context, listen: false);
-    final isOwner = authService.currentUserId == review.userId;
+    final auth = context.watch<app_auth.AuthProvider>();
+    final epoch = auth.sessionVersion;
+    bool owns() =>
+        context.mounted &&
+        identical(context.read<app_auth.AuthProvider>(), auth) &&
+        identical(context.read<AuthService>(), authService) &&
+        auth.isSessionCurrent(review.userId, epoch) &&
+        authService.currentUserId == review.userId;
+    final isOwner = owns();
 
     return Row(
       children: [
@@ -106,7 +124,8 @@ class ReviewCard extends StatelessWidget {
               ? NetworkImage(review.userAvatar)
               : null,
           child: review.userAvatar.isEmpty
-              ? Icon(Icons.person, color: isDark ? Colors.grey[400] : Colors.grey[600])
+              ? Icon(Icons.person,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600])
               : null,
         ),
         const SizedBox(width: 12),
@@ -129,10 +148,11 @@ class ReviewCard extends StatelessWidget {
           ),
         ),
         if (isOwner)
-          PopupMenuButton(
+          PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: lightTextColor, size: 20),
             color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'edit',
@@ -148,7 +168,8 @@ class ReviewCard extends StatelessWidget {
                 value: 'delete',
                 child: Row(
                   children: const [
-                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                    Icon(Icons.delete_outline,
+                        size: 18, color: AppColors.error),
                     SizedBox(width: 10),
                     Text('Delete', style: TextStyle(color: AppColors.error)),
                   ],
@@ -156,6 +177,7 @@ class ReviewCard extends StatelessWidget {
               ),
             ],
             onSelected: (value) {
+              if (!owns()) return;
               if (value == 'delete') {
                 _showDeleteDialog(context, review.productId, review.reviewId);
               } else if (value == 'edit') {
@@ -173,7 +195,9 @@ class ReviewCard extends StatelessWidget {
         Row(
           children: List.generate(5, (index) {
             return Icon(
-              index < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
+              index < review.rating
+                  ? Icons.star_rounded
+                  : Icons.star_border_rounded,
               color: Colors.amber[700],
               size: 18,
             );
@@ -222,7 +246,8 @@ class ReviewCard extends StatelessWidget {
                   width: 80,
                   height: 80,
                   color: isDark ? Colors.grey[800] : Colors.grey[200],
-                  child: Icon(Icons.broken_image, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                  child: Icon(Icons.broken_image,
+                      color: isDark ? Colors.grey[600] : Colors.grey[400]),
                 ),
               ),
             ),
@@ -234,7 +259,8 @@ class ReviewCard extends StatelessWidget {
 
   Widget _buildFooter(BuildContext context, Color lightTextColor) {
     final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
-    final userId = Provider.of<AuthService>(context, listen: false).currentUserId;
+    final userId =
+        Provider.of<AuthService>(context, listen: false).currentUserId;
 
     bool isHelpful = review.helpfulUsers.contains(userId);
     bool isUnhelpful = review.unhelpfulUsers.contains(userId);
@@ -244,17 +270,23 @@ class ReviewCard extends StatelessWidget {
       children: [
         Text(
           'Helpful?',
-          style: TextStyle(fontSize: 12, color: lightTextColor, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: 12, color: lightTextColor, fontWeight: FontWeight.w500),
         ),
         const SizedBox(width: 8),
         _buildHelpfulButton(
           context: context,
           text: review.helpfulCount.toString(),
-          icon: isHelpful ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
-          color: isHelpful ? (isDark ? AppColors.primaryLight : AppColors.primary) : lightTextColor,
+          icon: isHelpful
+              ? Icons.thumb_up_alt_rounded
+              : Icons.thumb_up_alt_outlined,
+          color: isHelpful
+              ? (isDark ? AppColors.primaryLight : AppColors.primary)
+              : lightTextColor,
           onTap: () {
             if (userId != null) {
-              reviewProvider.markHelpful(review.productId, review.reviewId, userId, true);
+              reviewProvider.markHelpful(
+                  review.productId, review.reviewId, userId, true);
             }
           },
         ),
@@ -262,11 +294,14 @@ class ReviewCard extends StatelessWidget {
         _buildHelpfulButton(
           context: context,
           text: review.unhelpfulCount.toString(),
-          icon: isUnhelpful ? Icons.thumb_down_alt_rounded : Icons.thumb_down_alt_outlined,
+          icon: isUnhelpful
+              ? Icons.thumb_down_alt_rounded
+              : Icons.thumb_down_alt_outlined,
           color: isUnhelpful ? AppColors.error : lightTextColor,
           onTap: () {
-             if (userId != null) {
-              reviewProvider.markHelpful(review.productId, review.reviewId, userId, false);
+            if (userId != null) {
+              reviewProvider.markHelpful(
+                  review.productId, review.reviewId, userId, false);
             }
           },
         ),
@@ -304,145 +339,106 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String productId, String reviewId) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Review'),
-        content: const Text('Are you sure you want to delete this review? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Provider.of<ReviewProvider>(context, listen: false)
-                  .deleteReview(productId, reviewId);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+  void _showDeleteDialog(
+      BuildContext context, String productId, String reviewId) {
+    final auth = context.read<app_auth.AuthProvider>();
+    final service = context.read<AuthService>();
+    final provider = context.read<ReviewProvider>();
+    final owner = review.userId;
+    final scope = Navigator.of(context).context;
+    final originRoute = ModalRoute.of(context);
+    final epoch = auth.sessionVersion;
+    bool owns() =>
+        scope.mounted &&
+        (originRoute?.isActive ?? false) &&
+        identical(scope.read<app_auth.AuthProvider>(), auth) &&
+        identical(scope.read<AuthService>(), service) &&
+        identical(scope.read<ReviewProvider>(), provider) &&
+        auth.isSessionCurrent(owner, epoch) &&
+        service.currentUserId == owner;
+    if (!owns()) return;
+    showDialog<void>(
+        context: context,
+        builder: (_) => _DeleteReviewDialog(
+            isDark: isDark,
+            owns: owns,
+            delete: (guard) => provider.deleteReview(productId, reviewId,
+                isSessionCurrent: guard)));
   }
 
   void _showEditDialog(BuildContext context, ReviewModel review) {
-    final titleController = TextEditingController(text: review.title);
-    final commentController = TextEditingController(text: review.comment);
-    int selectedRating = review.rating;
+    showDialog<bool>(
+        context: context,
+        builder: (_) => AddReviewDialog(
+            productId: review.productId,
+            productName: 'Product review',
+            reviewToEdit: review));
+  }
+}
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Icon(Icons.edit_rounded, color: isDark ? AppColors.primaryLight : AppColors.primary, size: 22),
-                  const SizedBox(width: 10),
-                  const Text('Edit Review'),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Rating selector
-                    Text(
-                      'Rating',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: isDark ? Colors.grey[300] : Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (index) {
-                        return GestureDetector(
-                          onTap: () => setDialogState(() => selectedRating = index + 1),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(
-                              index < selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
-                              color: Colors.amber[700],
-                              size: 32,
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 20),
-                    // Title
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Title',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF383838) : Colors.grey[50],
-                      ),
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                    ),
-                    const SizedBox(height: 16),
-                    // Comment
-                    TextField(
-                      controller: commentController,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        labelText: 'Your Review',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF383838) : Colors.grey[50],
-                      ),
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    titleController.dispose();
-                    commentController.dispose();
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
-                    reviewProvider.updateReview(
-                      productId: review.productId,
-                      reviewId: review.reviewId,
-                      rating: selectedRating,
-                      title: titleController.text.trim(),
-                      comment: commentController.text.trim(),
-                    );
-                    titleController.dispose();
-                    commentController.dispose();
-                    Navigator.pop(ctx);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-                  ),
-                  child: const Text('Update', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+class _DeleteReviewDialog extends StatefulWidget {
+  const _DeleteReviewDialog(
+      {required this.isDark, required this.owns, required this.delete});
+  final bool isDark;
+  final bool Function() owns;
+  final Future<void> Function(bool Function()) delete;
+  @override
+  State<_DeleteReviewDialog> createState() => _DeleteReviewDialogState();
+}
+
+class _DeleteReviewDialogState extends State<_DeleteReviewDialog> {
+  bool _busy = false;
+  bool _canAct() =>
+      mounted && widget.owns() && (ModalRoute.of(context)?.isCurrent ?? false);
+  Future<void> _submit() async {
+    if (_busy || !_canAct()) return;
+    setState(() {
+      _busy = true;
+    });
+    try {
+      await widget.delete(_canAct);
+      if (mounted && _canAct()) {
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted && _canAct()) {
+        SnackbarHelper.showError(
+            context, 'Unable to delete your review. Please try again.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    final owns = widget.owns();
+    return PopScope(
+        canPop: !_busy,
+        child: AlertDialog(
+          backgroundColor:
+              widget.isDark ? const Color(0xFF2C2C2C) : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Delete Review'),
+          content: Text(!owns
+              ? 'Your session changed. Close this dialog and try again.'
+              : 'Are you sure you want to delete this review? This action cannot be undone.'),
+          actions: [
+            TextButton(
+                onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                child: Text(owns ? 'Cancel' : 'Close')),
+            ElevatedButton(
+                onPressed: _busy || !owns ? null : _submit,
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                child: Text(_busy ? 'Deleting…' : 'Delete')),
+          ],
+        ));
   }
 }
