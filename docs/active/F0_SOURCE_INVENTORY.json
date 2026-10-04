@@ -11528,16 +11528,16 @@
         {
           "chain": [
             {
-              "line": 293,
+              "line": 334,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 293,
+              "line": 334,
               "method": "doc"
             },
             {
-              "line": 293,
+              "line": 334,
               "method": "update"
             }
           ],
@@ -11548,7 +11548,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 293,
+          "line": 334,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             88
@@ -11559,12 +11559,12 @@
         {
           "chain": [
             {
-              "line": 303,
+              "line": 344,
               "literal": "delivery_tasks",
               "method": "collection"
             },
             {
-              "line": 304,
+              "line": 345,
               "method": "doc"
             }
           ],
@@ -11573,7 +11573,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 303,
+          "line": 344,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             89
@@ -11584,16 +11584,16 @@
         {
           "chain": [
             {
-              "line": 305,
+              "line": 346,
               "literal": "live",
               "method": "collection"
             },
             {
-              "line": 306,
+              "line": 347,
               "method": "doc"
             },
             {
-              "line": 307,
+              "line": 348,
               "method": "set"
             }
           ],
@@ -11602,7 +11602,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 305,
+          "line": 346,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             90
@@ -11613,16 +11613,16 @@
         {
           "chain": [
             {
-              "line": 378,
+              "line": 423,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 378,
+              "line": 423,
               "method": "doc"
             },
             {
-              "line": 378,
+              "line": 423,
               "method": "set"
             }
           ],
@@ -11633,7 +11633,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 378,
+          "line": 423,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             88
@@ -11644,7 +11644,7 @@
       ],
       "filter_order_cursor_sites": [],
       "path": "apps/delivery/lib/providers/location_provider.dart",
-      "sha256": "bcff964df5b8ae7c4cde1f5adc0e5eb08a0501c20af95d66eb9c45f6241f82ff"
+      "sha256": "2d5103a98945f3f77a3ea956c08a54727536e3b1b492b4a5d54cd114a0c6126b"
     },
     {
       "callable_sites": [
