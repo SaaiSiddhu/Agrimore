@@ -9,9 +9,9 @@
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1148,
+    "collection_accesses": 1149,
     "filter_order_cursor_sites": 896,
-    "source_files": 826
+    "source_files": 827
   },
   "files": [
     {
@@ -41377,11 +41377,45 @@
           "rule_candidate_ids": [],
           "scope": "collection",
           "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 105,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 105,
+              "method": "doc"
+            },
+            {
+              "line": 105,
+              "method": "get"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 105,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
         }
       ],
       "filter_order_cursor_sites": [],
       "path": "functions/src/seller/reviewPhotoDraftCore.ts",
-      "sha256": "908136e87013fbb0fc702bb73497aba584e07f1751942fdc95f17affcded54f3"
+      "sha256": "7cbd5c6e6ad8f6db45d0dbc29c5863f5c10b097b6a2017f4cf19ec80fe444930"
+    },
+    {
+      "callable_sites": [],
+      "collection_accesses": [],
+      "filter_order_cursor_sites": [],
+      "path": "functions/src/seller/reviewPhotoObjectVerifier.ts",
+      "sha256": "0fc39ef57b132b994af29ed90456bbb52acf0768d73c6af27ef4b02bc3b98d95"
     },
     {
       "callable_sites": [],

@@ -98,3 +98,12 @@ export async function claimPhotoCleanup(db: Db, actor: string, draft: string, ab
    return { claimed: true, paths: [...d.paths] as string[] };
  });
 }
+
+/** Trusted-only read boundary; does not grant client collection access. */
+export async function inspectPhotoDraft(db: Db, actor: string, draft: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ const d = owned(await db.collection(COLL).doc(draft).get(), actor);
+ if (d.state !== "open" && d.state !== "ready") fail("failed-precondition", "Photo draft closed.");
+ if (instant(now) >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
+ return { paths: [...d.paths] as string[], expiresAt: d.expiresAt as number, state: d.state as string };
+}
