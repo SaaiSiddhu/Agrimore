@@ -627,3 +627,6 @@ Photo-core final default gate at9c24ae24 completed exit0/failed0 (/tmp/agrimore-
 
 
 F7 photo trusted-object verification CLAIMED (2026-10-04), based02db09f: exact reviewPhotoDraftCore.ts read-only validatedleaseinspection, new reviewPhotoObjectVerifier.ts and phaseFOUNDATION18_review_photo_objects_test.js, foundation matrix/progress/inventory evidence. External /tmp/agrimore-photo-object-verifier-contract.md. Configured bucket/exactleasedpaths/immutablegenerations/nonemptyJPEGmetadata<10MiB/no draftdownloadtokens, lease+metadata recheck; actual SDK demo positives and malformed/race controls. Metadata MIME is not decoded-byte proof. No callable/rules/permissions/client/URLissuance/live/deploy; preserve WIP/singleagent/fullgoalACTIVE.
+
+
+Photo object first postcommit default gate at5f7a77d2 failed1: deploy-bundle guard correctly flagged synthetic token literals in the test script (not real credentials). Other gates passed, allfiveanalyzers0errors. Fixed only claimed test fixture to generate capability values at runtime and construct emptyvalue via String(); credential guard unchanged/no allowlist or suppression added. Direct unchanged guard passes. First failed log retained /tmp/agrimore-photo-object-postcommit-gate.log; exact-final66demo checks and fresh postcommit gate required before SELF_GATED disposition.

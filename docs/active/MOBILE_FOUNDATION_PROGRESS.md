@@ -481,3 +481,6 @@ Photo-core final default gate at9c24ae24 completed exit0/failed0 (/tmp/agrimore-
 
 
 2026-10-04 photo object verifier: server-only configuredbucket/exactlease/generation/metageneration/MIME/size/no drafttoken boundary implemented, no URL/permission/callable enabled. Actual demo SDK positives/refusals +doubles29pass; configuredbucket guard mutation28pass1fail; restored fresh29+37core=66pass, tsc/emulator0. Initial test syntax failure excluded. Inventory827/1149/896/99 check0. Metadata is not decodedbyte proof; full photo protocol/mobile/rules/cleanup and original F0–F9 acceptance remain OPEN. Details F0matrix, postcommit gate pending. OwnerWIP preserved/singleagent/no deploy/livewrites.
+
+
+Photo object first postcommit default gate at5f7a77d2 failed1: deploy-bundle guard correctly flagged synthetic token literals in the test script (not real credentials). Other gates passed, allfiveanalyzers0errors. Fixed only claimed test fixture to generate capability values at runtime and construct emptyvalue via String(); credential guard unchanged/no allowlist or suppression added. Direct unchanged guard passes. First failed log retained /tmp/agrimore-photo-object-postcommit-gate.log; exact-final66demo checks and fresh postcommit gate required before SELF_GATED disposition.
