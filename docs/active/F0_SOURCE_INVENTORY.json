@@ -9,9 +9,9 @@
   },
   "coverage": {
     "callable_sites": 99,
-    "collection_accesses": 1149,
+    "collection_accesses": 1150,
     "filter_order_cursor_sites": 896,
-    "source_files": 827
+    "source_files": 828
   },
   "files": [
     {
@@ -41108,6 +41108,13 @@
     },
     {
       "callable_sites": [],
+      "collection_accesses": [],
+      "filter_order_cursor_sites": [],
+      "path": "functions/src/seller/reviewPhotoCleanup.ts",
+      "sha256": "d5b135bc4eaceebc65fa178aea3205a50d8a2061bd2beb4b4f84e7275411dcb4"
+    },
+    {
+      "callable_sites": [],
       "collection_accesses": [
         {
           "chain": [
@@ -41404,11 +41411,38 @@
           "rule_candidate_ids": [],
           "scope": "collection",
           "unresolved": true
+        },
+        {
+          "chain": [
+            {
+              "line": 114,
+              "literal": null,
+              "method": "collection"
+            },
+            {
+              "line": 114,
+              "method": "doc"
+            },
+            {
+              "line": 114,
+              "method": "get"
+            }
+          ],
+          "collection": null,
+          "direct_index_review": {
+            "classification": "MANUAL_REVIEW_REQUIRED"
+          },
+          "index_candidate_ids": [],
+          "line": 114,
+          "review": "MANUAL_REQUIRED",
+          "rule_candidate_ids": [],
+          "scope": "collection",
+          "unresolved": true
         }
       ],
       "filter_order_cursor_sites": [],
       "path": "functions/src/seller/reviewPhotoDraftCore.ts",
-      "sha256": "7cbd5c6e6ad8f6db45d0dbc29c5863f5c10b097b6a2017f4cf19ec80fe444930"
+      "sha256": "e45e0e605e682e95bd852cee56de3e632b4a722eccff42d95ebcd0da44718f0a"
     },
     {
       "callable_sites": [],

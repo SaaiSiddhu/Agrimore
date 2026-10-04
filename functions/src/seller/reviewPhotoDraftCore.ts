@@ -107,3 +107,11 @@ export async function inspectPhotoDraft(db: Db, actor: string, draft: string, no
  if (instant(now) >= d.expiresAt) fail("deadline-exceeded", "Photo draft expired.");
  return { paths: [...d.paths] as string[], expiresAt: d.expiresAt as number, state: d.state as string };
 }
+
+/** Trusted cleanup lookup; keep the tombstone indefinitely until recovery policy exists. */
+export async function inspectPhotoCleanup(db: Db, actor: string, draft: string, now: () => number = Date.now) {
+ id(actor); id(draft); instant(now);
+ const d = owned(await db.collection(COLL).doc(draft).get(), actor);
+ if (d.state !== "cleanup") fail("failed-precondition", "Photo cleanup not claimed.");
+ return { paths: [...d.paths] as string[], expiresAt: d.expiresAt as number, leaseExpired: instant(now) >= d.expiresAt };
+}
