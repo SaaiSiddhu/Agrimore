@@ -2,7 +2,8 @@
 // Project: agrimore-66a4e
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -46,13 +47,15 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDrQIYzWcC1RAaS474r_a9I9caY3cCVTSc',
-    appId: '1:1082819024270:web:fa2a015928e81bf1e640df',
+    apiKey: 'AIzaSyCk7FG8B7JjccxCUHe_2j35r9pk-lh08Gc',
+    appId: '1:1082819024270:ios:6dc2b8726e003004e640df',
     messagingSenderId: '1082819024270',
     projectId: 'agrimore-66a4e',
     databaseURL: 'https://agrimore-66a4e-default-rtdb.firebaseio.com',
     storageBucket: 'agrimore-66a4e.firebasestorage.app',
-    iosBundleId: 'com.agrimore.agrimore',
+    iosBundleId: 'com.customer.agrimore',
+    iosClientId:
+        '1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
