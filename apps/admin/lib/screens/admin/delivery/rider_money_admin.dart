@@ -80,6 +80,7 @@ String riderMoneyRefusal(String code, String? reason) => switch (reason) {
       'request_reused' => 'This deposit was already recorded with different details. Check the rider\'s cash before recording again.',
       'bad_request_id' => 'Could not record that. Please try again.',
       'payout_not_pending' => 'This statement is not waiting to be paid — it may already be settled.',
+      'payout_review_state' => "This statement does not match the rider's current payout records. Check the statement and account before marking it paid.",
       'bank_change_pending' => 'The rider has a payout-detail change waiting. Review it first.',
       'no_destination' => 'The rider has no payout details for that method.',
       'bad_method' => 'Choose bank or UPI.',

@@ -4279,7 +4279,7 @@
       "collection_accesses": [],
       "filter_order_cursor_sites": [],
       "path": "apps/admin/lib/screens/admin/delivery/rider_money_admin.dart",
-      "sha256": "37e2da84b0bbe41859439a3a6f4731f12e68620cb46a692b2b445938187645dd"
+      "sha256": "704e820e41818fbb3711d9160d0d5fc08cd97313798dc42e44ce8654515efc50"
     },
     {
       "callable_sites": [
@@ -39074,12 +39074,12 @@
         {
           "chain": [
             {
-              "line": 546,
+              "line": 547,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 546,
+              "line": 547,
               "method": "doc"
             }
           ],
@@ -39090,7 +39090,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 546,
+          "line": 547,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             88
@@ -39101,16 +39101,16 @@
         {
           "chain": [
             {
-              "line": 623,
+              "line": 629,
               "literal": "rider_payouts",
               "method": "collection"
             },
             {
-              "line": 623,
+              "line": 629,
               "method": "doc"
             },
             {
-              "line": 623,
+              "line": 629,
               "method": "get"
             }
           ],
@@ -39121,7 +39121,7 @@
           "index_candidate_ids": [
             59
           ],
-          "line": 623,
+          "line": 629,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             108
@@ -39132,16 +39132,16 @@
         {
           "chain": [
             {
-              "line": 637,
+              "line": 643,
               "literal": "delivery_partners",
               "method": "collection"
             },
             {
-              "line": 637,
+              "line": 643,
               "method": "doc"
             },
             {
-              "line": 637,
+              "line": 643,
               "method": "get"
             }
           ],
@@ -39152,7 +39152,7 @@
           "index_candidate_ids": [
             6
           ],
-          "line": 637,
+          "line": 643,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             88
@@ -39163,16 +39163,16 @@
         {
           "chain": [
             {
-              "line": 659,
+              "line": 665,
               "literal": "rider_bank_change_requests",
               "method": "collection"
             },
             {
-              "line": 659,
+              "line": 665,
               "method": "doc"
             },
             {
-              "line": 659,
+              "line": 665,
               "method": "get"
             }
           ],
@@ -39181,7 +39181,7 @@
             "classification": "MANUAL_REVIEW_REQUIRED"
           },
           "index_candidate_ids": [],
-          "line": 659,
+          "line": 665,
           "review": "MANUAL_REQUIRED",
           "rule_candidate_ids": [
             105
@@ -39283,7 +39283,7 @@
         }
       ],
       "path": "functions/src/delivery/riderMoney.ts",
-      "sha256": "00a45243e0625ef90f751c6d40c775d3843451da85cef33bafada29053e010e6"
+      "sha256": "0a5f8ffe4bb58bf6f303b49915629773784618a8f92d26ac0b8d7ef8486b93d1"
     },
     {
       "callable_sites": [],

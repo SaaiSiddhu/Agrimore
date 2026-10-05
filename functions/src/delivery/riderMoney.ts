@@ -453,8 +453,8 @@ export async function requestBankChangeCore(db: Db, riderId: string, data: unkno
 
 export type BankReviewVerdict = { kind: "approved" | "rejected"; released: number } | { kind: "refused"; reason: "not_found" | "not_pending" | "reason_required" | "bank_review_state" };
 
-/** A stored request owner must be one Firestore document ID, not a path. */
-function validBankReviewRiderId(value: unknown): value is string {
+/** A stored rider owner must be one Firestore document ID, not a path. */
+function validRiderDocumentId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 &&
     Buffer.byteLength(value, "utf8") <= 1500 && !value.includes("/") &&
     value !== "." && value !== ".." && !/^__.*__$/.test(value) &&
@@ -471,7 +471,7 @@ export async function reviewBankChangeCore(
     if (!req.exists) return { kind: "refused", reason: "not_found" };
     const r = req.data()!;
     if (r.status !== "pending") return { kind: "refused", reason: "not_pending" };
-    if (!validBankReviewRiderId(r.riderId)) return { kind: "refused", reason: "bank_review_state" };
+    if (!validRiderDocumentId(r.riderId)) return { kind: "refused", reason: "bank_review_state" };
     const riderId = r.riderId;
     const partnerRef = db.collection("delivery_partners").doc(riderId);
     const accRef = riderAccountRef(db, riderId);
@@ -520,7 +520,7 @@ export async function reviewBankChangeCore(
 
 export type PaidVerdict =
   | { kind: "paid" | "already"; paidTo: Record<string, unknown> }
-  | { kind: "refused"; reason: "not_found" | "payout_not_pending" | "bank_change_pending" | "no_destination" | "bad_reference" | "bad_method" };
+  | { kind: "refused"; reason: "not_found" | "payout_not_pending" | "payout_review_state" | "bank_change_pending" | "no_destination" | "bad_reference" | "bad_method" };
 
 /**
  * DLV-M1: an admin marks a pending statement paid, in a transaction that
@@ -542,8 +542,13 @@ export async function markPayoutPaidCore(
     const p = payout.data()!;
     if (p.status === "paid" && p.paymentReference === ref) return { kind: "already", paidTo: p.paidTo ?? {} };
     if (p.status !== "pending") return { kind: "refused", reason: "payout_not_pending" };
-    const riderId = String(p.riderId);
+    if (!validRiderDocumentId(p.riderId)) return { kind: "refused", reason: "payout_review_state" };
+    const riderId = p.riderId;
     const [acc, partner] = await Promise.all([tx.get(riderAccountRef(db, riderId)), tx.get(db.collection("delivery_partners").doc(riderId))]);
+    const account = acc.data() ?? {};
+    if (!acc.exists || (account.riderId !== undefined && account.riderId !== riderId)) {
+      return { kind: "refused", reason: "payout_review_state" };
+    }
     if (hasBankChangeMarker(acc.data() ?? {})) {
       return { kind: "refused", reason: "bank_change_pending" };
     }
@@ -583,6 +588,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   bad_request_id: "The request could not be read",
   request_reused: "This deposit was already recorded with different details",
   payout_not_pending: "This statement is not waiting to be paid",
+  payout_review_state: "This statement needs review against the rider's current payout records",
   bank_change_pending: "The rider has a payout-detail change waiting for review",
   no_destination: "The rider has no payout details for that method",
   bad_method: "Choose bank or UPI",
