@@ -402,6 +402,20 @@ export const buildRiderStatements = onSchedule(
 
 // ── bank details (D-DLV-BANK) ──
 
+const BANK_PAYOUT_QUERY_PAGE_SIZE = 100;
+
+/** Complete query snapshot traversal; all reads finish before bank-change writes. */
+async function* bankPayoutPages(tx: FirebaseFirestore.Transaction, query: FirebaseFirestore.Query) {
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  for (;;) {
+    const pageQuery = last ? query.startAfter(last).limit(BANK_PAYOUT_QUERY_PAGE_SIZE) : query.limit(BANK_PAYOUT_QUERY_PAGE_SIZE);
+    const page = await tx.get(pageQuery);
+    yield page;
+    if (page.size < BANK_PAYOUT_QUERY_PAGE_SIZE) return;
+    last = page.docs[page.docs.length - 1];
+  }
+}
+
 export type BankRequestVerdict = { kind: "requested"; id: string } | { kind: "refused"; reason: "not_a_rider" | "already_pending" | string };
 
 export async function requestBankChangeCore(db: Db, riderId: string, data: unknown, nowMs: number): Promise<BankRequestVerdict> {
@@ -413,16 +427,20 @@ export async function requestBankChangeCore(db: Db, riderId: string, data: unkno
   // DLV-M1: statements already waiting to be paid are held too — before, a
   // change requested after a statement became pending did not stop an
   // admin paying the old destination.
-  const pendingPayouts = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "pending");
+  const pendingPayouts = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "pending").select();
   return db.runTransaction(async (tx): Promise<BankRequestVerdict> => {
-    const [partner, acc, pending] = await Promise.all([tx.get(partnerRef), tx.get(accRef), tx.get(pendingPayouts)]);
+    const [partner, acc] = await Promise.all([tx.get(partnerRef), tx.get(accRef)]);
     if (!partner.exists) return { kind: "refused", reason: "not_a_rider" };
     if (typeof acc.data()?.bankChangePending === "string" && acc.data()!.bankChangePending) return { kind: "refused", reason: "already_pending" };
+    const pendingRefs: FirebaseFirestore.DocumentReference[] = [];
+    for await (const page of bankPayoutPages(tx, pendingPayouts)) {
+      for (const p of page.docs) pendingRefs.push(p.ref);
+    }
     const at = Timestamp.fromMillis(nowMs);
     tx.create(reqRef, { riderId, ...v.value, status: "pending", createdAt: at, updatedAt: at });
     tx.set(accRef, { riderId, bankChangePending: reqRef.id, updatedAt: at }, { merge: true });
-    for (const p of pending.docs) {
-      tx.update(p.ref, { status: "on_hold", holdReason: "bank_change_pending", heldAt: at, updatedAt: at });
+    for (const ref of pendingRefs) {
+      tx.update(ref, { status: "on_hold", holdReason: "bank_change_pending", heldAt: at, updatedAt: at });
     }
     return { kind: "requested", id: reqRef.id };
   });
@@ -460,8 +478,13 @@ export async function reviewBankChangeCore(
     }
     const validated = approve ? validateBankDetails(r) : null;
     if (approve && !validated?.ok) return { kind: "refused", reason: "bank_review_state" };
-    const held = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "on_hold");
-    const holds = await tx.get(held);
+    const held = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "on_hold").select("holdReason");
+    const releasableRefs: FirebaseFirestore.DocumentReference[] = [];
+    for await (const page of bankPayoutPages(tx, held)) {
+      for (const h of page.docs) {
+        if (["bank_change_pending", "no_bank_details"].includes(h.data().holdReason)) releasableRefs.push(h.ref);
+      }
+    }
     const at = Timestamp.fromMillis(nowMs);
     const details = validated?.ok ? validated.value : {
       accountHolderName: r.accountHolderName ?? null,
@@ -479,11 +502,9 @@ export async function reviewBankChangeCore(
     tx.set(accRef, { riderId, bankChangePending: null, updatedAt: at }, { merge: true });
     let released = 0;
     if (hasPayoutDestination(destination)) {
-      for (const h of holds.docs) {
-        if (["bank_change_pending", "no_bank_details"].includes(h.data().holdReason)) {
-          tx.update(h.ref, { status: "pending", holdReason: null, releasedAt: at, updatedAt: at });
-          released += 1;
-        }
+      for (const ref of releasableRefs) {
+        tx.update(ref, { status: "pending", holdReason: null, releasedAt: at, updatedAt: at });
+        released += 1;
       }
     }
     return { kind: approve ? "approved" : "rejected", released };
