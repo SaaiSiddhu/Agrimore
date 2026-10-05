@@ -116,8 +116,9 @@ import * as admin from "firebase-admin";
 // entirely. Scoped to this one new file rather than "fixing" the
 // namespace-style call everywhere else in functions/src, which is out of
 // this phase's scope and not something this phase's testing covered.
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { deleteRiderData, deleteStorageFolder, riderDeletionRefusal } from "../delivery/riderAccountDeletion";
+import { payoutBalancePaise } from "../employee/employeePayoutMoney";
 
 const db = admin.firestore();
 const auth = admin.auth();
@@ -133,6 +134,39 @@ const TERMINAL_ORDER_STATUSES = new Set(["delivered", "completed", "cancelled"])
 // leaves admin-side "paid" as the only other real value seen in
 // apps/admin's payout management screen.
 const PENDING_PAYOUT_STATUSES = new Set(["requested", "pending"]);
+
+// employeeCommission.ts pays attributed work even after role removal, and
+// reverses previously earned commission on either cancellation status field.
+// Such work must resolve while the owner still has a usable account.
+const COMMISSION_DELIVERED_STATUSES = new Set(["delivered", "completed"]);
+const COMMISSION_REVERSAL_STATUSES = new Set(["cancelled", "refunded", "returned", "rejected"]);
+
+async function requireResolvedAttributedWork(uid: string): Promise<void> {
+  // Do not gate on employees/{uid}: legacy partial deletion can remove it.
+  const orders = await db.collection("orders").where("employeeUid", "==", uid).get();
+  for (const row of orders.docs) {
+    const order = row.data();
+    const values = [order.orderStatus, order.status].filter(value => value !== undefined);
+    if (values.length === 0 || values.some(value => typeof value !== "string" || value.length === 0) ||
+        (order.commissionPaid !== undefined && typeof order.commissionPaid !== "boolean") ||
+        (order.commissionReversed !== undefined && typeof order.commissionReversed !== "boolean")) {
+      throw new functions.https.HttpsError("failed-precondition", "Your attributed order or commission record needs review before deleting your account.");
+    }
+    const statuses = values.map(value => (value as string).toLowerCase());
+    if (statuses.some(status => !COMMISSION_DELIVERED_STATUSES.has(status) && !COMMISSION_REVERSAL_STATUSES.has(status))) {
+      throw new functions.https.HttpsError("failed-precondition", "You have attributed orders still in progress. Wait until they are resolved before deleting your account.");
+    }
+    // Mirror reversal's either-field detection, rather than hiding a pending
+    // reversal behind a stale delivered value in the other status field.
+    if (statuses.some(status => COMMISSION_REVERSAL_STATUSES.has(status))) {
+      if (order.commissionPaid === true && order.commissionReversed !== true) {
+        throw new functions.https.HttpsError("failed-precondition", "Your commission reversal is still pending. Wait until it is resolved before deleting your account.");
+      }
+    } else if (order.commissionPaid !== true) {
+      throw new functions.https.HttpsError("failed-precondition", "Your earned commission is still pending. Wait until it is resolved before deleting your account.");
+    }
+  }
+}
 
 // Firestore batched writes cap at 500 operations. 450 leaves headroom for
 // any other write this callable might add later without silently
@@ -179,6 +213,19 @@ async function deleteSellerData(uid: string): Promise<{ wasSeller: boolean; hard
     ...statsSnap.docs.map((d) => d.ref),
     ...settingsSnap.docs.map((d) => d.ref),
   ];
+  // KYC/storefront objects FIRST, while seller role documents still prove
+  // which owned prefixes must be swept. A Storage failure must retain these
+  // markers; otherwise a retry would treat the account as a non-seller.
+  const wasSeller = sellerSnap.exists || requestSnap.exists;
+  let deletedFiles = 0;
+  if (wasSeller) {
+    const bucket = admin.storage().bucket();
+    for (const prefix of [`seller_documents/${uid}/`, `sellers/${uid}/storefront/`]) {
+      const [files] = await bucket.getFiles({ prefix });
+      await Promise.all(files.map((f) => f.delete({ ignoreNotFound: true })));
+      deletedFiles += files.length;
+    }
+  }
   await deleteRefsInChunks(refs);
 
   for (let i = 0; i < productsSnap.docs.length; i += BATCH_CHUNK_SIZE) {
@@ -189,20 +236,6 @@ async function deleteSellerData(uid: string): Promise<{ wasSeller: boolean; hard
     await batch.commit();
   }
 
-  // Storage only for accounts that ever applied to sell (a customer has no
-  // seller files). A failure here fails the call on purpose: this runs
-  // before users/{uid} is deleted, so the caller can simply retry.
-  const wasSeller = sellerSnap.exists || requestSnap.exists;
-  let deletedFiles = 0;
-  if (!wasSeller) {
-    return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
-  }
-  const bucket = admin.storage().bucket();
-  for (const prefix of [`seller_documents/${uid}/`, `sellers/${uid}/storefront/`]) {
-    const [files] = await bucket.getFiles({ prefix });
-    await Promise.all(files.map((f) => f.delete({ ignoreNotFound: true })));
-    deletedFiles += files.length;
-  }
   return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
 }
 
@@ -213,10 +246,10 @@ async function anonymizeReviews(uid: string): Promise<number> {
     // Served by the COLLECTION_GROUP index reviews (userId, createdAt DESC).
     snap = await db.collectionGroup("reviews").where("userId", "==", uid).orderBy("createdAt", "desc").get();
   } catch (e) {
-    // Index not deployed yet: never block the deletion over it; the audit
-    // records -1 so the gap is visible.
-    console.error(`Review anonymisation skipped for ${uid}`, e);
-    return -1;
+    // Without this query, personal review fields cannot be confirmed removed.
+    // Keep the profile/Auth marker so an index or transient failure can be retried.
+    console.error(`Review anonymisation could not be confirmed for ${uid}`, e);
+    throw new functions.https.HttpsError("failed-precondition", "Account data could not be confirmed. Please try again.");
   }
   for (let i = 0; i < snap.docs.length; i += BATCH_CHUNK_SIZE) {
     const batch = db.batch();
@@ -226,6 +259,14 @@ async function anonymizeReviews(uid: string): Promise<number> {
     await batch.commit();
   }
   return snap.size;
+}
+
+/** Only a private, timestamped own audit can certify completed Firestore deletion. */
+function validDeletionAudit(value: FirebaseFirestore.DocumentData | undefined, uid: string, authTime: number): boolean {
+  if (!value || value.uid !== uid || !(value.deletedAt instanceof Timestamp) ||
+      !Number.isSafeInteger(value.anonymizedReviewsCount) || value.anonymizedReviewsCount < 0) return false;
+  const completedAt = value.deletedAt.toMillis();
+  return Number.isFinite(completedAt) && completedAt >= authTime * 1000 && completedAt <= Date.now();
 }
 
 export const deleteUserData = functions.https.onCall(async (data, context) => {
@@ -241,14 +282,47 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Account action does not belong to this account");
   }
 
+  // Callable SDK production verification does not check revocation by default.
+  // Recheck the principal using the verified auth_time, never client data.
+  const authTime = context.auth.token.auth_time;
+  if (!Number.isSafeInteger(authTime) || authTime < 0) {
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
+  }
+  let principal: admin.auth.UserRecord;
+  try {
+    principal = await auth.getUser(uid);
+  } catch (error) {
+    if ((error as { code?: string }).code === "auth/user-not-found") {
+      // A previously verified token may return its own completed receipt only.
+      // It cannot start/resume deletion, run financial queries, or perform writes.
+      const [profile, audit] = await Promise.all([
+        db.collection("users").doc(uid).get(),
+        db.collection("account_deletion_audit").doc(uid).get(),
+      ]);
+      if (!profile.exists && validDeletionAudit(audit.data(), uid, authTime)) {
+        return { success: true, alreadyDeleted: true, hardDeletedDocCount: 0, anonymizedOrdersCount: 0, wasAssociate: false };
+      }
+    }
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
+  }
+  const validAfter = principal.tokensValidAfterTime === undefined ? 0 : Date.parse(principal.tokensValidAfterTime);
+  if (principal.uid !== uid || principal.disabled || !Number.isFinite(validAfter) || authTime < Math.floor(validAfter / 1000)) {
+    throw new functions.https.HttpsError("unauthenticated", "Sign in again before deleting your account.");
+  }
+
   // ============================================================
   // REFUSAL CHECKS — read-only, run on every call (including a retried
   // call after Firestore data is already gone — see the idempotency note
   // below for why re-running these is harmless).
   // ============================================================
-  const walletSnap = await db.collection("wallets").doc(uid).get();
-  const balance = (walletSnap.data()?.balance as number | undefined) ?? 0;
-  if (balance > 0) {
+  const walletRef = db.collection("wallets").doc(uid);
+  const walletSnap = await walletRef.get();
+  const balancePaise = walletSnap.exists ? payoutBalancePaise(walletSnap.data()?.balance) : 0;
+  if (balancePaise === null || balancePaise < 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Your wallet balance needs review before deleting your account.");
+  }
+  const balance = balancePaise / 100;
+  if (balancePaise > 0) {
     throw new functions.https.HttpsError(
       "failed-precondition",
       `You still have a wallet balance of Rs ${balance.toFixed(2)}. Withdraw or spend it before deleting your account.`
@@ -271,15 +345,24 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     .collection("employee_payouts")
     .where("employeeId", "==", uid)
     .get();
-  const pendingPayoutCount = pendingPayoutsSnap.docs.filter((d) =>
-    PENDING_PAYOUT_STATUSES.has(String(d.data().status || "").toLowerCase())
-  ).length;
+  const pendingPayoutCount = pendingPayoutsSnap.docs.filter((d) => {
+    const value = d.data().status;
+    const status = typeof value === "string" ? value.toLowerCase() : "";
+    if (!PENDING_PAYOUT_STATUSES.has(status) && !["paid", "rejected"].includes(status)) {
+      throw new functions.https.HttpsError("failed-precondition", "Your payout record needs review before deleting your account.");
+    }
+    return PENDING_PAYOUT_STATUSES.has(status);
+  }).length;
   if (pendingPayoutCount > 0) {
     throw new functions.https.HttpsError(
       "failed-precondition",
       "You have a pending payout request. Wait until it is paid before deleting your account."
     );
   }
+
+  // Read-only refusal before any role/personal cleanup. This snapshot guard
+  // does not replace the outstanding shared lifecycle barrier for new writers.
+  await requireResolvedAttributedWork(uid);
 
   // Seller refusals (SELLER-DELETE-1).
   const [sellerOrdersSnap, sellerPayoutsSnap] = await Promise.all([
@@ -296,14 +379,31 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
         "Deliver or cancel them before deleting your account."
     );
   }
-  const owed = sellerPayoutsSnap.docs
-    // SELLER-WALLET-1: money in a withdrawal not yet paid is still owed.
-    .filter((d) => ["pending", "requested"].includes(String(d.data().status || "").toLowerCase()))
-    .reduce((sum, d) => sum + Number(d.data().netAmount ?? d.data().amount ?? 0), 0);
-  if (owed > 0) {
+  const unsettled = sellerPayoutsSnap.docs.filter((row) => {
+    const value = row.data().status;
+    const status = typeof value === "string" ? value.toLowerCase() : "";
+    if (!["pending", "requested", "paid"].includes(status)) {
+      throw new functions.https.HttpsError("failed-precondition", "Your seller settlement record needs review before deleting your account.");
+    }
+    return status !== "paid";
+  });
+  if (unsettled.length > 0) {
+    // Unsettled state itself blocks deletion: zero, malformed or negative rows
+    // cannot cancel one another or stand in for confirmed settlement.
+    let owedPaise = 0;
+    for (const row of unsettled) {
+      const d = row.data();
+      const amount = payoutBalancePaise(Object.prototype.hasOwnProperty.call(d, "netAmount") ? d.netAmount : d.amount);
+      if (amount === null || amount < 0 || !Number.isSafeInteger(owedPaise + amount)) {
+        throw new functions.https.HttpsError("failed-precondition", "Your seller settlement record needs review before deleting your account.");
+      }
+      owedPaise += amount;
+    }
     throw new functions.https.HttpsError(
       "failed-precondition",
-      `AgriMore still owes you Rs ${owed.toFixed(2)} in settlements. Wait until it is paid before deleting your account.`
+      owedPaise > 0
+        ? `AgriMore still owes you Rs ${(owedPaise / 100).toFixed(2)} in settlements. Wait until it is paid before deleting your account.`
+        : "You have a seller settlement waiting for review. Wait until it is resolved before deleting your account."
     );
   }
 
@@ -315,13 +415,14 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   }
 
   // ============================================================
-  // IDEMPOTENCY: if users/{uid} is already gone, a previous call already
-  // did the Firestore work — skip straight to the (also-idempotent) Auth
-  // deletion below rather than throwing on a retried/duplicated client
-  // call.
+  // A missing profile alone is not completion evidence (legacy partial failures
+  // may have deleted it early). Skip only with a durable private audit as well;
+  // otherwise rerun the idempotent personal-data sweep.
   // ============================================================
   const userSnap = await db.collection("users").doc(uid).get();
-  const alreadyDeletedFirestore = !userSnap.exists;
+  const auditRef = db.collection("account_deletion_audit").doc(uid);
+  const priorAudit = userSnap.exists ? undefined : (await auditRef.get()).data();
+  const alreadyDeletedFirestore = !userSnap.exists && validDeletionAudit(priorAudit, uid, authTime);
   let hardDeletedCount = 0;
   let anonymizedOrdersCount = 0;
   let wasAssociate = false;
@@ -347,8 +448,6 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     wasAssociate = employeeSnap.exists;
 
     const hardDeleteRefs: FirebaseFirestore.DocumentReference[] = [
-      db.collection("users").doc(uid),
-      db.collection("wallets").doc(uid),
       db.collection("carts").doc(uid),
       db.collection("wishlists").doc(uid),
       ...addressesSnap.docs.map((d) => d.ref),
@@ -361,15 +460,15 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       hardDeleteRefs.push(employeeSnap.ref);
     }
 
-    await deleteRefsInChunks(hardDeleteRefs);
-    hardDeletedCount = hardDeleteRefs.length;
-
     // orders.userId == uid only — orders.employeeUid == uid (other
     // customers' purchases this account earned commission on, if it was
     // also an associate) are deliberately never touched here.
     const orderRefs = ordersSnap.docs.map((d) => d.ref);
     await anonymizeOrdersInChunks(orderRefs);
     anonymizedOrdersCount = orderRefs.length;
+
+    await deleteRefsInChunks(hardDeleteRefs);
+    hardDeletedCount = hardDeleteRefs.length + 2; // Final wallet/profile commit below.
 
     // Audit record — Cloud-Functions-only by construction: this is a
     // brand-new collection with no matching firestore.rules block, and
@@ -378,7 +477,7 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     // (firestore.rules is explicitly out of scope this phase). Contains
     // ONLY counts/booleans — no name, email, phone, or address, which
     // would defeat the deletion this record is documenting.
-    await db.collection("account_deletion_audit").doc(uid).set({
+    await auditRef.set({
       uid,
       deletedAt: FieldValue.serverTimestamp(),
       hardDeletedDocCount: hardDeletedCount + seller.hardDeleted,
@@ -393,6 +492,24 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       anonymizedReviewsCount,
     });
   }
+
+  // Recheck inside the SAME transaction that removes wallet and profile.
+  // Earlier zero/refusal snapshots cannot justify deleting a later refund.
+  // Also run on partial-deletion retries; a missing profile alone skips no money check.
+  await db.runTransaction(async tx => {
+    const [currentWallet, currentProfile, currentAudit] = await Promise.all([
+      tx.get(walletRef), tx.get(userSnap.ref), tx.get(auditRef),
+    ]);
+    if (!validDeletionAudit(currentAudit.data(), uid, authTime)) {
+      throw new functions.https.HttpsError("failed-precondition", "Account data could not be confirmed. Please try again.");
+    }
+    const currentPaise = currentWallet.exists ? payoutBalancePaise(currentWallet.data()?.balance) : 0;
+    if (currentPaise !== 0) {
+      throw new functions.https.HttpsError("failed-precondition", "Your wallet balance changed. Review it before deleting your account.");
+    }
+    tx.delete(walletRef);
+    tx.delete(currentProfile.ref);
+  });
 
   // ============================================================
   // Auth user deletion — ALWAYS last, and always attempted (even on a

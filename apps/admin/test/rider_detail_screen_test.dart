@@ -6,7 +6,16 @@
 // the flutter-finder-skipoffstage-below-fold memory's ADMR-57 update).
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+// Official local Firebase initialization mock; no native/provider operations.
+// ignore: depend_on_referenced_packages
+import 'package:firebase_core_platform_interface/test.dart';
+import 'package:agrimore_admin/app/themes/admin_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:agrimore_admin/screens/admin/delivery/rider_detail_screen.dart';
@@ -51,6 +60,68 @@ Future<void> switchToTab(WidgetTester tester, String tabLabel) async {
 }
 
 void main() {
+  for (final dark in [false, true]) {
+    testWidgets('bank review displays safe state refusal on phone ${dark ? 'dark' : 'light'}', (tester) async {
+      setupFirebaseCoreMocks();
+      await Firebase.initializeApp();
+      const channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.cloud_functions_platform_interface.CloudFunctionsHostApi.call',
+        StandardMessageCodec(),
+      );
+      var calls = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(channel, (message) async {
+        final args = (message as List).first as Map;
+        expect(args['functionName'], 'reviewRiderBankChange');
+        expect((args['parameters'] as Map)['requestId'], 'bank_state_fixture');
+        expect((args['parameters'] as Map)['approve'], isTrue);
+        calls++;
+        return ['failed-precondition', 'Fixture internal error', {
+          'code': 'failed-precondition',
+          'message': 'Fixture internal error',
+          'additionalData': {'reason': 'bank_review_state'},
+        }];
+      });
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(channel, null));
+      final db = FakeFirebaseFirestore();
+      await _seedRider(db, 'bank_state_rider');
+      await db.collection('rider_bank_change_requests').doc('bank_state_fixture').set({
+        'riderId': 'bank_state_rider', 'status': 'pending', 'upiId': 'fixture@upi',
+      });
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final boundaryKey = GlobalKey();
+      await tester.pumpWidget(RepaintBoundary(key: boundaryKey, child: MaterialApp(
+        theme: AdminTheme.lightTheme, darkTheme: AdminTheme.darkTheme,
+        themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+        home: RiderDetailScreen(riderId: 'bank_state_rider', firestore: db),
+      )));
+      await tester.pumpAndSettle();
+      await switchToTab(tester, 'Bank & Payout');
+      final approve = find.widgetWithText(FilledButton, 'Approve');
+      await tester.ensureVisible(approve);
+      await tester.tap(approve);
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+      expect(find.text('This bank change does not match the rider\'s current payout records. Check the request and account before reviewing it.'), findsOneWidget);
+      expect(find.textContaining('Fixture internal error'), findsNothing);
+      expect(find.text('Approved'), findsNothing);
+      expect(tester.takeException(), isNull);
+      final boundary = boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 1);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await File('/tmp/agrimore-bank-review-state-${dark ? 'dark' : 'light'}.png').writeAsBytes(bytes!.buffer.asUint8List());
+        image.dispose();
+      });
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
+
   testWidgets('renders identity fields for the found rider', (tester) async {
     final db = FakeFirebaseFirestore();
     await _seedRider(db, 'rider_1', name: 'Arun Kumar');

@@ -26,6 +26,7 @@ import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput, assertSafeOrderMoney } from "./orderPricing";
 import { computeRedeemableAmount } from "./redemptionRules";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { validateDeliveryQuote } from "./deliveryQuoteValidation";
 import { resolveProductCategoryId } from "../common/productCategory";
 
 // 30 minutes: long enough to cover a real Razorpay checkout flow, short
@@ -77,6 +78,9 @@ interface QuoteOrderWithCreditData {
   employeeCode?: string;
   couponCode?: string;
   deliveryCharge?: number;
+  legacyDeliveryCharge?: number;
+  deliveryQuoteId?: string;
+  deliveryAddress?: Record<string, unknown>;
   tax?: number;
   /** An upper-bound REQUEST — never trusted as the final amount (S4). */
   requestedCreditAmount?: number;
@@ -186,17 +190,21 @@ export const quoteOrderWithCredit = onCall(
           return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
         })
       );
-      let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
-      if (cartSellerIds.size === 1) {
-        const [onlySellerId] = Array.from(cartSellerIds);
-        if (onlySellerId !== "_unassigned") {
-          const sellerSnap = await tx.get(db.collection("sellers").doc(onlySellerId));
-          const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
-          if (schedule) {
-            sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
-          }
-        }
+      const realSellerIds = [...cartSellerIds].filter((sellerId) => sellerId !== "_unassigned");
+      const sellerSnaps = realSellerIds.length
+        ? await tx.getAll(...realSellerIds.map((sellerId) => db.collection("sellers").doc(sellerId)))
+        : [];
+      const sellerFeeSchedules = new Map<string, DeliveryFeeSchedule>();
+      for (const sellerSnap of sellerSnaps) {
+        const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
+        if (schedule) sellerFeeSchedules.set(sellerSnap.id, schedule);
       }
+      const { sellerDistanceMeters } = await validateDeliveryQuote({
+        db, tx, uid, deliveryQuoteId: data?.deliveryQuoteId,
+        deliveryAddress: data?.deliveryAddress, items: normalizedItems, orderMode,
+        deliveryCharge: data?.deliveryCharge, legacyDeliveryCharge: data?.legacyDeliveryCharge,
+        sellerFeeSchedules, sellerSnapshots: sellerSnaps, expectedSellerIds: [...cartSellerIds],
+      });
 
       // ============================================
       // COMPUTATION — same authoritative pricing createOrder would produce.
@@ -209,9 +217,10 @@ export const quoteOrderWithCredit = onCall(
         couponSnap,
         couponCode: data?.couponCode,
         couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
-        deliveryCharge: data?.deliveryCharge,
+        deliveryCharge: data?.deliveryQuoteId ? data?.legacyDeliveryCharge : data?.deliveryCharge,
         tax: data?.tax,
         sellerFeeSchedules,
+        sellerDistanceMeters,
       });
 
       // ============================================
@@ -338,6 +347,7 @@ export const quoteOrderWithCredit = onCall(
           cartFingerprint,
           quotedTotal: pricing.grandTotal,
           quotedPayable: payable,
+          deliveryQuoteId: data?.deliveryQuoteId ?? null,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           expiresAt: expiresAtTimestamp,
           releasedAt: null,
@@ -351,7 +361,11 @@ export const quoteOrderWithCredit = onCall(
         creditApplied,
         payable,
         holdId,
+        deliveryQuoteId: data?.deliveryQuoteId ?? null,
         expiresAt: expiresAtTimestamp ? expiresAtTimestamp.toDate().toISOString() : null,
+        // Frozen native recovery metadata, derived from the SAME server hold
+        // timestamp. Device admission is advisory; settlement rechecks Firestore.
+        productCreditHoldExpiresAtMs: expiresAtTimestamp ? expiresAtTimestamp.toMillis() : null,
         reasons,
       };
     });

@@ -31,6 +31,7 @@ import '../orders/admin_order_details_screen.dart';
 import '../widgets/actor_support_cases_section.dart';
 import '../widgets/paginated_query_list.dart';
 import 'rider_cash_ledger_screen.dart';
+import 'rider_money_admin.dart';
 import 'rider_review_sheet.dart';
 
 class RiderDetailScreen extends StatefulWidget {
@@ -703,6 +704,13 @@ class _BankPayoutTabState extends State<_BankPayoutTab> {
       if (mounted) {
         SnackbarHelper.showSuccess(context,
             '${approve ? 'Approved' : 'Rejected'}${released > 0 ? ' · $released held statement${released == 1 ? '' : 's'} released' : ''}');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('reviewRiderBankChange: ${e.code}');
+      final details = e.details;
+      final reason = details is Map ? details['reason'] : null;
+      if (mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal(e.code, reason is String ? reason : null));
       }
     } catch (e) {
       debugPrint('reviewRiderBankChange: $e');

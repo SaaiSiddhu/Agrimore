@@ -26,17 +26,46 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
 import { assertProgramLaunchable, auditEntry, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { calculateBenefitForPeriod } from "./benefitCalculation";
 
-// Bounds the work per run — see the file-level note on why a daily tick
-// makes a bounded, "pick up the rest next run" design safe rather than a
-// silent truncation: nothing is ever skipped permanently, just deferred.
+// Bounds each run. A private per-period cursor advances through eligible
+// enrollments; per-enrollment anchors alone do not advance the first page.
 const MAX_ENROLLMENTS_PER_RUN = 500;
 
 const ACCRUAL_ELIGIBLE_STATUSES = new Set(["active", "benefitEligible"]);
+
+interface AccrualCursor {
+  version: number;
+  lastEnrollmentId: string | null;
+}
+
+function parseAccrualCursor(data: FirebaseFirestore.DocumentData | undefined): AccrualCursor | null {
+  if (!data) return null;
+  if (!Number.isSafeInteger(data.version) || data.version < 1 || data.version >= Number.MAX_SAFE_INTEGER ||
+      (data.lastEnrollmentId !== null && (typeof data.lastEnrollmentId !== "string" ||
+        !data.lastEnrollmentId || data.lastEnrollmentId.includes("/")))) {
+    throw new Error("Invalid benefit accrual cursor");
+  }
+  return data as AccrualCursor;
+}
+
+async function advanceAccrualCursor(
+  db: FirebaseFirestore.Firestore, ref: FirebaseFirestore.DocumentReference,
+  expectedVersion: number, lastEnrollmentId: string | null
+): Promise<boolean> {
+  return db.runTransaction(async tx => {
+    const current = parseAccrualCursor((await tx.get(ref)).data());
+    if ((current?.version ?? 0) !== expectedVersion) return false;
+    tx.set(ref, {
+      version: expectedVersion + 1, lastEnrollmentId, updatedAt: Timestamp.now(),
+    });
+    return true;
+  });
+}
+
 
 function currentPeriod(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -200,11 +229,15 @@ async function runAccrualForPeriod(
     return { processed: 0, credited: 0, skipped: 0, truncated: false, monthlyCreditDisabled: true };
   }
 
-  const enrollmentsSnap = await db
-    .collection("benefit_enrollments")
+  const cursorRef = db.collection("benefit_accrual_cursors").doc(period);
+  const cursor = parseAccrualCursor((await cursorRef.get()).data());
+  const baseQuery = db.collection("benefit_enrollments")
     .where("status", "in", Array.from(ACCRUAL_ELIGIBLE_STATUSES))
-    .limit(MAX_ENROLLMENTS_PER_RUN + 1)
-    .get();
+    .orderBy(FieldPath.documentId(), "asc")
+    .limit(MAX_ENROLLMENTS_PER_RUN + 1);
+  const enrollmentsSnap = await (cursor?.lastEnrollmentId
+    ? baseQuery.startAfter(cursor.lastEnrollmentId)
+    : baseQuery).get();
 
   const truncated = enrollmentsSnap.size > MAX_ENROLLMENTS_PER_RUN;
   const docs = truncated ? enrollmentsSnap.docs.slice(0, MAX_ENROLLMENTS_PER_RUN) : enrollmentsSnap.docs;
@@ -212,7 +245,7 @@ async function runAccrualForPeriod(
     console.warn(
       `[BenefitAccrual] Hit the ${MAX_ENROLLMENTS_PER_RUN}-enrollment cap for period ${period} — ` +
         `${enrollmentsSnap.size - MAX_ENROLLMENTS_PER_RUN} enrollment(s) NOT processed this run; ` +
-        "they remain eligible and will be picked up on a later run (the anchor is per-enrollment, not global)."
+        "the period cursor defers remaining enrollments to a later run."
     );
   }
 
@@ -223,6 +256,12 @@ async function runAccrualForPeriod(
     if (outcome === "credited") credited++;
     else skipped++;
   }
+
+  // A failed page leaves its checkpoint untouched. Retrying reuses economic
+  // anchors; a completed cycle resets so earlier arrivals and skipped rows
+  // are reconsidered. Independent period cursors never suppress another month.
+  await advanceAccrualCursor(db, cursorRef, cursor?.version ?? 0,
+    truncated ? docs[docs.length - 1].id : null);
 
   return { processed: docs.length, credited, skipped, truncated };
 }

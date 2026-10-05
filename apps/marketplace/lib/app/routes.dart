@@ -545,6 +545,10 @@ class AppRoutes {
           final paymentArgs = settings.arguments as Map<String, dynamic>?;
           final address = paymentArgs?['address'] as AddressModel?;
           final total = paymentArgs?['total'] as double? ?? 0.0;
+          final deliveryCharge = (paymentArgs?['deliveryCharge'] as num?)?.toDouble() ?? 0.0;
+          final legacyDeliveryCharge = (paymentArgs?['legacyDeliveryCharge'] as num?)?.toDouble() ?? deliveryCharge;
+          final deliveryQuoteId = paymentArgs?['deliveryQuoteId'] as String?;
+          final deliveryQuoteExpiresAtMs = paymentArgs?['deliveryQuoteExpiresAtMs'];
           if (address == null) {
             return _buildErrorRoute(
                 'Address is required for payment', settings);
@@ -552,7 +556,12 @@ class AppRoutes {
           return _buildRoute(
             AuthGuard(
                 child: PaymentMethodScreen(
-                    selectedAddress: address, total: total)),
+                    selectedAddress: address,
+                    total: total,
+                    deliveryCharge: deliveryCharge,
+                    legacyDeliveryCharge: legacyDeliveryCharge,
+                    deliveryQuoteId: deliveryQuoteId,
+                    deliveryQuoteExpiresAtMs: deliveryQuoteExpiresAtMs)),
             settings,
           );
         case couponSelection:

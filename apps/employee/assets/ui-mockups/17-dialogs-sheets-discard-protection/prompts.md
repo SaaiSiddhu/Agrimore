@@ -1,0 +1,68 @@
+# Agrimore Sales Associate — C17 exact image prompts
+
+Built-in image_gen; **PROVISIONAL_DIRECTION / TARGET_IMPLEMENTATION**. Exact fenced prompts and reference inputs recorded for every selected generation stage. For a false Original final newline, omit the separator newline before the closing fence when reproducing the hash.
+
+## Light — initial generation
+
+Prompt SHA-256: fd560c8253f4df6b38f08cc0d0dece71531d4ab849b1d13b0d3d5c9b16d63afb. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png · SHA-256 5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C17 premium Storybook board, Agrimore Sales Associate / LIGHT, full landscape image approximately 1536 x 1024.
+Reference image 1 is APPROVED C01 light identity ONLY. Inherit palette, Inter hierarchy, spacing, corner/border/elevation language. Create a NEW modal-system board, not a color-token table. Full canvas, NO sidebar, navigation bar or device/browser chrome.
+Heading exactly "Agrimore Sales Associate" with "Light" theme chip. Subtitle exactly "Dialogs, sheets and discard protection". Small "C17 / Design proposal". Four spacious labelled panels in a 2x2 grid: Confirmation, Editable sheet, Discard protection, Submission recovery. Show centered dialogs inside their own neutral scrim specimen, bottom sheets anchored within their own specimen frame, and distinct pending/failure variants. Do not overlay one panel over another. Domain character: Premium royal-blue review-request sheets, indigo scope guidance and calm pearl/slate modal surfaces.
+Locked palette {"primary": "#2D56C4", "onPrimary": "#FFFFFF", "support": "#6950A2", "supportLabel": "Supporting indigo", "canvas": "#F7F8FC", "surface": "#FFFFFF", "raised": "#FBFCFF", "text": "#192840", "muted": "#61708B", "border": "#DDE3F0", "strongBorder": "#94A0B7", "selected": "#EAF0FE", "focus": "#2D56C4"}; status pairs [{"role": "Success", "container": "#E7F5ED", "text": "#146C43"}, {"role": "Warning", "container": "#FFF4D6", "text": "#805400"}, {"role": "Error", "container": "#FDECEA", "text": "#B42318"}, {"role": "Info", "container": "#EDF1FB", "text": "#31549E"}]. Normal filled PRIMARY uses #2D56C4 with inverse #FFFFFF text. SECONDARY and recovery controls use neutral surface fill, thin #2D56C4 outline and label. All DESTRUCTIVE actions in these examples are OUTLINED danger controls using #B42318 outline and label with neutral fill, not filled danger pills. Safe Keep editing/Keep draft actions remain clearly readable. No white-on-pale filled buttons. Supporting accents annotate context, not a rival primary. Dark canvas neutral near-black, all dialog/sheet surfaces dark-grey and desaturated, no white modals or saturated washes. Delivery filled primary is black in light and off-white with dark text in dark; secondary off-white in dark, orange remains guidance.
+Inter scale [34, 24, 18, 16, 14, 12], weights [600, 500, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 12, "Card": 18, "Sheet / dialog": 24}px; 1px borders / 2px focus; labelled 48px controls and close targets. Compact but comfortably readable; no dense tiny text or clipped footer.
+Exact panel content:
+1. Confirmation: Centered confirmation "Cancel review request?". Body "Withdraws the pending details change. Current details, if set, stay in use." OUTLINED royal-blue "Keep request" and OUTLINED semantic-danger "Cancel request". Indigo board note "Pending request only". No approval/rejection/paid state or automatic cancellation on dismiss.
+2. Editable sheet: Bottom sheet "Edit payout details", small "Proposed sheet / Form excerpt", labelled close X. "Payout method" picker showing "Bank transfer" and empty "Account holder" field; annotation "Values omitted in this specimen". OUTLINED "Cancel" and royal-blue PRIMARY "Submit for review". Footer above labelled keyboard clearance. No names, bank/UPI/account numbers, amounts or claim this form excerpt contains all required fields.
+3. Discard protection: Dialog "Discard payout edits?", body "Only unsubmitted edits will be removed." OUTLINED royal-blue "Keep editing" and OUTLINED danger "Discard edits". Indigo board note "Current details and pending requests stay unchanged". No server Cancel request in this local-discard specimen.
+4. Submission recovery: Explicit separate "Pending variant" disabled outlined spinner "Submitting for review" and "Failed variant" safe notice "Submission unavailable", helper "Your edits are still here." Indigo annotation "Check request status before resubmitting". No Approved/paid badge, blind Retry or review promise.
+Critical behavior: panels are independent sample variants, not simultaneous live dialogs. Pending and failed examples are labelled separately. Back/scrim/drag/close are NEVER consent to submit or discard. Discard only unsent local edits; server cancellation/reset is a distinct explicitly confirmed action. Do not invent Save draft outside the evidenced Delivery registration draft. Modal dismissal is not server success, and submission is not approved/paid/delivered/ordered. Empty fields deliberately omit user values; keep input in proposed runtime. Keyboard clearance is a small labelled specimen strip; no code, endpoint identifiers or implementation jargon in product fields.
+Use only synthetic Sample context; no PII, actual names, document photos, email, phone, addresses, bank/UPI/account values, record IDs, prices, rupee amounts, quantities, stock numbers, timings, dates, totals, ETA, guarantees, remote deletion or fake success. No default dangerous focus ring.
+Footer exactly "Illustrative modals / Target design / C01 identity". No sidebar, logo/tagline, watermark, fake metrics, glossy gradients or unrelated token chart.
+```
+
+## Light — refinement 1
+
+Prompt SHA-256: 7ef444f906cddaf52a2c6842692ee539613c8fabc4023dfe4f2047d9ceb10781. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-bb660b68-1d55-4186-ada9-a90d2e2e4c29.png · SHA-256 7d991b964dfe7e994cc7b7863ffa434c9c8faf8a7824483aa6659beef990c700
+
+```text
+Refine this C17 LIGHT modal-system board. Change ONLY the button label 'Close' inside the Failed variant of Submission recovery to exactly 'Keep editing'. It means return to the retained editor without discarding its input; do not close the editor, claim success or retry the mutation. Preserve the same secondary outlined style, every other message, all four panels, empty-field/value-omission annotations, sample/proposed labels, action colors, Inter hierarchy, app heading and footer. No other changes or additions.
+```
+
+## Dark — initial generation
+
+Prompt SHA-256: 3a4c26be80688d9e8c2b88d43ef4e3fed8713d6d99eb7cc6b4186b4a5f51b49c. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png · SHA-256 579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62
+- /Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3924fbbd-04ce-459c-baa8-65f6780486ec.png · SHA-256 11f91231843049a2a0bd0f4b5d8a15a92f792b25e2faa3fda905396a671d7536
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C17 premium Storybook board, Agrimore Sales Associate / DARK, full landscape image approximately 1536 x 1024.
+Reference image 1 is APPROVED C01 dark identity ONLY. Inherit palette, Inter hierarchy, spacing, corner/border/elevation language. Create a NEW modal-system board, not a color-token table. Full canvas, NO sidebar, navigation bar or device/browser chrome.
+Heading exactly "Agrimore Sales Associate" with "Dark" theme chip. Subtitle exactly "Dialogs, sheets and discard protection". Small "C17 / Design proposal". Four spacious labelled panels in a 2x2 grid: Confirmation, Editable sheet, Discard protection, Submission recovery. Show centered dialogs inside their own neutral scrim specimen, bottom sheets anchored within their own specimen frame, and distinct pending/failure variants. Do not overlay one panel over another. Domain character: Premium royal-blue review-request sheets, indigo scope guidance and calm pearl/slate modal surfaces.
+Locked palette {"primary": "#96B4FF", "onPrimary": "#142241", "support": "#C0ADE7", "supportLabel": "Supporting indigo", "canvas": "#090B11", "surface": "#131722", "raised": "#1E2533", "text": "#F2F5FC", "muted": "#B9C5DD", "border": "#354259", "strongBorder": "#8393B2", "selected": "#1B2C50", "focus": "#96B4FF"}; status pairs [{"role": "Success", "container": "#102C20", "text": "#8DE0B0"}, {"role": "Warning", "container": "#302612", "text": "#F1CE7B"}, {"role": "Error", "container": "#341B1B", "text": "#FFA39C"}, {"role": "Info", "container": "#1A2B4C", "text": "#B2C8FF"}]. Normal filled PRIMARY uses #96B4FF with inverse #142241 text. SECONDARY and recovery controls use neutral surface fill, thin #96B4FF outline and label. All DESTRUCTIVE actions in these examples are OUTLINED danger controls using #FFA39C outline and label with neutral fill, not filled danger pills. Safe Keep editing/Keep draft actions remain clearly readable. No white-on-pale filled buttons. Supporting accents annotate context, not a rival primary. Dark canvas neutral near-black, all dialog/sheet surfaces dark-grey and desaturated, no white modals or saturated washes. Delivery filled primary is black in light and off-white with dark text in dark; secondary off-white in dark, orange remains guidance.
+Inter scale [34, 24, 18, 16, 14, 12], weights [600, 500, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 12, "Card": 18, "Sheet / dialog": 24}px; 1px borders / 2px focus; labelled 48px controls and close targets. Compact but comfortably readable; no dense tiny text or clipped footer.
+Exact panel content:
+1. Confirmation: Centered confirmation "Cancel review request?". Body "Withdraws the pending details change. Current details, if set, stay in use." OUTLINED royal-blue "Keep request" and OUTLINED semantic-danger "Cancel request". Indigo board note "Pending request only". No approval/rejection/paid state or automatic cancellation on dismiss.
+2. Editable sheet: Bottom sheet "Edit payout details", small "Proposed sheet / Form excerpt", labelled close X. "Payout method" picker showing "Bank transfer" and empty "Account holder" field; annotation "Values omitted in this specimen". OUTLINED "Cancel" and royal-blue PRIMARY "Submit for review". Footer above labelled keyboard clearance. No names, bank/UPI/account numbers, amounts or claim this form excerpt contains all required fields.
+3. Discard protection: Dialog "Discard payout edits?", body "Only unsubmitted edits will be removed." OUTLINED royal-blue "Keep editing" and OUTLINED danger "Discard edits". Indigo board note "Current details and pending requests stay unchanged". No server Cancel request in this local-discard specimen.
+4. Submission recovery: Explicit separate "Pending variant" disabled outlined spinner "Submitting for review" and "Failed variant" safe notice "Submission unavailable", helper "Your edits are still here." Indigo annotation "Check request status before resubmitting". No Approved/paid badge, blind Retry or review promise.
+Critical behavior: panels are independent sample variants, not simultaneous live dialogs. Pending and failed examples are labelled separately. Back/scrim/drag/close are NEVER consent to submit or discard. Discard only unsent local edits; server cancellation/reset is a distinct explicitly confirmed action. Do not invent Save draft outside the evidenced Delivery registration draft. Modal dismissal is not server success, and submission is not approved/paid/delivered/ordered. Empty fields deliberately omit user values; keep input in proposed runtime. Keyboard clearance is a small labelled specimen strip; no code, endpoint identifiers or implementation jargon in product fields.
+Use only synthetic Sample context; no PII, actual names, document photos, email, phone, addresses, bank/UPI/account values, record IDs, prices, rupee amounts, quantities, stock numbers, timings, dates, totals, ETA, guarantees, remote deletion or fake success. No default dangerous focus ring.
+Footer exactly "Illustrative modals / Target design / C01 identity". No sidebar, logo/tagline, watermark, fake metrics, glossy gradients or unrelated token chart.
+Reference image 2 is the SELECTED C17 LIGHT composition ONLY. Preserve its four-panel layout, selected wording, proposed/sample labels and 'Keep editing' failed-variant action. Image 1 is authoritative DARK C01 palette. Transform all modal/sheet/scrim/keyboard-clearance surfaces to near-black/dark-grey; no white cards, no saturated blue/green washes. Every primary action (Send request, Pause ordering, Save stock, Send report, Submit for review, Add note) uses the DARK primary with its DARK onPrimary inverse text, never white text on pale fill. Every secondary action remains neutral-dark outlined with light app-primary label/border; Delivery secondary is off-white, not orange. Every danger action remains outlined with DARK Error text role, not a pale filled pill. Icons, spinner, field text, X/close and annotations also use DARK roles, never carried-over electric light-theme icon circles. All pending actions disabled; no Close action replacing Keep editing in failed variants. Do not add chrome, sidebar, slogan, values, IDs, new actions or success states.
+```
+

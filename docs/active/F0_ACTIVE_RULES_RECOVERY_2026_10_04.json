@@ -1,0 +1,4287 @@
+{
+  "checkedAtUtc": "2026-10-04T17:58:24.216Z",
+  "project": "agrimore-66a4e",
+  "database": "(default)",
+  "scope": "GET metadata/rules only; no document data or cloud mutation",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/databases/(default)",
+      "hasPageToken": false
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/databases/(default)/collectionGroups/-/indexes",
+      "hasPageToken": false
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/locations/-/backups",
+      "hasPageToken": false
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/databases/(default)/backupSchedules",
+      "hasPageToken": false
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/releases",
+      "helper": "listAllReleases (all pages)"
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/rulesets/bf55943c-1ba4-4ed8-b518-4a44c33e456c"
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/rulesets/8e6c147f-916f-4489-a948-fc8fe3ff7490"
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/databases/(default)",
+      "hasPageToken": false,
+      "retryAfterHttp500": true
+    },
+    {
+      "method": "GET",
+      "path": "projects/agrimore-66a4e/databases/(default)/collectionGroups/-/indexes",
+      "hasPageToken": false,
+      "retryAfterHttp500": true
+    }
+  ],
+  "sections": {
+    "database": {
+      "status": "UNKNOWN_READ_FAILED",
+      "httpStatus": 500,
+      "checkedAtUtc": "2026-10-04T17:59:39.055Z",
+      "retryHttpStatus": 500,
+      "retryResult": "UNKNOWN_READ_FAILED"
+    },
+    "compositeIndexes": {
+      "status": "UNKNOWN_READ_FAILED",
+      "httpStatus": 500,
+      "checkedAtUtc": "2026-10-04T17:59:45.393Z",
+      "retryHttpStatus": 500,
+      "retryResult": "UNKNOWN_READ_FAILED"
+    },
+    "backups": {
+      "status": "SUCCESS",
+      "items": [],
+      "pages": 1,
+      "paginationComplete": true
+    },
+    "backupSchedules": {
+      "status": "SUCCESS",
+      "items": [],
+      "pages": 1,
+      "paginationComplete": true
+    },
+    "activeRules": {
+      "status": "SUCCESS",
+      "entries": [
+        {
+          "service": "cloud.firestore",
+          "status": "SUCCESS",
+          "release": {
+            "name": "projects/agrimore-66a4e/releases/cloud.firestore",
+            "rulesetName": "projects/agrimore-66a4e/rulesets/bf55943c-1ba4-4ed8-b518-4a44c33e456c",
+            "createTime": "2026-03-18T08:31:09.300227Z",
+            "updateTime": "2026-09-24T13:42:30.170045Z"
+          },
+          "files": [
+            {
+              "name": "firestore.rules",
+              "bytes": 133330,
+              "sha256": "ed23d495a30d732854ac76b29f367ceed67399a4eda3d439f09352898277696a",
+              "localByteEqual": false,
+              "temporaryPath": "/tmp/agrimore-active-2026-10-04-cloud-firestore-0.rules"
+            }
+          ],
+          "localPath": "firestore.rules",
+          "localSha256": "424d0fac3df1f0b775671d0c7371e15b7c29a2dc95940d5bf0e8d7a0d12f86a4"
+        },
+        {
+          "service": "firebase.storage",
+          "status": "SUCCESS",
+          "release": {
+            "name": "projects/agrimore-66a4e/releases/firebase.storage/agrimore-66a4e.firebasestorage.app",
+            "rulesetName": "projects/agrimore-66a4e/rulesets/8e6c147f-916f-4489-a948-fc8fe3ff7490",
+            "createTime": "2026-03-14T13:20:20.260867Z",
+            "updateTime": "2026-09-24T13:42:29.249053Z"
+          },
+          "files": [
+            {
+              "name": "storage.rules",
+              "bytes": 14584,
+              "sha256": "87a1f9aa0ad37d85ceb8a8adf744c0f61ba9ebf15d349e88d249fe825f655cb4",
+              "localByteEqual": false,
+              "temporaryPath": "/tmp/agrimore-active-2026-10-04-firebase-storage-0.rules"
+            }
+          ],
+          "localPath": "storage.rules",
+          "localSha256": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2"
+        }
+      ]
+    }
+  },
+  "completedAtUtc": "2026-10-04T17:59:51.660Z",
+  "classification": "VERIFIED_REPOSITORY_FACT / dated read-only metadata; UNKNOWN_READ_FAILED fields retained",
+  "sourceCommit": "6cb92cc8732fb6a35b855bc16e9062067abbd113",
+  "sourceHashes": {
+    "firestore.rules": "424d0fac3df1f0b775671d0c7371e15b7c29a2dc95940d5bf0e8d7a0d12f86a4",
+    "storage.rules": "9d89bd5932e4a276e17d716783ad7ce75832389dbe81d6ee664d2555df18f5d2",
+    "firestore.indexes.json": "2160797d594d1c119a8ccf28fef882b5be2102f3366e993148dc0cb4fe8e039e"
+  },
+  "structuralRuleComparison": {
+    "firestore": {
+      "method": "Scoped match/function blocks; comment-free token sequence hashes. Structural comparison only, not formal semantic equivalence or authorization proof. Parent hashes include nested blocks. Wildcard names preserved.",
+      "localBlocks": 185,
+      "liveBlocks": 166,
+      "counts": {
+        "TOKEN_EQUAL": 153,
+        "TOKEN_DIFFERENT": 9,
+        "SOURCE_ONLY": 23,
+        "LIVE_ONLY": 4
+      },
+      "items": [
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::livePointIsValid",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::livePointIsValid",
+            "line": 2015,
+            "endLine": 2027,
+            "tokenSha256": "388638f8a4a66b1de1167f34659913f22f954e35c04a5c76046175ab39323898"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::livePointIsValid",
+            "line": 1901,
+            "endLine": 1913,
+            "tokenSha256": "388638f8a4a66b1de1167f34659913f22f954e35c04a5c76046175ab39323898"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::liveTask",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::liveTask",
+            "line": 2008,
+            "endLine": 2010,
+            "tokenSha256": "9c842817ef769b546a0135b8e5c06244dcfaa1462dbb706bbe2b5da1c938bc3e"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::liveTask",
+            "line": 1894,
+            "endLine": 1896,
+            "tokenSha256": "9c842817ef769b546a0135b8e5c06244dcfaa1462dbb706bbe2b5da1c938bc3e"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::optionalNumberIn",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::optionalNumberIn",
+            "line": 2011,
+            "endLine": 2014,
+            "tokenSha256": "8b9cadd69e1eafdf7e0d2ba9a14cc61695f3df5e14aa0678abddb393397e11e2"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}::optionalNumberIn",
+            "line": 1897,
+            "endLine": 1900,
+            "tokenSha256": "8b9cadd69e1eafdf7e0d2ba9a14cc61695f3df5e14aa0678abddb393397e11e2"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/threads/{threadId}::isThreadParty",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::isThreadParty",
+            "line": 2092,
+            "endLine": 2095,
+            "tokenSha256": "83c9d6cece16348509e7cae1fafdf71f4ef3239dfcba93582690fb6c6ecf5a2a"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::isThreadParty",
+            "line": 1978,
+            "endLine": 1981,
+            "tokenSha256": "83c9d6cece16348509e7cae1fafdf71f4ef3239dfcba93582690fb6c6ecf5a2a"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/threads/{threadId}::parentThread",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::parentThread",
+            "line": 2130,
+            "endLine": 2132,
+            "tokenSha256": "df2fab9968d84a45ed19eaf23bae226f7fb462486d184ddb33c6468b87834507"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::parentThread",
+            "line": 2016,
+            "endLine": 2018,
+            "tokenSha256": "df2fab9968d84a45ed19eaf23bae226f7fb462486d184ddb33c6468b87834507"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/threads/{threadId}::threadBoundToItsOrder",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadBoundToItsOrder",
+            "line": 2098,
+            "endLine": 2103,
+            "tokenSha256": "a74515ea5f7b04f478556d2ae0c870851272bb2a22aca97d2f7a4d2318b11725"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadBoundToItsOrder",
+            "line": 1984,
+            "endLine": 1989,
+            "tokenSha256": "a74515ea5f7b04f478556d2ae0c870851272bb2a22aca97d2f7a4d2318b11725"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/threads/{threadId}::threadCreateAllowed",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadCreateAllowed",
+            "line": 2104,
+            "endLine": 2115,
+            "tokenSha256": "837b3f8cbb5fe4e61200aed4659884b8b4f9da1708df40a0796cdd856665dbda"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadCreateAllowed",
+            "line": 1990,
+            "endLine": 2001,
+            "tokenSha256": "837b3f8cbb5fe4e61200aed4659884b8b4f9da1708df40a0796cdd856665dbda"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents/threads/{threadId}::threadParties",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadParties",
+            "line": 2089,
+            "endLine": 2091,
+            "tokenSha256": "7fe6030e636da272e0022f519937e2a4e9fefbd65259addaa3166e367d1409ac"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents/threads/{threadId}::threadParties",
+            "line": 1975,
+            "endLine": 1977,
+            "tokenSha256": "7fe6030e636da272e0022f519937e2a4e9fefbd65259addaa3166e367d1409ac"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::deliveryPartnerCanClaimOrder",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::deliveryPartnerCanClaimOrder",
+            "line": 702,
+            "endLine": 716,
+            "tokenSha256": "bb43ae98efc047fa16f0f6db8d88c9c3c8644d91086ea4fedc72b50ea709441f"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::deliveryPartnerCanClaimOrder",
+            "line": 635,
+            "endLine": 648,
+            "tokenSha256": "39df2263ea94dfd30ec73617b56b0875ee7fac9f20263bed14ec1d73363cf7cf"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::deliveryPartnerCanDenyUnassignedOrder",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::deliveryPartnerCanDenyUnassignedOrder",
+            "line": 748,
+            "endLine": 760,
+            "tokenSha256": "921e46783bc093deffecea04ecb08add73736c523da2b9cb5204e39eece4fb60"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::deliveryPartnerCanDenyUnassignedOrder",
+            "line": 702,
+            "endLine": 714,
+            "tokenSha256": "921e46783bc093deffecea04ecb08add73736c523da2b9cb5204e39eece4fb60"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::hasRole",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::hasRole",
+            "line": 29,
+            "endLine": 31,
+            "tokenSha256": "a2cca9ef43e64199c288b6e3303757dcc590ee83458e3399c68df8e9a90e4611"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::hasRole",
+            "line": 20,
+            "endLine": 22,
+            "tokenSha256": "a2cca9ef43e64199c288b6e3303757dcc590ee83458e3399c68df8e9a90e4611"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isAdmin",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAdmin",
+            "line": 34,
+            "endLine": 56,
+            "tokenSha256": "b2fc85a4b23ddda44a7e71009f59d05207975fbe711fd5a3b1a86f489fc94b50"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAdmin",
+            "line": 25,
+            "endLine": 47,
+            "tokenSha256": "b2fc85a4b23ddda44a7e71009f59d05207975fbe711fd5a3b1a86f489fc94b50"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isAuthenticated",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAuthenticated",
+            "line": 20,
+            "endLine": 22,
+            "tokenSha256": "5d5ff9efdb6010538678079b27cafff97dfd370d957ce0e44d0ebc3f81e2d5e8"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAuthenticated",
+            "line": 11,
+            "endLine": 13,
+            "tokenSha256": "5d5ff9efdb6010538678079b27cafff97dfd370d957ce0e44d0ebc3f81e2d5e8"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isAvailableDeliveryOrder",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAvailableDeliveryOrder",
+            "line": 113,
+            "endLine": 119,
+            "tokenSha256": "2939b11fbf1f58bc3c1bd803ff8cf78f34da4c4a5fe99f3df233cdbd28dbedac"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isAvailableDeliveryOrder",
+            "line": 104,
+            "endLine": 110,
+            "tokenSha256": "2939b11fbf1f58bc3c1bd803ff8cf78f34da4c4a5fe99f3df233cdbd28dbedac"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isDeliveryPartner",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isDeliveryPartner",
+            "line": 83,
+            "endLine": 92,
+            "tokenSha256": "30ef5150edcb62100a461e257b9a2bba24799c32c36d20c1081edf8414a6090f"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isDeliveryPartner",
+            "line": 74,
+            "endLine": 83,
+            "tokenSha256": "30ef5150edcb62100a461e257b9a2bba24799c32c36d20c1081edf8414a6090f"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isEmployee",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isEmployee",
+            "line": 96,
+            "endLine": 111,
+            "tokenSha256": "c280924faa442ffe505fa6106519ffa87c022231b7b66ffca71fdf5c51f4ab12"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isEmployee",
+            "line": 87,
+            "endLine": 102,
+            "tokenSha256": "c280924faa442ffe505fa6106519ffa87c022231b7b66ffca71fdf5c51f4ab12"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isOwner",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isOwner",
+            "line": 25,
+            "endLine": 27,
+            "tokenSha256": "7aeefe532db31bf7e7f006db901eac95d25c4d2f1bef43c4916a6dc999a4c4aa"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isOwner",
+            "line": 16,
+            "endLine": 18,
+            "tokenSha256": "7aeefe532db31bf7e7f006db901eac95d25c4d2f1bef43c4916a6dc999a4c4aa"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::isSeller",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isSeller",
+            "line": 65,
+            "endLine": 80,
+            "tokenSha256": "9c9d62b9b6a15ff97a1da8de09cbaaf044de824b1eef7af42740668593df542e"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::isSeller",
+            "line": 56,
+            "endLine": 71,
+            "tokenSha256": "9c9d62b9b6a15ff97a1da8de09cbaaf044de824b1eef7af42740668593df542e"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::newEmployeeCreateHasNoOnboardingFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::newEmployeeCreateHasNoOnboardingFields",
+            "line": 1252,
+            "endLine": 1258,
+            "tokenSha256": "711da94398ccfad9f446289949cca94d97388436d7e3ee9074287b52af157b24"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::newEmployeeCreateHasNoOnboardingFields",
+            "line": 1167,
+            "endLine": 1173,
+            "tokenSha256": "711da94398ccfad9f446289949cca94d97388436d7e3ee9074287b52af157b24"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::newUserCreateHasNoPrivilegedFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::newUserCreateHasNoPrivilegedFields",
+            "line": 208,
+            "endLine": 235,
+            "tokenSha256": "a3cee5f1dc54f6c6de3157dcaf5d97e84f44f1b6b044de0d4ddca890f8cdbd03"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::newUserCreateHasNoPrivilegedFields",
+            "line": 199,
+            "endLine": 226,
+            "tokenSha256": "a3cee5f1dc54f6c6de3157dcaf5d97e84f44f1b6b044de0d4ddca890f8cdbd03"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::orderFulfilmentCannotChangeProtectedFields",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::orderFulfilmentCannotChangeProtectedFields",
+            "line": 668,
+            "endLine": 688,
+            "tokenSha256": "1d69d88092b067983a35c6e641ace7947fac80e9db06e40cec3624b5a76f54c0"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::orderFulfilmentCannotChangeProtectedFields",
+            "line": 602,
+            "endLine": 621,
+            "tokenSha256": "36ac0d4a4aad23f500e8f3e913c6ba9da6b84e7782fbfad9a423deedb7e2c090"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotApproveEmployeeStatusOrCommission",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotApproveEmployeeStatusOrCommission",
+            "line": 1178,
+            "endLine": 1183,
+            "tokenSha256": "3d5cf1afdf1f3b3d40f20bea8eb589733e65b648404253654159b50171e27b45"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotApproveEmployeeStatusOrCommission",
+            "line": 1109,
+            "endLine": 1114,
+            "tokenSha256": "3d5cf1afdf1f3b3d40f20bea8eb589733e65b648404253654159b50171e27b45"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotApproveSellerStatus",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotApproveSellerStatus",
+            "line": 1051,
+            "endLine": 1054,
+            "tokenSha256": "6c64ced45803912576c281e9b1e3a126465d32baf0081ed1da59e8c694e9ef67"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotApproveSellerStatus",
+            "line": 982,
+            "endLine": 985,
+            "tokenSha256": "6c64ced45803912576c281e9b1e3a126465d32baf0081ed1da59e8c694e9ef67"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotChangeOrderFinancials",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangeOrderFinancials",
+            "line": 542,
+            "endLine": 556,
+            "tokenSha256": "5ff08040d60715c72b263f9f3c1b110548fc6a6a6d21aa5a7c920ca25496b635"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangeOrderFinancials",
+            "line": 493,
+            "endLine": 507,
+            "tokenSha256": "5ff08040d60715c72b263f9f3c1b110548fc6a6a6d21aa5a7c920ca25496b635"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotChangePrivilegedFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangePrivilegedFields",
+            "line": 169,
+            "endLine": 195,
+            "tokenSha256": "eb8929f2ef4cb9d2877d4737309804b5eb4b1aed4edeee7f653e1adfa26f042b"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangePrivilegedFields",
+            "line": 160,
+            "endLine": 186,
+            "tokenSha256": "eb8929f2ef4cb9d2877d4737309804b5eb4b1aed4edeee7f653e1adfa26f042b"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotChangeWalletBalanceFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangeWalletBalanceFields",
+            "line": 1785,
+            "endLine": 1791,
+            "tokenSha256": "4065a5a4a3cb090073a7084a201c6e157721a3e43d016c395a6316ba133faaf6"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotChangeWalletBalanceFields",
+            "line": 1671,
+            "endLine": 1677,
+            "tokenSha256": "4065a5a4a3cb090073a7084a201c6e157721a3e43d016c395a6316ba133faaf6"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotSetOnboardingFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotSetOnboardingFields",
+            "line": 1241,
+            "endLine": 1248,
+            "tokenSha256": "acae9110ddabcf0ffd8176c59eac03c16a12b8431e16b278f467e8ab55c7ca66"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotSetOnboardingFields",
+            "line": 1156,
+            "endLine": 1163,
+            "tokenSha256": "acae9110ddabcf0ffd8176c59eac03c16a12b8431e16b278f467e8ab55c7ca66"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerCannotSetPayoutFields",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerCannotSetPayoutFields",
+            "line": 1233,
+            "endLine": 1239,
+            "tokenSha256": "2972037d701ebadf2c412d1d2ff0a8313928aa0646084dc1dcb4c47a89c2edb7"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerDeliveryPartnerCreateIsPending",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerDeliveryPartnerCreateIsPending",
+            "line": 1945,
+            "endLine": 1952,
+            "tokenSha256": "99dab9aad20e753e9be042e11593f721d70bc458dd6186cafa3b81cdd6d83444"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerDeliveryPartnerCreateIsPending",
+            "line": 1831,
+            "endLine": 1838,
+            "tokenSha256": "99dab9aad20e753e9be042e11593f721d70bc458dd6186cafa3b81cdd6d83444"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerDeliveryPartnerUpdateIsAllowed",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerDeliveryPartnerUpdateIsAllowed",
+            "line": 1933,
+            "endLine": 1938,
+            "tokenSha256": "8438fd2d01b57d379d2ab76224ca286baad42e35c71cb582b8837753e9d8ed1f"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerDeliveryPartnerUpdateIsAllowed",
+            "line": 1819,
+            "endLine": 1824,
+            "tokenSha256": "8438fd2d01b57d379d2ab76224ca286baad42e35c71cb582b8837753e9d8ed1f"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerEditsOnlyStorefrontFields",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerEditsOnlyStorefrontFields",
+            "line": 1058,
+            "endLine": 1081,
+            "tokenSha256": "7b2a37c819325ebe66a441956a33024f8a8c489544d5e4ab5888fe2fed1a3d19"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerEditsOnlyStorefrontFields",
+            "line": 989,
+            "endLine": 1012,
+            "tokenSha256": "7b2a37c819325ebe66a441956a33024f8a8c489544d5e4ab5888fe2fed1a3d19"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerOrderRatingChangeIsValid",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerOrderRatingChangeIsValid",
+            "line": 561,
+            "endLine": 573,
+            "tokenSha256": "1ae94fe084e12349080769c757d1e366e1383f50952685f9032bb276f7c7557f"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::ownerOrderStatusChangeIsValid",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerOrderStatusChangeIsValid",
+            "line": 587,
+            "endLine": 601,
+            "tokenSha256": "c7dc953dfb7bf2d29dcc88463ca47a3490468f8d94925757809ae97af1b54583"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::ownerOrderStatusChangeIsValid",
+            "line": 521,
+            "endLine": 535,
+            "tokenSha256": "c7dc953dfb7bf2d29dcc88463ca47a3490468f8d94925757809ae97af1b54583"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::reviewRatingInRange",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::reviewRatingInRange",
+            "line": 386,
+            "endLine": 389,
+            "tokenSha256": "90614e23345c1ab9f54eb993abe32331259a93a5121f10bd00a27b4ed388f60a"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::reviewRatingInRange",
+            "line": 377,
+            "endLine": 380,
+            "tokenSha256": "90614e23345c1ab9f54eb993abe32331259a93a5121f10bd00a27b4ed388f60a"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::reviewSelfVoteOnly",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::reviewSelfVoteOnly",
+            "line": 410,
+            "endLine": 419,
+            "tokenSha256": "34a035103d47035085667c89bc4a8fa53001a51e58d2be3c752222fbb8d99b65"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::reviewVotesInitiallyEmpty",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::reviewVotesInitiallyEmpty",
+            "line": 404,
+            "endLine": 408,
+            "tokenSha256": "f62ea099536149335eef9e24541de1ba2bcff4c81250a93a25bf2fe7aab4cf74"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::reviewVotesValid",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::reviewVotesValid",
+            "line": 393,
+            "endLine": 402,
+            "tokenSha256": "a4588c81c5625803747ea96cfaae9ee4ab6fa8cce8e1e124f0d52650435e3680"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::riderCannotChangeStatus",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::riderCannotChangeStatus",
+            "line": 727,
+            "endLine": 730,
+            "tokenSha256": "cdaa1e041b7b08da07d1980a6387bfac31d0136a73c17df59375db8c8e80a1ab"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::riderCurrentRank",
+          "status": "LIVE_ONLY",
+          "local": null,
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::riderCurrentRank",
+            "line": 672,
+            "endLine": 676,
+            "tokenSha256": "7a47def0ae2c8ea2214efcf828248b9af671473a7230acdb2d4e50809a35185b"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::riderStatusChangeIsValid",
+          "status": "LIVE_ONLY",
+          "local": null,
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::riderStatusChangeIsValid",
+            "line": 682,
+            "endLine": 684,
+            "tokenSha256": "fbe5e1fb86b93a4570e48c969f6fe4b1f4f6e64d178346af1220997d0e490329"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::riderStatusFieldIsValid",
+          "status": "LIVE_ONLY",
+          "local": null,
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::riderStatusFieldIsValid",
+            "line": 677,
+            "endLine": 681,
+            "tokenSha256": "204ede4a39debeec0118ef57463e670900fd4d5aac155b0e9a3efe7b1d08b034"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::riderStatusRank",
+          "status": "LIVE_ONLY",
+          "local": null,
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::riderStatusRank",
+            "line": 659,
+            "endLine": 668,
+            "tokenSha256": "1ae0961f4adafedaf9b5e692d3870b7ffa2029b1e1130a671e8d2ad245200948"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::sellerCannotChangeOrderLifecycle",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::sellerCannotChangeOrderLifecycle",
+            "line": 658,
+            "endLine": 666,
+            "tokenSha256": "84d41c2030f1fcc4b825ea2b7a0da8d7e3a7185527c62c60af7b21c8245bb977"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::sellerCannotChangeOrderLifecycle",
+            "line": 592,
+            "endLine": 600,
+            "tokenSha256": "84d41c2030f1fcc4b825ea2b7a0da8d7e3a7185527c62c60af7b21c8245bb977"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::sellerProductTrustFieldsAreDefault",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::sellerProductTrustFieldsAreDefault",
+            "line": 361,
+            "endLine": 368,
+            "tokenSha256": "19ebc595bc9f3f717f85720b4e7ecbe7ebfcf19e8ac12d4e3c429d4bf71a60d0"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::sellerProductTrustFieldsAreDefault",
+            "line": 352,
+            "endLine": 359,
+            "tokenSha256": "19ebc595bc9f3f717f85720b4e7ecbe7ebfcf19e8ac12d4e3c429d4bf71a60d0"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/databases/{database}/documents::walletBalanceFieldsAreZero",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::walletBalanceFieldsAreZero",
+            "line": 1751,
+            "endLine": 1770,
+            "tokenSha256": "e4fb3769300f8edfe10f67cb93eaabc236d8cd40cbe6272b8b1773dee9a66756"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/databases/{database}/documents::walletBalanceFieldsAreZero",
+            "line": 1637,
+            "endLine": 1656,
+            "tokenSha256": "e4fb3769300f8edfe10f67cb93eaabc236d8cd40cbe6272b8b1773dee9a66756"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents",
+            "line": 4,
+            "endLine": 2739,
+            "tokenSha256": "ae1e0131b4bdab3cd458a9168288c36b14ab85d7a1460fe8726a8014e3197adf"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents",
+            "line": 4,
+            "endLine": 2558,
+            "tokenSha256": "708d66c94a596024826c367c9a78e51671f69db8b9aab6c2defd9cd9e53b5949"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/addresses/{addressId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/addresses/{addressId}",
+            "line": 1643,
+            "endLine": 1661,
+            "tokenSha256": "34611a544cc5b9873ecbdb10742a0826915fdfc78f23dfeb965dac32fdac2b90"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/addresses/{addressId}",
+            "line": 1538,
+            "endLine": 1547,
+            "tokenSha256": "88bbf202b2164c0f79a946e59111dba6baddb6a43e516a3128c612277158970a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/ai_connection_status/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/ai_connection_status/{userId}",
+            "line": 1865,
+            "endLine": 1868,
+            "tokenSha256": "6f3462ed24cab1b134f270f6f2a6bc97023f35e29b709177061cfb121e6bf96a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/ai_connection_status/{userId}",
+            "line": 1751,
+            "endLine": 1754,
+            "tokenSha256": "6f3462ed24cab1b134f270f6f2a6bc97023f35e29b709177061cfb121e6bf96a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/ai_connections/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/ai_connections/{userId}",
+            "line": 1854,
+            "endLine": 1857,
+            "tokenSha256": "0a2b9b3d0dc8a2c90b6bbd4874b389385c0cfdbc1a2ac9756e9c811a1e0887fd"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/ai_connections/{userId}",
+            "line": 1740,
+            "endLine": 1743,
+            "tokenSha256": "0a2b9b3d0dc8a2c90b6bbd4874b389385c0cfdbc1a2ac9756e9c811a1e0887fd"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/analytics/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/analytics/{docId}",
+            "line": 1421,
+            "endLine": 1424,
+            "tokenSha256": "0cd671d5dc7560e5ec89bfe6e58c5adb197382e3d7e45ef574013bfb5227aed5"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/analytics/{docId}",
+            "line": 1316,
+            "endLine": 1319,
+            "tokenSha256": "0cd671d5dc7560e5ec89bfe6e58c5adb197382e3d7e45ef574013bfb5227aed5"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/app_config/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/app_config/{docId}",
+            "line": 1322,
+            "endLine": 1328,
+            "tokenSha256": "526d5d92d83ebd8fad3f9ffd4cb4e80f1d2859be709d79101717d9e6ea0a1ccf"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/app_config/{docId}",
+            "line": 1217,
+            "endLine": 1223,
+            "tokenSha256": "526d5d92d83ebd8fad3f9ffd4cb4e80f1d2859be709d79101717d9e6ea0a1ccf"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/associate_refund_requests/{requestId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/associate_refund_requests/{requestId}",
+            "line": 2421,
+            "endLine": 2429,
+            "tokenSha256": "5719bf513054aefb6f433241271835fd0c3f7c707c675b6f90a064d0656a8c15"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/associate_refund_requests/{requestId}",
+            "line": 2285,
+            "endLine": 2293,
+            "tokenSha256": "5719bf513054aefb6f433241271835fd0c3f7c707c675b6f90a064d0656a8c15"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/auth_events/{eventId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_events/{eventId}",
+            "line": 1666,
+            "endLine": 1675,
+            "tokenSha256": "96ba6541ad7e850c62080cae5067df35e5adf24a01dc5b39f4da7130d0af477f"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_events/{eventId}",
+            "line": 1552,
+            "endLine": 1561,
+            "tokenSha256": "96ba6541ad7e850c62080cae5067df35e5adf24a01dc5b39f4da7130d0af477f"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/auth_logs/{logId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_logs/{logId}",
+            "line": 1727,
+            "endLine": 1735,
+            "tokenSha256": "e33a01b38fd0f2d20207564bd811798887d54d566b86882e3fe13372b55d6878"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_logs/{logId}",
+            "line": 1613,
+            "endLine": 1621,
+            "tokenSha256": "e33a01b38fd0f2d20207564bd811798887d54d566b86882e3fe13372b55d6878"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/auth_test_mode/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_test_mode/{docId}",
+            "line": 1609,
+            "endLine": 1611,
+            "tokenSha256": "db30a1fee8388e98a8abae97f9c8714ccad80e0a1aa3ec6c261eb26a14d05825"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_test_mode/{docId}",
+            "line": 1504,
+            "endLine": 1506,
+            "tokenSha256": "db30a1fee8388e98a8abae97f9c8714ccad80e0a1aa3ec6c261eb26a14d05825"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/auth_test_mode_log/{logId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_test_mode_log/{logId}",
+            "line": 1612,
+            "endLine": 1614,
+            "tokenSha256": "1a71f76d86fc63f74f1b2a8298221414d4dea88ad684b442e3150d07b1c78736"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/auth_test_mode_log/{logId}",
+            "line": 1507,
+            "endLine": 1509,
+            "tokenSha256": "1a71f76d86fc63f74f1b2a8298221414d4dea88ad684b442e3150d07b1c78736"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/banners/{bannerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/banners/{bannerId}",
+            "line": 964,
+            "endLine": 970,
+            "tokenSha256": "a2b8cdfeb237bdbcc6772709dfdad4f78f8adeec9bb2ffb3557c80cd8beb860e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/banners/{bannerId}",
+            "line": 895,
+            "endLine": 901,
+            "tokenSha256": "a2b8cdfeb237bdbcc6772709dfdad4f78f8adeec9bb2ffb3557c80cd8beb860e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/benefit_accrual_cursors/{period}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_accrual_cursors/{period}",
+            "line": 12,
+            "endLine": 12,
+            "tokenSha256": "00cddacc602f35c1cc6d0a47f0fa189da56b2afea973ed5c264cae852ca69ef1"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/benefit_accruals/{accrualId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_accruals/{accrualId}",
+            "line": 1511,
+            "endLine": 1518,
+            "tokenSha256": "738a321aeae7eff14311e0f8138ac312f4e904f8ff118b75b0b4fcad13249a72"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_accruals/{accrualId}",
+            "line": 1406,
+            "endLine": 1413,
+            "tokenSha256": "738a321aeae7eff14311e0f8138ac312f4e904f8ff118b75b0b4fcad13249a72"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/benefit_enrollments/{enrollmentId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_enrollments/{enrollmentId}",
+            "line": 1502,
+            "endLine": 1509,
+            "tokenSha256": "7325e01c8d227e65fd6b037dc4aa0be71dc4157bd197a0c237c6893c8dd6b3d7"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_enrollments/{enrollmentId}",
+            "line": 1397,
+            "endLine": 1404,
+            "tokenSha256": "7325e01c8d227e65fd6b037dc4aa0be71dc4157bd197a0c237c6893c8dd6b3d7"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/benefit_programs/{programId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_programs/{programId}",
+            "line": 1497,
+            "endLine": 1500,
+            "tokenSha256": "5feabbd3079da2b4e64abc75b94131b623683582b7b842f1f8b804d891910013"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/benefit_programs/{programId}",
+            "line": 1392,
+            "endLine": 1395,
+            "tokenSha256": "5feabbd3079da2b4e64abc75b94131b623683582b7b842f1f8b804d891910013"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/bestseller_slots/{slotId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/bestseller_slots/{slotId}",
+            "line": 1680,
+            "endLine": 1686,
+            "tokenSha256": "59d4f6c3072c993eca9228aa0daf863665c644be7c52f93f53e98f5615ba2b02"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/bestseller_slots/{slotId}",
+            "line": 1566,
+            "endLine": 1572,
+            "tokenSha256": "59d4f6c3072c993eca9228aa0daf863665c644be7c52f93f53e98f5615ba2b02"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/business_posts/{postId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/business_posts/{postId}",
+            "line": 2726,
+            "endLine": 2738,
+            "tokenSha256": "29ec95beb1be0907dfadd08f9be178012e478f5d4842fc1e26eefdc1a2f3e5b5"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/business_posts/{postId}",
+            "line": 2545,
+            "endLine": 2557,
+            "tokenSha256": "29ec95beb1be0907dfadd08f9be178012e478f5d4842fc1e26eefdc1a2f3e5b5"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/campaigns/{campaignId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/campaigns/{campaignId}",
+            "line": 1020,
+            "endLine": 1028,
+            "tokenSha256": "74e01e09d4e9da6e20d5a1b4030dd57438daa0b153487cf8c62106d826b485ce"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/campaigns/{campaignId}",
+            "line": 951,
+            "endLine": 959,
+            "tokenSha256": "74e01e09d4e9da6e20d5a1b4030dd57438daa0b153487cf8c62106d826b485ce"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/carts/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/carts/{userId}",
+            "line": 1566,
+            "endLine": 1574,
+            "tokenSha256": "ad05f55ed703f87a36f7858ed2070cb029c662ff040bab0a88750c292bcc321a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/carts/{userId}",
+            "line": 1461,
+            "endLine": 1469,
+            "tokenSha256": "ad05f55ed703f87a36f7858ed2070cb029c662ff040bab0a88750c292bcc321a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/carts/{userId}/items/{itemId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/carts/{userId}/items/{itemId}",
+            "line": 1571,
+            "endLine": 1573,
+            "tokenSha256": "84d74fc6f4550869d2328993b4fd60dd5a51dbb52b451cc2c88bf977dcc04edb"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/carts/{userId}/items/{itemId}",
+            "line": 1466,
+            "endLine": 1468,
+            "tokenSha256": "84d74fc6f4550869d2328993b4fd60dd5a51dbb52b451cc2c88bf977dcc04edb"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/categories/{categoryId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/categories/{categoryId}",
+            "line": 900,
+            "endLine": 912,
+            "tokenSha256": "cd392083fc490e79278a29cc596830724e4a85266892dfdc7b759cdeb9882f5f"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/categories/{categoryId}",
+            "line": 831,
+            "endLine": 843,
+            "tokenSha256": "cd392083fc490e79278a29cc596830724e4a85266892dfdc7b759cdeb9882f5f"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/categories/{categoryId}/subcategories/{subId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/categories/{categoryId}/subcategories/{subId}",
+            "line": 908,
+            "endLine": 911,
+            "tokenSha256": "9c96b0eb706df9d5186be6bfa092c5d77b0f04350a7f13acf5e67621652de97e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/categories/{categoryId}/subcategories/{subId}",
+            "line": 839,
+            "endLine": 842,
+            "tokenSha256": "9c96b0eb706df9d5186be6bfa092c5d77b0f04350a7f13acf5e67621652de97e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/category_section_slots/{slotId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/category_section_slots/{slotId}",
+            "line": 1691,
+            "endLine": 1697,
+            "tokenSha256": "d16c516c05f3918d28ca02c90f5de78ed8069733118ba8d182f50a5f3482f119"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/category_section_slots/{slotId}",
+            "line": 1577,
+            "endLine": 1583,
+            "tokenSha256": "d16c516c05f3918d28ca02c90f5de78ed8069733118ba8d182f50a5f3482f119"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/centers/{centerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/centers/{centerId}",
+            "line": 2629,
+            "endLine": 2632,
+            "tokenSha256": "a980372f09738f4450ea6d59a5aa4bd754e2120e9ee33c44eb30a73009ae5388"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/centers/{centerId}",
+            "line": 2448,
+            "endLine": 2451,
+            "tokenSha256": "a980372f09738f4450ea6d59a5aa4bd754e2120e9ee33c44eb30a73009ae5388"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/checkout_requests/{requestId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/checkout_requests/{requestId}",
+            "line": 2487,
+            "endLine": 2489,
+            "tokenSha256": "8f27ea85668969be0d207a5b49c0dd60fae0ddc95039e4f2b0d35ba8dccc6084"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/commission_exceptions/{exceptionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/commission_exceptions/{exceptionId}",
+            "line": 2499,
+            "endLine": 2502,
+            "tokenSha256": "64425f8eaadefe524844815e5fc4d125db508efc8bc951f804c665a7291492ff"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/commission_exceptions/{exceptionId}",
+            "line": 2351,
+            "endLine": 2354,
+            "tokenSha256": "64425f8eaadefe524844815e5fc4d125db508efc8bc951f804c665a7291492ff"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/compliance_audit_log/{entryId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/compliance_audit_log/{entryId}",
+            "line": 1476,
+            "endLine": 1482,
+            "tokenSha256": "cd8fa89bd766f3fd8e98722fee6b3fd032112a783822628fa15ea05e9fe8508a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/compliance_audit_log/{entryId}",
+            "line": 1371,
+            "endLine": 1377,
+            "tokenSha256": "cd8fa89bd766f3fd8e98722fee6b3fd032112a783822628fa15ea05e9fe8508a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/compliance_config/{programId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/compliance_config/{programId}",
+            "line": 1469,
+            "endLine": 1474,
+            "tokenSha256": "7800233d281dd316eda5ada5539921d777ee27cd937cb461089923d38b7906bb"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/compliance_config/{programId}",
+            "line": 1364,
+            "endLine": 1369,
+            "tokenSha256": "7800233d281dd316eda5ada5539921d777ee27cd937cb461089923d38b7906bb"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/coupon_redemptions/{redemptionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/coupon_redemptions/{redemptionId}",
+            "line": 934,
+            "endLine": 937,
+            "tokenSha256": "7d3b6649f3436e88da19bf845c08e354a7b8eb7bfa41e1ed0de0050c99f1dfe0"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/coupon_redemptions/{redemptionId}",
+            "line": 865,
+            "endLine": 868,
+            "tokenSha256": "7d3b6649f3436e88da19bf845c08e354a7b8eb7bfa41e1ed0de0050c99f1dfe0"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/coupons/{couponId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/coupons/{couponId}",
+            "line": 917,
+            "endLine": 923,
+            "tokenSha256": "21d6b1f3870aebd3ef9f328ddd4f906b9c91925dd668a647c1564918aa9fcf6c"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/coupons/{couponId}",
+            "line": 848,
+            "endLine": 854,
+            "tokenSha256": "21d6b1f3870aebd3ef9f328ddd4f906b9c91925dd668a647c1564918aa9fcf6c"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_dispatch/{orderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_dispatch/{orderId}",
+            "line": 2065,
+            "endLine": 2068,
+            "tokenSha256": "6fd5aaebb9b8e4d27d7408bd2d73b1fed7f781c6610e7802d4abb32afb4e65cc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_dispatch/{orderId}",
+            "line": 1951,
+            "endLine": 1954,
+            "tokenSha256": "6fd5aaebb9b8e4d27d7408bd2d73b1fed7f781c6610e7802d4abb32afb4e65cc"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_exceptions/{exceptionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_exceptions/{exceptionId}",
+            "line": 2190,
+            "endLine": 2193,
+            "tokenSha256": "32aac085a4d8c26aad919c5b6f923dc6eeef23955ab4ee4d5a22e11459039abc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_exceptions/{exceptionId}",
+            "line": 2076,
+            "endLine": 2079,
+            "tokenSha256": "32aac085a4d8c26aad919c5b6f923dc6eeef23955ab4ee4d5a22e11459039abc"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_partners/{partnerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_partners/{partnerId}",
+            "line": 1954,
+            "endLine": 1972,
+            "tokenSha256": "4ed4dd97267bb2e2b660530d52b9dd76491b2546727151bc4017067b6c928e2d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_partners/{partnerId}",
+            "line": 1840,
+            "endLine": 1858,
+            "tokenSha256": "4ed4dd97267bb2e2b660530d52b9dd76491b2546727151bc4017067b6c928e2d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_requests/{requestId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_requests/{requestId}",
+            "line": 2055,
+            "endLine": 2061,
+            "tokenSha256": "13c355bd3e16f9fc6080c846ddaf663ca8557718260ce34b239ee75a2782f142"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_requests/{requestId}",
+            "line": 1941,
+            "endLine": 1947,
+            "tokenSha256": "13c355bd3e16f9fc6080c846ddaf663ca8557718260ce34b239ee75a2782f142"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_tasks/{orderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}",
+            "line": 1986,
+            "endLine": 2042,
+            "tokenSha256": "8ad2ccb0dc97f7e2de0975bd2e6619f0ca48e3c89b17950e7df7f2a87b846e9e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}",
+            "line": 1872,
+            "endLine": 1928,
+            "tokenSha256": "8ad2ccb0dc97f7e2de0975bd2e6619f0ca48e3c89b17950e7df7f2a87b846e9e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}",
+            "line": 2007,
+            "endLine": 2041,
+            "tokenSha256": "8289861c74649bb189720b3a2e817b3c577ada302782e3e884f86c027ab90961"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/delivery_tasks/{orderId}/live/{docId}",
+            "line": 1893,
+            "endLine": 1927,
+            "tokenSha256": "8289861c74649bb189720b3a2e817b3c577ada302782e3e884f86c027ab90961"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/document_review_submissions/{submissionId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/document_review_submissions/{submissionId}",
+            "line": 2238,
+            "endLine": 2241,
+            "tokenSha256": "42160b2aafa2eae1a41b6d11335d772173792a640c34255cfd7d1e4bfbf1da82"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/employee_payout_change_requests/{requestId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employee_payout_change_requests/{requestId}",
+            "line": 1294,
+            "endLine": 1297,
+            "tokenSha256": "e1e419a0a0ea7539d42ad1ad1c550c9148d6b3c3ac717b1dc4f4fc65324d5a13"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/employee_payouts/{payoutId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employee_payouts/{payoutId}",
+            "line": 2306,
+            "endLine": 2326,
+            "tokenSha256": "3f772a2a57339a3670f3bcf7e6b781915357263e1c75bfb193fcd3b00a46f5a6"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employee_payouts/{payoutId}",
+            "line": 2165,
+            "endLine": 2190,
+            "tokenSha256": "cce3db40f75c8a5b7e1aabfd70fd11f99b6a4c31c725091fde04e7363a1f13bf"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/employee_wallets/{employeeId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employee_wallets/{employeeId}",
+            "line": 1298,
+            "endLine": 1301,
+            "tokenSha256": "bbf54110ddf341abe8bc7ca75eafd2deb3d6b007d95785234f906167e66370cc"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/employees/{employeeId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employees/{employeeId}",
+            "line": 1260,
+            "endLine": 1282,
+            "tokenSha256": "0b58f10b9f8738a1918b95495b86a7a886bf536a2dff26837c74eae77907eacc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/employees/{employeeId}",
+            "line": 1175,
+            "endLine": 1196,
+            "tokenSha256": "0492ced7abb62cbb34f3e2fc4b15e48f78f3a5adb68b0f7a5aa1f3bb48dfba5c"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/feature_flags/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/feature_flags/{docId}",
+            "line": 1461,
+            "endLine": 1467,
+            "tokenSha256": "0d11e93fddab8a4e01b55bd9a91e2f1043f2542f8fea7c51ea864671f781352a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/feature_flags/{docId}",
+            "line": 1356,
+            "endLine": 1362,
+            "tokenSha256": "0d11e93fddab8a4e01b55bd9a91e2f1043f2542f8fea7c51ea864671f781352a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/follows/{followId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/follows/{followId}",
+            "line": 2686,
+            "endLine": 2707,
+            "tokenSha256": "04e8791674f71c00229591a6738ccdfeff724fd684c5ea32ea7af239106c688d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/follows/{followId}",
+            "line": 2505,
+            "endLine": 2526,
+            "tokenSha256": "04e8791674f71c00229591a6738ccdfeff724fd684c5ea32ea7af239106c688d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/home_product_sections/{sectionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/home_product_sections/{sectionId}",
+            "line": 1705,
+            "endLine": 1708,
+            "tokenSha256": "0cacaae52ae8348e5d9be9e5276ca7b3ea1b902ee26a330101e62db7965a5626"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/home_product_sections/{sectionId}",
+            "line": 1591,
+            "endLine": 1594,
+            "tokenSha256": "0cacaae52ae8348e5d9be9e5276ca7b3ea1b902ee26a330101e62db7965a5626"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/inventory_alerts/{alertId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/inventory_alerts/{alertId}",
+            "line": 2331,
+            "endLine": 2339,
+            "tokenSha256": "513c172bcb392f917077e29a79a722c6de54db1dc93869e318bdaa02321f4be5"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/inventory_alerts/{alertId}",
+            "line": 2195,
+            "endLine": 2203,
+            "tokenSha256": "513c172bcb392f917077e29a79a722c6de54db1dc93869e318bdaa02321f4be5"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/invoices/{invoiceId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/invoices/{invoiceId}",
+            "line": 1598,
+            "endLine": 1604,
+            "tokenSha256": "36dddb739bf3b9a0a4b841e77b78d3269517090acef9734c387dd6571ecedc5b"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/invoices/{invoiceId}",
+            "line": 1493,
+            "endLine": 1499,
+            "tokenSha256": "36dddb739bf3b9a0a4b841e77b78d3269517090acef9734c387dd6571ecedc5b"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/logs/{logId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/logs/{logId}",
+            "line": 1439,
+            "endLine": 1443,
+            "tokenSha256": "66a58c9c9d52e6a4feafb77ae06f37bbbaead1c781eaba2f3fe0bfd4890b47be"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/logs/{logId}",
+            "line": 1334,
+            "endLine": 1338,
+            "tokenSha256": "66a58c9c9d52e6a4feafb77ae06f37bbbaead1c781eaba2f3fe0bfd4890b47be"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/loyalty/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/loyalty/{docId}",
+            "line": 1306,
+            "endLine": 1312,
+            "tokenSha256": "b93d226bc60a198358e156336fb3978e0bf49199ca577ae86d934911d03fca8a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/loyalty/{docId}",
+            "line": 1201,
+            "endLine": 1207,
+            "tokenSha256": "b93d226bc60a198358e156336fb3978e0bf49199ca577ae86d934911d03fca8a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/loyalty_tiers/{tierId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/loyalty_tiers/{tierId}",
+            "line": 1314,
+            "endLine": 1317,
+            "tokenSha256": "9ecb306fcda70e9aa3b1fa513141a5ec7d4fbfcbc65d8c39cdc273b82af33a40"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/loyalty_tiers/{tierId}",
+            "line": 1209,
+            "endLine": 1212,
+            "tokenSha256": "9ecb306fcda70e9aa3b1fa513141a5ec7d4fbfcbc65d8c39cdc273b82af33a40"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/masterProducts/{productId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/masterProducts/{productId}",
+            "line": 2617,
+            "endLine": 2620,
+            "tokenSha256": "2d2e9e58d2bcba0f3e0fd57bb6d71d2bd9a3ed950e81e83d357a4bd8e59be55b"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/masterProducts/{productId}",
+            "line": 2436,
+            "endLine": 2439,
+            "tokenSha256": "2d2e9e58d2bcba0f3e0fd57bb6d71d2bd9a3ed950e81e83d357a4bd8e59be55b"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/notification_history/{notificationId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/notification_history/{notificationId}",
+            "line": 1414,
+            "endLine": 1416,
+            "tokenSha256": "f1fa8e58f476b799f7a0e648ccf18daf5da414a50990fbdee010c6565645438e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/notification_history/{notificationId}",
+            "line": 1309,
+            "endLine": 1311,
+            "tokenSha256": "f1fa8e58f476b799f7a0e648ccf18daf5da414a50990fbdee010c6565645438e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/notifications/{notificationId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/notifications/{notificationId}",
+            "line": 1409,
+            "endLine": 1412,
+            "tokenSha256": "0efe75f5888709edf2fbd6554b94b700198e840468fdaf616b8af7f9164a348d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/notifications/{notificationId}",
+            "line": 1304,
+            "endLine": 1307,
+            "tokenSha256": "0efe75f5888709edf2fbd6554b94b700198e840468fdaf616b8af7f9164a348d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/onboarding_events/{eventId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_events/{eventId}",
+            "line": 2407,
+            "endLine": 2412,
+            "tokenSha256": "9e7d875eff7cf97914480ba0aefa0419566a7a3f727f2eea528ba0eab5ec9d8a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_events/{eventId}",
+            "line": 2271,
+            "endLine": 2276,
+            "tokenSha256": "9e7d875eff7cf97914480ba0aefa0419566a7a3f727f2eea528ba0eab5ec9d8a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/onboarding_exceptions/{exceptionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_exceptions/{exceptionId}",
+            "line": 2414,
+            "endLine": 2419,
+            "tokenSha256": "aa75da8b2eb36baa39a55bc16a71c6a454fa2d80608ebb6bbdcffe068a58a5e6"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_exceptions/{exceptionId}",
+            "line": 2278,
+            "endLine": 2283,
+            "tokenSha256": "aa75da8b2eb36baa39a55bc16a71c6a454fa2d80608ebb6bbdcffe068a58a5e6"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/onboarding_handoffs/{code}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_handoffs/{code}",
+            "line": 2370,
+            "endLine": 2372,
+            "tokenSha256": "cd11e1aa6cbf418a6afb509cc46c8e9b6f66ee2f0244d239ebbdb06be48ba655"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_handoffs/{code}",
+            "line": 2234,
+            "endLine": 2236,
+            "tokenSha256": "cd11e1aa6cbf418a6afb509cc46c8e9b6f66ee2f0244d239ebbdb06be48ba655"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/onboarding_rate_limits/{uid}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_rate_limits/{uid}",
+            "line": 2447,
+            "endLine": 2449,
+            "tokenSha256": "0d9cb15c6b87f8f87e8b3754d6acba67b4ab78a27e1ca40ef2c535d21431871d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/onboarding_rate_limits/{uid}",
+            "line": 2311,
+            "endLine": 2313,
+            "tokenSha256": "0d9cb15c6b87f8f87e8b3754d6acba67b4ab78a27e1ca40ef2c535d21431871d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/order_rate_limits/{uid}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/order_rate_limits/{uid}",
+            "line": 2475,
+            "endLine": 2477,
+            "tokenSha256": "39e03dde8dafd76b59873fc5c65a8c3c4837df7197583980be8a7e9c039da072"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/order_rate_limits/{uid}",
+            "line": 2339,
+            "endLine": 2341,
+            "tokenSha256": "39e03dde8dafd76b59873fc5c65a8c3c4837df7197583980be8a7e9c039da072"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/orders/{orderId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}",
+            "line": 762,
+            "endLine": 895,
+            "tokenSha256": "2a6d3113aa3dca073301fdef0b796d98c58ccb09dab035ae55fce5aadeec4afc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}",
+            "line": 716,
+            "endLine": 826,
+            "tokenSha256": "3dcbff84cfedd577e2cea12e025fcae735d1963958d13a64376c947ae9191251"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/orders/{orderId}/reviews/{reviewId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}/reviews/{reviewId}",
+            "line": 826,
+            "endLine": 845,
+            "tokenSha256": "1e422407b0514bfa5e58995b4d22fda4df0a0599e55c9d2a7cff03980ff2275c"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/orders/{orderId}/secrets/{secretId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}/secrets/{secretId}",
+            "line": 889,
+            "endLine": 894,
+            "tokenSha256": "25b4f2b27f7bbfb8135aa179bf34bf5a0a972d21b4185ba8d663ecf17d46e145"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}/secrets/{secretId}",
+            "line": 820,
+            "endLine": 825,
+            "tokenSha256": "25b4f2b27f7bbfb8135aa179bf34bf5a0a972d21b4185ba8d663ecf17d46e145"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/orders/{orderId}/timeline/{eventId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}/timeline/{eventId}",
+            "line": 848,
+            "endLine": 871,
+            "tokenSha256": "dea7697f8f59931b1c2b1ce154563ac89bf519345be94e944111e40281955732"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/orders/{orderId}/timeline/{eventId}",
+            "line": 779,
+            "endLine": 802,
+            "tokenSha256": "dea7697f8f59931b1c2b1ce154563ac89bf519345be94e944111e40281955732"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/otp_codes/{email}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_codes/{email}",
+            "line": 1579,
+            "endLine": 1582,
+            "tokenSha256": "6bba2b6da4451a7f452f8759c82f79a93f685815d3fba0c686c1eb724bb21f6e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_codes/{email}",
+            "line": 1474,
+            "endLine": 1477,
+            "tokenSha256": "6bba2b6da4451a7f452f8759c82f79a93f685815d3fba0c686c1eb724bb21f6e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/otp_delivery_failures/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_delivery_failures/{docId}",
+            "line": 1623,
+            "endLine": 1625,
+            "tokenSha256": "4a125237581c2a95fe023d5a8ab645ba5abf413c230ee96f0085665c1d86b815"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_delivery_failures/{docId}",
+            "line": 1518,
+            "endLine": 1520,
+            "tokenSha256": "4a125237581c2a95fe023d5a8ab645ba5abf413c230ee96f0085665c1d86b815"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/otp_ip_limits/{hashedIp}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_ip_limits/{hashedIp}",
+            "line": 1636,
+            "endLine": 1638,
+            "tokenSha256": "e7b6d48c9b44fa185ba6841fa68240e6774aed868bbac6099e07d404c25048df"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/otp_ip_limits/{hashedIp}",
+            "line": 1531,
+            "endLine": 1533,
+            "tokenSha256": "e7b6d48c9b44fa185ba6841fa68240e6774aed868bbac6099e07d404c25048df"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/payment_reconciliation_cursors/{cursorId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/payment_reconciliation_cursors/{cursorId}",
+            "line": 2480,
+            "endLine": 2482,
+            "tokenSha256": "f5a47975ef3410974ce4de88591b4a7633a38069930e3fe87991c7d29aaeae4b"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/payment_security_logs/{logId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/payment_security_logs/{logId}",
+            "line": 2377,
+            "endLine": 2381,
+            "tokenSha256": "07fbe01689e64436b910960126f9777ecda8cc4857ebbc50deaffddb9ab3de8d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/payment_security_logs/{logId}",
+            "line": 2241,
+            "endLine": 2245,
+            "tokenSha256": "07fbe01689e64436b910960126f9777ecda8cc4857ebbc50deaffddb9ab3de8d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/phone_otp_codes/{phone}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/phone_otp_codes/{phone}",
+            "line": 1587,
+            "endLine": 1590,
+            "tokenSha256": "2d413971dca273ad9d3cb4aeccb4f382f8932ef63e3b0140a7ce1e6ba74a3bf2"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/phone_otp_codes/{phone}",
+            "line": 1482,
+            "endLine": 1485,
+            "tokenSha256": "2d413971dca273ad9d3cb4aeccb4f382f8932ef63e3b0140a7ce1e6ba74a3bf2"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/product_credit_balances/{customerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_balances/{customerId}",
+            "line": 1532,
+            "endLine": 1538,
+            "tokenSha256": "ec23c20726de8d3ed9a45a0a8d01ba77cae0f86d5a3b4b2ec7a1df1ba6dec128"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_balances/{customerId}",
+            "line": 1427,
+            "endLine": 1433,
+            "tokenSha256": "ec23c20726de8d3ed9a45a0a8d01ba77cae0f86d5a3b4b2ec7a1df1ba6dec128"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/product_credit_expiry_cursors/{cursorId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_expiry_cursors/{cursorId}",
+            "line": 10,
+            "endLine": 10,
+            "tokenSha256": "734b16c2ad5fab99fae204679d68db5cc4d5c8ec87894933a63f3b05e003d522"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/product_credit_holds/{holdId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_holds/{holdId}",
+            "line": 1544,
+            "endLine": 1548,
+            "tokenSha256": "7e35036039f8b77d382e725ad476ce2cde588f32075e7ab9baf9f8c383b101e2"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_holds/{holdId}",
+            "line": 1439,
+            "endLine": 1443,
+            "tokenSha256": "7e35036039f8b77d382e725ad476ce2cde588f32075e7ab9baf9f8c383b101e2"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/product_credit_ledger/{entryId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_ledger/{entryId}",
+            "line": 1520,
+            "endLine": 1530,
+            "tokenSha256": "5de4eecfb72fd12cc51194306748730dc1c644735b2bb26e596b61181438e04b"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_credit_ledger/{entryId}",
+            "line": 1415,
+            "endLine": 1425,
+            "tokenSha256": "5de4eecfb72fd12cc51194306748730dc1c644735b2bb26e596b61181438e04b"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/product_price_mappings/{mappingId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_price_mappings/{mappingId}",
+            "line": 2648,
+            "endLine": 2653,
+            "tokenSha256": "efdc681f31b001d2f6bbfbfa4727d0f9ee323d10a96df441876006f8944f68ba"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/product_price_mappings/{mappingId}",
+            "line": 2467,
+            "endLine": 2472,
+            "tokenSha256": "efdc681f31b001d2f6bbfbfa4727d0f9ee323d10a96df441876006f8944f68ba"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/products/{productId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}",
+            "line": 421,
+            "endLine": 487,
+            "tokenSha256": "8cff4cdf0c52c4c1f274acfa860aec4a110ec97600bb43a0289b9f2e9640ec89"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}",
+            "line": 382,
+            "endLine": 438,
+            "tokenSha256": "650bf6f22ba9b50bad8b7498bf2d3f916fa9a71d55369de2648ffcc5c4008780"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/products/{productId}/reviewStats/{statsId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}/reviewStats/{statsId}",
+            "line": 480,
+            "endLine": 486,
+            "tokenSha256": "5ed9e4b8bce45b026651b4f17d8c0d5f4464a5e75d6bb99d90761b643037ae8a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}/reviewStats/{statsId}",
+            "line": 431,
+            "endLine": 437,
+            "tokenSha256": "5ed9e4b8bce45b026651b4f17d8c0d5f4464a5e75d6bb99d90761b643037ae8a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/products/{productId}/reviews/{reviewId}",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}/reviews/{reviewId}",
+            "line": 442,
+            "endLine": 477,
+            "tokenSha256": "5530d610a58400194e4a85cb274b4b5568f1390f2f1a190d65f8e566ecc8e40c"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/products/{productId}/reviews/{reviewId}",
+            "line": 403,
+            "endLine": 428,
+            "tokenSha256": "e20658e6288c5f9097c4fa2d1a3d787a1aa4fac1b44b6a235ed7d9f283640f44"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/razorpay_orders/{orderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/razorpay_orders/{orderId}",
+            "line": 2344,
+            "endLine": 2349,
+            "tokenSha256": "a3ad00447b216f7829898862c265de76d4393d9860e6b329c99ce2b2d92560e1"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/razorpay_orders/{orderId}",
+            "line": 2208,
+            "endLine": 2213,
+            "tokenSha256": "a3ad00447b216f7829898862c265de76d4393d9860e6b329c99ce2b2d92560e1"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/referrals/{referralId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/referrals/{referralId}",
+            "line": 1891,
+            "endLine": 1905,
+            "tokenSha256": "d91cfde248666c9ecce2429f2cb016eb0d8a4d8c03b23ed1334c4bdaa18f577e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/referrals/{referralId}",
+            "line": 1777,
+            "endLine": 1791,
+            "tokenSha256": "d91cfde248666c9ecce2429f2cb016eb0d8a4d8c03b23ed1334c4bdaa18f577e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/review_photo_drafts/{draftId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/review_photo_drafts/{draftId}",
+            "line": 6,
+            "endLine": 6,
+            "tokenSha256": "e4c454034310420fb3f84bd73813a454d9fba52ed13088ba68c3ea2fd34d65f8"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/review_photo_rpc_limits/{limitId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/review_photo_rpc_limits/{limitId}",
+            "line": 8,
+            "endLine": 8,
+            "tokenSha256": "417eb2b12985e0cc49795af2c656df18f5cce4a36ab80a00e85eb2225aabe814"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/review_photo_upload_limits/{ownerId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/review_photo_upload_limits/{ownerId}",
+            "line": 7,
+            "endLine": 7,
+            "tokenSha256": "05a015a335b277d7e83e87403d23bf3726c7973c78069486a637bd6a4dd17129"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/reviews/{reviewId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/reviews/{reviewId}",
+            "line": 942,
+            "endLine": 959,
+            "tokenSha256": "3740d81f39d3ed3614aa7d1c0d5cadc9bd4ed7b0734f50d4d388f8dcd185cf41"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/reviews/{reviewId}",
+            "line": 873,
+            "endLine": 890,
+            "tokenSha256": "3740d81f39d3ed3614aa7d1c0d5cadc9bd4ed7b0734f50d4d388f8dcd185cf41"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rfqs/{rfqId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rfqs/{rfqId}",
+            "line": 1878,
+            "endLine": 1881,
+            "tokenSha256": "b91219bd3c4501d0636a8a4d5dd2fb292bc76ddfde75a2f4da8cb819c1d988c8"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rfqs/{rfqId}",
+            "line": 1764,
+            "endLine": 1767,
+            "tokenSha256": "b91219bd3c4501d0636a8a4d5dd2fb292bc76ddfde75a2f4da8cb819c1d988c8"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_accounts/{riderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_accounts/{riderId}",
+            "line": 2213,
+            "endLine": 2216,
+            "tokenSha256": "220a617b68d752ac8951d60257e7827391f305bde56058848268aac2c4913c00"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_accounts/{riderId}",
+            "line": 2089,
+            "endLine": 2092,
+            "tokenSha256": "220a617b68d752ac8951d60257e7827391f305bde56058848268aac2c4913c00"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_bank_change_requests/{requestId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_bank_change_requests/{requestId}",
+            "line": 2221,
+            "endLine": 2224,
+            "tokenSha256": "4393a0d050bed427f45cf03582c7c93f296a4865c747825f7f69aca7e3ad98e3"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_bank_change_requests/{requestId}",
+            "line": 2097,
+            "endLine": 2100,
+            "tokenSha256": "4393a0d050bed427f45cf03582c7c93f296a4865c747825f7f69aca7e3ad98e3"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_cash_ledger/{entryId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_cash_ledger/{entryId}",
+            "line": 2217,
+            "endLine": 2220,
+            "tokenSha256": "863755a3823eaad60ae894dd2abb8ef9f0d4dcdb4fba2c926890aafbb41f64d0"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_cash_ledger/{entryId}",
+            "line": 2093,
+            "endLine": 2096,
+            "tokenSha256": "863755a3823eaad60ae894dd2abb8ef9f0d4dcdb4fba2c926890aafbb41f64d0"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_earnings/{orderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_earnings/{orderId}",
+            "line": 2209,
+            "endLine": 2212,
+            "tokenSha256": "b24aaefef7967596081e7006999825cec5650ce99835157b7080465c11798461"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_earnings/{orderId}",
+            "line": 2085,
+            "endLine": 2088,
+            "tokenSha256": "b24aaefef7967596081e7006999825cec5650ce99835157b7080465c11798461"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_identity_change_requests/{requestId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_identity_change_requests/{requestId}",
+            "line": 2229,
+            "endLine": 2232,
+            "tokenSha256": "05cde4c738da3ed37266d589daeef26be49fa403c519a3533344d402a49e7d76"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_incident_limits/{riderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_incident_limits/{riderId}",
+            "line": 2195,
+            "endLine": 2197,
+            "tokenSha256": "ee7678cf99292090346d2ab34d0df7e3687915a94948e79e6af0ae850d32214b"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_incident_limits/{riderId}",
+            "line": 2081,
+            "endLine": 2083,
+            "tokenSha256": "ee7678cf99292090346d2ab34d0df7e3687915a94948e79e6af0ae850d32214b"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_incidents/{incidentId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_incidents/{incidentId}",
+            "line": 2182,
+            "endLine": 2185,
+            "tokenSha256": "a1ff0fdc255840b13d934a538822732167a9b804b0f986d827003ca79a9af3a7"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_incidents/{incidentId}",
+            "line": 2068,
+            "endLine": 2071,
+            "tokenSha256": "a1ff0fdc255840b13d934a538822732167a9b804b0f986d827003ca79a9af3a7"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_payouts/{payoutId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_payouts/{payoutId}",
+            "line": 2242,
+            "endLine": 2265,
+            "tokenSha256": "ef99f35217f1792e0e483d961d97efb2f0372c45f120572ea24cccc2569ae68f"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_payouts/{payoutId}",
+            "line": 2101,
+            "endLine": 2124,
+            "tokenSha256": "ef99f35217f1792e0e483d961d97efb2f0372c45f120572ea24cccc2569ae68f"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/rider_support_tickets/{ticketId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/rider_support_tickets/{ticketId}",
+            "line": 2204,
+            "endLine": 2207,
+            "tokenSha256": "146e59c7717df0bedc08a4682809b05095beef25661c0a678a92e83f010c17d0"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/section_banners/{bannerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/section_banners/{bannerId}",
+            "line": 1006,
+            "endLine": 1012,
+            "tokenSha256": "b5a854f54ccf4096b77a129027b95de496da839b59ec923e7ce568b71797e5c7"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/section_banners/{bannerId}",
+            "line": 937,
+            "endLine": 943,
+            "tokenSha256": "b5a854f54ccf4096b77a129027b95de496da839b59ec923e7ce568b71797e5c7"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/sellerRequests/{uid}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellerRequests/{uid}",
+            "line": 2583,
+            "endLine": 2594,
+            "tokenSha256": "6f93b3ce794c31c5a99e518b2c353ce19349bdd6712638d6bde5bee926d5f485"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellerRequests/{uid}",
+            "line": 2402,
+            "endLine": 2413,
+            "tokenSha256": "6f93b3ce794c31c5a99e518b2c353ce19349bdd6712638d6bde5bee926d5f485"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_ai_rate_limits/{uid}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_ai_rate_limits/{uid}",
+            "line": 2463,
+            "endLine": 2465,
+            "tokenSha256": "69cadcded7e8a69222869d0199f2cbf7959d71ef574f4f8ef338c5c823414bfe"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_ai_rate_limits/{uid}",
+            "line": 2327,
+            "endLine": 2329,
+            "tokenSha256": "69cadcded7e8a69222869d0199f2cbf7959d71ef574f4f8ef338c5c823414bfe"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_invoice_counters/{counterId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_invoice_counters/{counterId}",
+            "line": 1605,
+            "endLine": 1607,
+            "tokenSha256": "9b9c0cf34ff3096b9fa98c15b543a9c3ae7088404dbec195e9096de8acde17d6"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_invoice_counters/{counterId}",
+            "line": 1500,
+            "endLine": 1502,
+            "tokenSha256": "9b9c0cf34ff3096b9fa98c15b543a9c3ae7088404dbec195e9096de8acde17d6"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_payout_change_requests/{requestId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payout_change_requests/{requestId}",
+            "line": 1154,
+            "endLine": 1157,
+            "tokenSha256": "d4c34a20cfc386ebaaeda99f3d1a34532de58d08589fd7855abd666fcde292da"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payout_change_requests/{requestId}",
+            "line": 1085,
+            "endLine": 1088,
+            "tokenSha256": "d4c34a20cfc386ebaaeda99f3d1a34532de58d08589fd7855abd666fcde292da"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_payout_details/{sellerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payout_details/{sellerId}",
+            "line": 1136,
+            "endLine": 1140,
+            "tokenSha256": "1fde37acc787c466c17c65b7fe2f703db5934262ba21d2a79749ca452bcc12fb"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payout_details/{sellerId}",
+            "line": 1067,
+            "endLine": 1071,
+            "tokenSha256": "1fde37acc787c466c17c65b7fe2f703db5934262ba21d2a79749ca452bcc12fb"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_payouts/{payoutId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payouts/{payoutId}",
+            "line": 2267,
+            "endLine": 2301,
+            "tokenSha256": "21861db67bbaefe0323240edcd6dda7f1445d4f412bae78f3a0bfb811347e23c"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_payouts/{payoutId}",
+            "line": 2126,
+            "endLine": 2160,
+            "tokenSha256": "21861db67bbaefe0323240edcd6dda7f1445d4f412bae78f3a0bfb811347e23c"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_stats_contrib/{orderId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_stats_contrib/{orderId}",
+            "line": 2167,
+            "endLine": 2169,
+            "tokenSha256": "70e6dcebdd539f0c55eba44a4c353938ed80bb122cef2652ef0711a154161642"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_stats_contrib/{orderId}",
+            "line": 2053,
+            "endLine": 2055,
+            "tokenSha256": "70e6dcebdd539f0c55eba44a4c353938ed80bb122cef2652ef0711a154161642"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_stats_daily/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_stats_daily/{docId}",
+            "line": 2160,
+            "endLine": 2164,
+            "tokenSha256": "531b9e9f3c14aa7db64bf98a7a762ce1ee9e8c5c9f7c06c8cf86c46a551d941d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_stats_daily/{docId}",
+            "line": 2046,
+            "endLine": 2050,
+            "tokenSha256": "531b9e9f3c14aa7db64bf98a7a762ce1ee9e8c5c9f7c06c8cf86c46a551d941d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_wallets/{sellerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_wallets/{sellerId}",
+            "line": 1158,
+            "endLine": 1161,
+            "tokenSha256": "e8afd90cc6099bc19983d7c982d058be0429b7ef6b25ede03d29e42792e9ca33"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_wallets/{sellerId}",
+            "line": 1089,
+            "endLine": 1092,
+            "tokenSha256": "e8afd90cc6099bc19983d7c982d058be0429b7ef6b25ede03d29e42792e9ca33"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/seller_withdrawals/{withdrawalId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_withdrawals/{withdrawalId}",
+            "line": 1150,
+            "endLine": 1153,
+            "tokenSha256": "53c3a192a975842d6d1c8b26edb78d06ed83af48df4f0f08de8d093def69ef28"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/seller_withdrawals/{withdrawalId}",
+            "line": 1081,
+            "endLine": 1084,
+            "tokenSha256": "53c3a192a975842d6d1c8b26edb78d06ed83af48df4f0f08de8d093def69ef28"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/sellers/{sellerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellers/{sellerId}",
+            "line": 1083,
+            "endLine": 1106,
+            "tokenSha256": "7598f9c3acb040bab00a676e1120d9b5b4885b041d92022cdc4a960c81675b06"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellers/{sellerId}",
+            "line": 1014,
+            "endLine": 1037,
+            "tokenSha256": "7598f9c3acb040bab00a676e1120d9b5b4885b041d92022cdc4a960c81675b06"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/sellers/{sellerId}/products/{productId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellers/{sellerId}/products/{productId}",
+            "line": 1102,
+            "endLine": 1105,
+            "tokenSha256": "7e973d649221d23abd80e64292a26c6b0116e6c26576f1099351c78f17434115"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sellers/{sellerId}/products/{productId}",
+            "line": 1033,
+            "endLine": 1036,
+            "tokenSha256": "7e973d649221d23abd80e64292a26c6b0116e6c26576f1099351c78f17434115"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/access",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/access",
+            "line": 1355,
+            "endLine": 1357,
+            "tokenSha256": "9659ed6882837c7221393198f74607f905d1b2ce10fadc0687c8ffbb829fde57"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/access",
+            "line": 1250,
+            "endLine": 1252,
+            "tokenSha256": "9659ed6882837c7221393198f74607f905d1b2ce10fadc0687c8ffbb829fde57"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/associate_onboarding",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/associate_onboarding",
+            "line": 1390,
+            "endLine": 1392,
+            "tokenSha256": "65397035848f0b5f69d822b6b816a8988247ff1984f866fa03b34608c9dc6539"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/associate_onboarding",
+            "line": 1285,
+            "endLine": 1287,
+            "tokenSha256": "65397035848f0b5f69d822b6b816a8988247ff1984f866fa03b34608c9dc6539"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/home_grocery_strip_config",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/home_grocery_strip_config",
+            "line": 1372,
+            "endLine": 1374,
+            "tokenSha256": "7ec504388793d94383658e8f6929f3d7fd81e9d717cfd9007e5f259f711dfacc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/home_grocery_strip_config",
+            "line": 1267,
+            "endLine": 1269,
+            "tokenSha256": "7ec504388793d94383658e8f6929f3d7fd81e9d717cfd9007e5f259f711dfacc"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/home_section_order",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/home_section_order",
+            "line": 1381,
+            "endLine": 1383,
+            "tokenSha256": "24356dce3c1fbf4215a01746397618f84f99afcbbfe11e455b2a445513ae5ff9"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/home_section_order",
+            "line": 1276,
+            "endLine": 1278,
+            "tokenSha256": "24356dce3c1fbf4215a01746397618f84f99afcbbfe11e455b2a445513ae5ff9"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/location_settings",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/location_settings",
+            "line": 1366,
+            "endLine": 1368,
+            "tokenSha256": "d08f3b9fd386a530ecd96366fdca7dcc66cb7a5bca08f9eb68b4e8fbae758c07"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/location_settings",
+            "line": 1261,
+            "endLine": 1263,
+            "tokenSha256": "d08f3b9fd386a530ecd96366fdca7dcc66cb7a5bca08f9eb68b4e8fbae758c07"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/wallet_config",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/wallet_config",
+            "line": 1358,
+            "endLine": 1360,
+            "tokenSha256": "bfae14c25a10025e9e3a3dd4e7bff197b94acaa416e9d5e6e587119780ebf9a4"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/wallet_config",
+            "line": 1253,
+            "endLine": 1255,
+            "tokenSha256": "bfae14c25a10025e9e3a3dd4e7bff197b94acaa416e9d5e6e587119780ebf9a4"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/settings/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/{docId}",
+            "line": 1393,
+            "endLine": 1396,
+            "tokenSha256": "1c7657d68aed45f9ed2f2b2c9f33442f65059611e8bdc589eca738dd47175a9f"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/settings/{docId}",
+            "line": 1288,
+            "endLine": 1291,
+            "tokenSha256": "1c7657d68aed45f9ed2f2b2c9f33442f65059611e8bdc589eca738dd47175a9f"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/sponsored_banners/{bannerId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sponsored_banners/{bannerId}",
+            "line": 992,
+            "endLine": 1001,
+            "tokenSha256": "ea52c81a01d6b82068d3ccd7726fbc2cf882880074e3ba20c75bd0729452c252"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/sponsored_banners/{bannerId}",
+            "line": 923,
+            "endLine": 932,
+            "tokenSha256": "ea52c81a01d6b82068d3ccd7726fbc2cf882880074e3ba20c75bd0729452c252"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/subscription_plans/{planId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/subscription_plans/{planId}",
+            "line": 2664,
+            "endLine": 2666,
+            "tokenSha256": "7b69ee34fa3ea0ef47b723e58fd885066318ea0a928a06ab967468608bd512ac"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/subscription_plans/{planId}",
+            "line": 2483,
+            "endLine": 2485,
+            "tokenSha256": "7b69ee34fa3ea0ef47b723e58fd885066318ea0a928a06ab967468608bd512ac"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/subscriptions/{subscriptionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/subscriptions/{subscriptionId}",
+            "line": 2550,
+            "endLine": 2560,
+            "tokenSha256": "a46bb4e3d18092b025596c3cc2e3f0aab08a76a18b3894b50d028e09ae18f0b9"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/subscriptions/{subscriptionId}",
+            "line": 2369,
+            "endLine": 2379,
+            "tokenSha256": "a46bb4e3d18092b025596c3cc2e3f0aab08a76a18b3894b50d028e09ae18f0b9"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/support_case_events/{eventId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/support_case_events/{eventId}",
+            "line": 2523,
+            "endLine": 2526,
+            "tokenSha256": "8e64bb60a17aea04b9acc7fa0bf5d626abc37e5bb2b981bb2d732fe3e5e2aa4e"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/support_case_evidence/{evidenceId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/support_case_evidence/{evidenceId}",
+            "line": 2532,
+            "endLine": 2535,
+            "tokenSha256": "4bded58ba3cb8b7c3893c08c284556c78182c5788573ba47acda3965b56f8330"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/support_case_notes/{noteId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/support_case_notes/{noteId}",
+            "line": 2519,
+            "endLine": 2522,
+            "tokenSha256": "fde2794fe4bd7072177c1e00b43423667cdbfaa1c2793b99798511ad53962072"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/support_cases/{caseId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/support_cases/{caseId}",
+            "line": 2515,
+            "endLine": 2518,
+            "tokenSha256": "07ceaacd5a5816720c27cd8f8eb0a3d22b24f4ad6580fec9cf598261729e012f"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/threads/{threadId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/threads/{threadId}",
+            "line": 2082,
+            "endLine": 2148,
+            "tokenSha256": "72a079b70f927cb5d5dac17e5222c1d654110b31687339f18564c85a0209683a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/threads/{threadId}",
+            "line": 1968,
+            "endLine": 2034,
+            "tokenSha256": "72a079b70f927cb5d5dac17e5222c1d654110b31687339f18564c85a0209683a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/threads/{threadId}/messages/{messageId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/threads/{threadId}/messages/{messageId}",
+            "line": 2134,
+            "endLine": 2147,
+            "tokenSha256": "dfb43468f4a3cf44483907e149f15d6e0e0b7591ed9508a7a5cb7f475533fe54"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/threads/{threadId}/messages/{messageId}",
+            "line": 2020,
+            "endLine": 2033,
+            "tokenSha256": "dfb43468f4a3cf44483907e149f15d6e0e0b7591ed9508a7a5cb7f475533fe54"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/trending_searches/{searchId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/trending_searches/{searchId}",
+            "line": 2605,
+            "endLine": 2608,
+            "tokenSha256": "c924d317db561d149bde3b5d20e5921425d6a0ab476828783852fdb39536c850"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/trending_searches/{searchId}",
+            "line": 2424,
+            "endLine": 2427,
+            "tokenSha256": "c924d317db561d149bde3b5d20e5921425d6a0ab476828783852fdb39536c850"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}",
+            "line": 237,
+            "endLine": 357,
+            "tokenSha256": "dec17c46da7a92bd4f53ae9c6b5b6d08a5e8a02614e982a0cd159a873f97a4da"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}",
+            "line": 228,
+            "endLine": 348,
+            "tokenSha256": "dec17c46da7a92bd4f53ae9c6b5b6d08a5e8a02614e982a0cd159a873f97a4da"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/addresses/{addressId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/addresses/{addressId}",
+            "line": 255,
+            "endLine": 257,
+            "tokenSha256": "839555b33146318359bd2360a70623efd2519df17f8502f8301999784dee56f3"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/addresses/{addressId}",
+            "line": 246,
+            "endLine": 248,
+            "tokenSha256": "839555b33146318359bd2360a70623efd2519df17f8502f8301999784dee56f3"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/cart/{itemId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/cart/{itemId}",
+            "line": 263,
+            "endLine": 265,
+            "tokenSha256": "f501b70d063a0113a3746dc7a7c69e8545e4198911f09e6ef5af3dde419a6be9"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/cart/{itemId}",
+            "line": 254,
+            "endLine": 256,
+            "tokenSha256": "f501b70d063a0113a3746dc7a7c69e8545e4198911f09e6ef5af3dde419a6be9"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}",
+            "line": 304,
+            "endLine": 310,
+            "tokenSha256": "5e772b7c7df04cd99690b867ddef617851e6d23b429842db8b9ca61c462149b8"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}",
+            "line": 295,
+            "endLine": 301,
+            "tokenSha256": "5e772b7c7df04cd99690b867ddef617851e6d23b429842db8b9ca61c462149b8"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}/messages/{messageId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}/messages/{messageId}",
+            "line": 307,
+            "endLine": 309,
+            "tokenSha256": "b8bce3154ffe5755959323d716efaebb626b803afcb1551bdfe34f7aa9e179d8"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/chats/{chatId}/messages/{messageId}",
+            "line": 298,
+            "endLine": 300,
+            "tokenSha256": "b8bce3154ffe5755959323d716efaebb626b803afcb1551bdfe34f7aa9e179d8"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/loyalty/{docId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/loyalty/{docId}",
+            "line": 312,
+            "endLine": 315,
+            "tokenSha256": "ae617b09eb4469c99c5e3e3c3a12396010b72930b4e71898b0313564876db3d4"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/loyalty/{docId}",
+            "line": 303,
+            "endLine": 306,
+            "tokenSha256": "ae617b09eb4469c99c5e3e3c3a12396010b72930b4e71898b0313564876db3d4"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/notifications/{notificationId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/notifications/{notificationId}",
+            "line": 294,
+            "endLine": 302,
+            "tokenSha256": "6d79b36783c666618c46954a311e050a39fa9962686bd55f1224032fdb64eb0c"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/notifications/{notificationId}",
+            "line": 285,
+            "endLine": 293,
+            "tokenSha256": "6d79b36783c666618c46954a311e050a39fa9962686bd55f1224032fdb64eb0c"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/recent_searches/{searchId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/recent_searches/{searchId}",
+            "line": 354,
+            "endLine": 356,
+            "tokenSha256": "963ba0cdb8e6c01e437842ab071fb588a361e2f4df8b4ba340c5a6297470b836"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/recent_searches/{searchId}",
+            "line": 345,
+            "endLine": 347,
+            "tokenSha256": "963ba0cdb8e6c01e437842ab071fb588a361e2f4df8b4ba340c5a6297470b836"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/recently_viewed/{productId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/recently_viewed/{productId}",
+            "line": 317,
+            "endLine": 319,
+            "tokenSha256": "bc78db21de735d8c5891693f44eb2f04f0d4faf65e6b85757e418da401ebf4b3"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/recently_viewed/{productId}",
+            "line": 308,
+            "endLine": 310,
+            "tokenSha256": "bc78db21de735d8c5891693f44eb2f04f0d4faf65e6b85757e418da401ebf4b3"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/scratchCards/{cardId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/scratchCards/{cardId}",
+            "line": 327,
+            "endLine": 333,
+            "tokenSha256": "c885cb2fef349de10fd0f1801d5c4e68432dddfdee55e24cc8b0b667c26ee712"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/scratchCards/{cardId}",
+            "line": 318,
+            "endLine": 324,
+            "tokenSha256": "c885cb2fef349de10fd0f1801d5c4e68432dddfdee55e24cc8b0b667c26ee712"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/settings/notifications",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/settings/notifications",
+            "line": 276,
+            "endLine": 292,
+            "tokenSha256": "9ad3f21abd572765abb95f37da333286f8fe1a5514ec6ada65a67b7c4b774f2a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/settings/notifications",
+            "line": 267,
+            "endLine": 283,
+            "tokenSha256": "9ad3f21abd572765abb95f37da333286f8fe1a5514ec6ada65a67b7c4b774f2a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/transactions/{transactionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/transactions/{transactionId}",
+            "line": 340,
+            "endLine": 344,
+            "tokenSha256": "b03b96d103fdd63a0e5282b47afd5635c9345157eb493f7577fae65da03ef67a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/transactions/{transactionId}",
+            "line": 331,
+            "endLine": 335,
+            "tokenSha256": "b03b96d103fdd63a0e5282b47afd5635c9345157eb493f7577fae65da03ef67a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/users/{userId}/wishlist/{itemId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/wishlist/{itemId}",
+            "line": 259,
+            "endLine": 261,
+            "tokenSha256": "281ae8a5861abd0fd7659e546ed318dfc364288c8e254f0f8522f3c2bae5f349"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/users/{userId}/wishlist/{itemId}",
+            "line": 250,
+            "endLine": 252,
+            "tokenSha256": "281ae8a5861abd0fd7659e546ed318dfc364288c8e254f0f8522f3c2bae5f349"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/vendors/{vendorId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/vendors/{vendorId}",
+            "line": 2072,
+            "endLine": 2077,
+            "tokenSha256": "6a7668cfbe3ebe45c792b739ee498c918856ba147458999876e8a1733738c1cb"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/vendors/{vendorId}",
+            "line": 1958,
+            "endLine": 1963,
+            "tokenSha256": "6a7668cfbe3ebe45c792b739ee498c918856ba147458999876e8a1733738c1cb"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/verified_payments/{paymentId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/verified_payments/{paymentId}",
+            "line": 2354,
+            "endLine": 2358,
+            "tokenSha256": "69d2f74b26028bd09527631bc8d7ff7da97a90309322f0684b55afe5f046c346"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/verified_payments/{paymentId}",
+            "line": 2218,
+            "endLine": 2222,
+            "tokenSha256": "69d2f74b26028bd09527631bc8d7ff7da97a90309322f0684b55afe5f046c346"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/wallet_topups/{paymentId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallet_topups/{paymentId}",
+            "line": 1837,
+            "endLine": 1840,
+            "tokenSha256": "3d51a15d1ca048056d915dfae25c7abaf6e472bcc31dcbbc2cb8db2aac1db93d"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallet_topups/{paymentId}",
+            "line": 1723,
+            "endLine": 1726,
+            "tokenSha256": "3d51a15d1ca048056d915dfae25c7abaf6e472bcc31dcbbc2cb8db2aac1db93d"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/wallet_transactions/{transactionId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallet_transactions/{transactionId}",
+            "line": 1818,
+            "endLine": 1829,
+            "tokenSha256": "6609d24236f4ba21def4b7b72ccf29fa971f8ddd49db37c7ac6e4a536dea4ae6"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallet_transactions/{transactionId}",
+            "line": 1704,
+            "endLine": 1715,
+            "tokenSha256": "6609d24236f4ba21def4b7b72ccf29fa971f8ddd49db37c7ac6e4a536dea4ae6"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/wallets/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallets/{userId}",
+            "line": 1793,
+            "endLine": 1813,
+            "tokenSha256": "8f9b0a830126c78413383cd8fb03bdbef2157ca09e6afee6793d2c34501b35a8"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wallets/{userId}",
+            "line": 1679,
+            "endLine": 1699,
+            "tokenSha256": "8f9b0a830126c78413383cd8fb03bdbef2157ca09e6afee6793d2c34501b35a8"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/webhook_events/{eventId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/webhook_events/{eventId}",
+            "line": 2431,
+            "endLine": 2436,
+            "tokenSha256": "f5573ded4e10a14c031603fa72276c3618eb7559e69b5538bbe404d95107c01e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/webhook_events/{eventId}",
+            "line": 2295,
+            "endLine": 2300,
+            "tokenSha256": "f5573ded4e10a14c031603fa72276c3618eb7559e69b5538bbe404d95107c01e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/wishlists/{userId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wishlists/{userId}",
+            "line": 1553,
+            "endLine": 1561,
+            "tokenSha256": "e9050deae85b2d9f03e1105d4f3363b2bbaf552243e64ce1af3c2cb2f34f864a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wishlists/{userId}",
+            "line": 1448,
+            "endLine": 1456,
+            "tokenSha256": "e9050deae85b2d9f03e1105d4f3363b2bbaf552243e64ce1af3c2cb2f34f864a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/wishlists/{userId}/items/{itemId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wishlists/{userId}/items/{itemId}",
+            "line": 1558,
+            "endLine": 1560,
+            "tokenSha256": "84d74fc6f4550869d2328993b4fd60dd5a51dbb52b451cc2c88bf977dcc04edb"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/wishlists/{userId}/items/{itemId}",
+            "line": 1453,
+            "endLine": 1455,
+            "tokenSha256": "84d74fc6f4550869d2328993b4fd60dd5a51dbb52b451cc2c88bf977dcc04edb"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/databases/{database}/documents/{path=**}/reviews/{reviewId}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/{path=**}/reviews/{reviewId}",
+            "line": 379,
+            "endLine": 384,
+            "tokenSha256": "b6f79dd991c562d2912e352d28682bd81b09034901bdc5823b04eaef9d8cb3cc"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/databases/{database}/documents/{path=**}/reviews/{reviewId}",
+            "line": 370,
+            "endLine": 375,
+            "tokenSha256": "b6f79dd991c562d2912e352d28682bd81b09034901bdc5823b04eaef9d8cb3cc"
+          }
+        }
+      ]
+    },
+    "storage": {
+      "method": "Scoped match/function blocks; comment-free token sequence hashes. Structural comparison only, not formal semantic equivalence or authorization proof. Parent hashes include nested blocks. Wildcard names preserved.",
+      "localBlocks": 36,
+      "liveBlocks": 29,
+      "counts": {
+        "TOKEN_EQUAL": 28,
+        "TOKEN_DIFFERENT": 1,
+        "SOURCE_ONLY": 7,
+        "LIVE_ONLY": 0
+      },
+      "items": [
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o/chat/{threadId}/{fileName}::isThreadParticipant",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/chat/{threadId}/{fileName}::isThreadParticipant",
+            "line": 197,
+            "endLine": 201,
+            "tokenSha256": "a847cba48fd463f2671a87795889fb66b49d2eb9bfe5cd62337901d05fc8f9a4"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/chat/{threadId}/{fileName}::isThreadParticipant",
+            "line": 161,
+            "endLine": 165,
+            "tokenSha256": "a847cba48fd463f2671a87795889fb66b49d2eb9bfe5cd62337901d05fc8f9a4"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o/delivery_proofs/{fileName}::assignedOrderId",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::assignedOrderId",
+            "line": 317,
+            "endLine": 319,
+            "tokenSha256": "c8ccc31c02424b8af30af7133f3a25fed3b83d555faa0306c11da56ccd5e3e43"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::assignedOrderId",
+            "line": 259,
+            "endLine": 261,
+            "tokenSha256": "c8ccc31c02424b8af30af7133f3a25fed3b83d555faa0306c11da56ccd5e3e43"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o/delivery_proofs/{fileName}::isAssignedPartnerForThisProof",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::isAssignedPartnerForThisProof",
+            "line": 320,
+            "endLine": 324,
+            "tokenSha256": "53853977e54580e735112f770ba01b3f8f49d46527bcf469cde83698cd599a10"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::isAssignedPartnerForThisProof",
+            "line": 262,
+            "endLine": 266,
+            "tokenSha256": "53853977e54580e735112f770ba01b3f8f49d46527bcf469cde83698cd599a10"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o/delivery_proofs/{fileName}::proofNotYetAttached",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::proofNotYetAttached",
+            "line": 328,
+            "endLine": 331,
+            "tokenSha256": "03cf25da3c93767f29b4e976e53034bf3d1c3972f743b7afdb92ef5c92db5a15"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}::proofNotYetAttached",
+            "line": 270,
+            "endLine": 273,
+            "tokenSha256": "03cf25da3c93767f29b4e976e53034bf3d1c3972f743b7afdb92ef5c92db5a15"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isAdmin",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isAdmin",
+            "line": 15,
+            "endLine": 18,
+            "tokenSha256": "a0124efb558a3e6aeeb9fb870bd0f54de52e4bc269bead9eccca6e771fc141fd"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isAdmin",
+            "line": 15,
+            "endLine": 18,
+            "tokenSha256": "a0124efb558a3e6aeeb9fb870bd0f54de52e4bc269bead9eccca6e771fc141fd"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isAuthenticated",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isAuthenticated",
+            "line": 11,
+            "endLine": 13,
+            "tokenSha256": "5d5ff9efdb6010538678079b27cafff97dfd370d957ce0e44d0ebc3f81e2d5e8"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isAuthenticated",
+            "line": 11,
+            "endLine": 13,
+            "tokenSha256": "5d5ff9efdb6010538678079b27cafff97dfd370d957ce0e44d0ebc3f81e2d5e8"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isDeliveryPartner",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isDeliveryPartner",
+            "line": 24,
+            "endLine": 26,
+            "tokenSha256": "8b52ac9890fb0b742902034cc29e15b7d4ea46e9bd618ef6afc11761940e1dab"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isDeliveryPartner",
+            "line": 24,
+            "endLine": 26,
+            "tokenSha256": "8b52ac9890fb0b742902034cc29e15b7d4ea46e9bd618ef6afc11761940e1dab"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isImage",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isImage",
+            "line": 34,
+            "endLine": 36,
+            "tokenSha256": "ef4f95b21c6aae1fa8c9751d0716dbd7e05a6a572565be28d9720c58ec6b3e1d"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isImage",
+            "line": 34,
+            "endLine": 36,
+            "tokenSha256": "ef4f95b21c6aae1fa8c9751d0716dbd7e05a6a572565be28d9720c58ec6b3e1d"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isImageOrPdf",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isImageOrPdf",
+            "line": 376,
+            "endLine": 379,
+            "tokenSha256": "0fc166a53aeee6830e36e408d86239f22dea8dfcb2d581d44d990949a7d56986"
+          },
+          "live": null
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isSeller",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isSeller",
+            "line": 20,
+            "endLine": 22,
+            "tokenSha256": "d8361876a6ccc94c322839e7c4d8bc6018ee77dc352942e31b9fd013625e40cd"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isSeller",
+            "line": 20,
+            "endLine": 22,
+            "tokenSha256": "d8361876a6ccc94c322839e7c4d8bc6018ee77dc352942e31b9fd013625e40cd"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::isValidFileSize",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isValidFileSize",
+            "line": 29,
+            "endLine": 31,
+            "tokenSha256": "2abc6d06ff0daf41cf18de0422946cb913134cc570540ba0177652ed40fb8644"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::isValidFileSize",
+            "line": 29,
+            "endLine": 31,
+            "tokenSha256": "2abc6d06ff0daf41cf18de0422946cb913134cc570540ba0177652ed40fb8644"
+          }
+        },
+        {
+          "kind": "function",
+          "key": "/b/{bucket}/o::riderKycEditable",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::riderKycEditable",
+            "line": 263,
+            "endLine": 267,
+            "tokenSha256": "665fc394483fc641284fcf1f040da70500bc144931211be235a40e2e504abca6"
+          },
+          "live": {
+            "kind": "function",
+            "key": "/b/{bucket}/o::riderKycEditable",
+            "line": 227,
+            "endLine": 231,
+            "tokenSha256": "665fc394483fc641284fcf1f040da70500bc144931211be235a40e2e504abca6"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o",
+          "status": "TOKEN_DIFFERENT",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o",
+            "line": 4,
+            "endLine": 407,
+            "tokenSha256": "8b68767fc4d545435bf1c1459d09d1cdffe16f6311e83ccb749ddcfe9561cb3e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o",
+            "line": 4,
+            "endLine": 297,
+            "tokenSha256": "133c9fc71b40b27449373fbc99c236245e2e4b7940f49a64e55d0fc453e107f9"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/banners/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/banners/{fileName}",
+            "line": 122,
+            "endLine": 125,
+            "tokenSha256": "3b2865e56443dbe4d99cf75fbae5fa5f8c89f9e015ba8d72341b89e6e4273119"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/banners/{fileName}",
+            "line": 122,
+            "endLine": 125,
+            "tokenSha256": "3b2865e56443dbe4d99cf75fbae5fa5f8c89f9e015ba8d72341b89e6e4273119"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/business_posts/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/business_posts/{fileName}",
+            "line": 398,
+            "endLine": 402,
+            "tokenSha256": "302fed3c27e0193963bcce93dbcd5dc1030881cd9456c0e45755110813835d4e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/business_posts/{fileName}",
+            "line": 288,
+            "endLine": 292,
+            "tokenSha256": "302fed3c27e0193963bcce93dbcd5dc1030881cd9456c0e45755110813835d4e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/categories/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/categories/{fileName}",
+            "line": 142,
+            "endLine": 145,
+            "tokenSha256": "9aea05a82c82543ab3c42a386403bcf9ebb21bc8e312c87d34cf9c11e59e4435"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/categories/{fileName}",
+            "line": 142,
+            "endLine": 145,
+            "tokenSha256": "9aea05a82c82543ab3c42a386403bcf9ebb21bc8e312c87d34cf9c11e59e4435"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/categories/{folder}/{fileName}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/categories/{folder}/{fileName}",
+            "line": 154,
+            "endLine": 158,
+            "tokenSha256": "400d720408247c552bb5c39adabb3ffd56dd04c02ffa87e935d46e636e01662e"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/chat/{threadId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/chat/{threadId}/{fileName}",
+            "line": 196,
+            "endLine": 204,
+            "tokenSha256": "aa3599fcce51e2c0bf636b33bee46f0766e63fa885083c5192ac945bb23e3e0a"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/chat/{threadId}/{fileName}",
+            "line": 160,
+            "endLine": 168,
+            "tokenSha256": "aa3599fcce51e2c0bf636b33bee46f0766e63fa885083c5192ac945bb23e3e0a"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/delivery_document_submissions/{userId}/{submissionId}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/delivery_document_submissions/{userId}/{submissionId}",
+            "line": 292,
+            "endLine": 300,
+            "tokenSha256": "10d6d981fd4227d8b91f255191a1913a5653eb1b8aba78eb61b79c7ab5ac5696"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/delivery_documents/{userId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/delivery_documents/{userId}/{fileName}",
+            "line": 269,
+            "endLine": 278,
+            "tokenSha256": "14e66ac8da6ed3789cc28c335c85654559753f233a148149345aba742c528cd4"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/delivery_documents/{userId}/{fileName}",
+            "line": 233,
+            "endLine": 242,
+            "tokenSha256": "14e66ac8da6ed3789cc28c335c85654559753f233a148149345aba742c528cd4"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/delivery_proofs/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}",
+            "line": 316,
+            "endLine": 334,
+            "tokenSha256": "93b5932524b05f83e9d2c3984e7caaa19efed630793722ffb9aea1a400b2a503"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/delivery_proofs/{fileName}",
+            "line": 258,
+            "endLine": 276,
+            "tokenSha256": "93b5932524b05f83e9d2c3984e7caaa19efed630793722ffb9aea1a400b2a503"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/employee_documents/{userId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/employee_documents/{userId}/{fileName}",
+            "line": 234,
+            "endLine": 240,
+            "tokenSha256": "7c6ffe275289ecf5c53373cb1415550558527ad827c384c9ba04d5615c0036db"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/employee_documents/{userId}/{fileName}",
+            "line": 198,
+            "endLine": 204,
+            "tokenSha256": "7c6ffe275289ecf5c53373cb1415550558527ad827c384c9ba04d5615c0036db"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/notifications/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/notifications/{fileName}",
+            "line": 126,
+            "endLine": 129,
+            "tokenSha256": "4eba1c504166e701f4c86f2269e344d1d1f94f2814e4a03da89528655e6d8456"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/notifications/{fileName}",
+            "line": 126,
+            "endLine": 129,
+            "tokenSha256": "4eba1c504166e701f4c86f2269e344d1d1f94f2814e4a03da89528655e6d8456"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/product_images/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/product_images/{fileName}",
+            "line": 69,
+            "endLine": 73,
+            "tokenSha256": "3279f1babc11fa0c266cded25fdcaa37dc2e4e5f8e5d40aff9f645e3717d9110"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/product_images/{fileName}",
+            "line": 69,
+            "endLine": 73,
+            "tokenSha256": "3279f1babc11fa0c266cded25fdcaa37dc2e4e5f8e5d40aff9f645e3717d9110"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/products/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/products/{fileName}",
+            "line": 55,
+            "endLine": 58,
+            "tokenSha256": "6253adb9b779afc87ceb9dcce354f53da9a43637d59338f071254727ec95183c"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/products/{fileName}",
+            "line": 55,
+            "endLine": 58,
+            "tokenSha256": "6253adb9b779afc87ceb9dcce354f53da9a43637d59338f071254727ec95183c"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/profiles/{userId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/profiles/{userId}/{fileName}",
+            "line": 104,
+            "endLine": 110,
+            "tokenSha256": "505b1a16bfbc49e0271b9f7e8aa04deda3c4323cccdb9cb4339481d8ab2c1cd6"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/profiles/{userId}/{fileName}",
+            "line": 104,
+            "endLine": 110,
+            "tokenSha256": "505b1a16bfbc49e0271b9f7e8aa04deda3c4323cccdb9cb4339481d8ab2c1cd6"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/section_banners/{fileName}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/section_banners/{fileName}",
+            "line": 166,
+            "endLine": 169,
+            "tokenSha256": "98a221751729e25c5dd51cc29bdae8a96005b5a6d4612e88006f248e775ebf6d"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/seller_documents/{userId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/seller_documents/{userId}/{fileName}",
+            "line": 216,
+            "endLine": 222,
+            "tokenSha256": "ad470bae53e5a85ba0df6e93de8e063d4c2d99b7f9042b3efad9e8835397b368"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/seller_documents/{userId}/{fileName}",
+            "line": 180,
+            "endLine": 186,
+            "tokenSha256": "ad470bae53e5a85ba0df6e93de8e063d4c2d99b7f9042b3efad9e8835397b368"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/sellers/{sellerId}/storefront/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sellers/{sellerId}/storefront/{fileName}",
+            "line": 94,
+            "endLine": 99,
+            "tokenSha256": "1cdb75ff31712ad32c1e863c2e380d8560212c9181c891f65faa5f0be257b664"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sellers/{sellerId}/storefront/{fileName}",
+            "line": 94,
+            "endLine": 99,
+            "tokenSha256": "1cdb75ff31712ad32c1e863c2e380d8560212c9181c891f65faa5f0be257b664"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/sellers/{sellerId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sellers/{sellerId}/{fileName}",
+            "line": 87,
+            "endLine": 90,
+            "tokenSha256": "75fd17078b6d2b802979dd283d3650706fb57bb09d6ff13929eeafa02c6cad3e"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sellers/{sellerId}/{fileName}",
+            "line": 87,
+            "endLine": 90,
+            "tokenSha256": "75fd17078b6d2b802979dd283d3650706fb57bb09d6ff13929eeafa02c6cad3e"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/sponsored/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sponsored/{fileName}",
+            "line": 134,
+            "endLine": 137,
+            "tokenSha256": "01035959755ed98874b3d539084738d0e15bcb68c4ea3f0ee19ad2d6a736a14f"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sponsored/{fileName}",
+            "line": 134,
+            "endLine": 137,
+            "tokenSha256": "01035959755ed98874b3d539084738d0e15bcb68c4ea3f0ee19ad2d6a736a14f"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/sponsored_banners/{fileName}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/sponsored_banners/{fileName}",
+            "line": 178,
+            "endLine": 181,
+            "tokenSha256": "1729da0d1881497dd67d15f33c8f1b7d8c8d573da32044efc1b7617ef2c4608c"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/support_attachments/{riderId}/{fileName}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/support_attachments/{riderId}/{fileName}",
+            "line": 345,
+            "endLine": 350,
+            "tokenSha256": "5a5d9b242c237af5d636ddab18ca075ae10402737267fc062f74cbc141af3c55"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/support_case_evidence/{caseId}/{fileName}",
+          "status": "SOURCE_ONLY",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/support_case_evidence/{caseId}/{fileName}",
+            "line": 380,
+            "endLine": 386,
+            "tokenSha256": "aaab2b80c798750c4dcd325931216a91b87e15283b39cac55582563265dc258b"
+          },
+          "live": null
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/users/{userId}/{fileName}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/users/{userId}/{fileName}",
+            "line": 111,
+            "endLine": 117,
+            "tokenSha256": "b2658f1ca4d682ae06cdbb3fa7216b502e503386342c11d4a384201bdb243826"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/users/{userId}/{fileName}",
+            "line": 111,
+            "endLine": 117,
+            "tokenSha256": "b2658f1ca4d682ae06cdbb3fa7216b502e503386342c11d4a384201bdb243826"
+          }
+        },
+        {
+          "kind": "match",
+          "key": "/b/{bucket}/o/{allPaths=**}",
+          "status": "TOKEN_EQUAL",
+          "local": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/{allPaths=**}",
+            "line": 404,
+            "endLine": 406,
+            "tokenSha256": "35037e18024c5bba49ba654edc4301c98d792701922e838132fad17532eb6b48"
+          },
+          "live": {
+            "kind": "match",
+            "key": "/b/{bucket}/o/{allPaths=**}",
+            "line": 294,
+            "endLine": 296,
+            "tokenSha256": "35037e18024c5bba49ba654edc4301c98d792701922e838132fad17532eb6b48"
+          }
+        }
+      ]
+    }
+  },
+  "historicalIndexComparison": {
+    "sourceReport": "F0_FUNCTION_ENDPOINT_PARITY_2026_10_04.json",
+    "sourceCapturedAt": "2026-10-04T09:39:01.135996+00:00",
+    "sourceCommit": "4766754faaa81188a2ad6790eb020f721266fd0a",
+    "liveReadStatus": {
+      "functions": {
+        "exitCode": 0,
+        "success": true,
+        "count": 87,
+        "capturedAt": "2026-10-04T09:38:54.515400+00:00"
+      },
+      "indexes": {
+        "exitCode": 0,
+        "success": true,
+        "count": null,
+        "capturedAt": "2026-10-04T09:38:58.199413+00:00"
+      }
+    },
+    "counts": {
+      "liveCount": 58,
+      "workingSourceCount": 78,
+      "committedSourceCount": 75
+    },
+    "committedMissingLiveCount": 17,
+    "workingMissingLiveCount": 20,
+    "ownerWorkingAdditionCount": 3,
+    "note": "Historical shape listing only; fresh state reads failed HTTP500. No READY inference."
+  },
+  "limits": [
+    "No production document, provider, device, deployment or cloud mutation performed.",
+    "All metadata is dated; source/live rule token equality is not formal semantic equivalence or complete authorization proof.",
+    "Database and composite index reads failed HTTP500 initially and again on bounded retries. Their current state remains UNKNOWN.",
+    "Fresh backup and schedule list pagination ended after one empty page each; no restore/export/RPO/RTO proof.",
+    "Rule match grants overlap; absence of a scoped block does not alone prove access denial.",
+    "Parent block hashes include nested children; counts are not counts of independent vulnerabilities.",
+    "Four live-only Firestore helper definitions implement legacy forward rider transitions. Retain compatibility decision; no live exploit test.",
+    "Owner stock/index/catalogue WIP unchanged. All F0-F9 acceptance OPEN."
+  ],
+  "verification": {
+    "sourceReportCommit": "4e43272c",
+    "standardPostcommitGateExit": 0,
+    "standardPostcommitGateFailed": 0,
+    "runtime": "official isolated Node22.23.3/npm10.9.9",
+    "log": "/tmp/agrimore-active-rules-recovery-postcommit-gate.log",
+    "allFiveAnalyzerErrors": 0,
+    "deliveryWarnings": 0,
+    "deliveryInfos": 0,
+    "ledgerWarnings": 0,
+    "sourceInventoryCheckExit": 0,
+    "ownerIndexHashPreserved": true,
+    "limits": "Documentation-only; no new cloud/device/provider/restore/authorization test. Failed fresh database/index-state reads remain UNKNOWN."
+  }
+}

@@ -4054,6 +4054,60 @@ abstract class AppLocalizations {
   /// **'By order value'**
   String get feeSlab;
 
+  /// No description provided for @feeDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'By road distance'**
+  String get feeDistance;
+
+  /// No description provided for @feeDistanceBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base delivery fee (₹)'**
+  String get feeDistanceBase;
+
+  /// No description provided for @feeDistanceRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate per kilometre (₹)'**
+  String get feeDistanceRate;
+
+  /// No description provided for @feeDistanceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Base fee plus the road-distance rate. Customers see the server-calculated amount before payment.'**
+  String get feeDistanceHelp;
+
+  /// No description provided for @feeDistanceLocationReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop location is set. Delivery radius: {radius} km.'**
+  String feeDistanceLocationReady(Object radius);
+
+  /// No description provided for @feeDistanceLocationMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a shop location before choosing road-distance pricing.'**
+  String get feeDistanceLocationMissing;
+
+  /// No description provided for @feeSetLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use current shop location'**
+  String get feeSetLocation;
+
+  /// No description provided for @feeLocationSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop location saved'**
+  String get feeLocationSaved;
+
+  /// No description provided for @feeLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t set the shop location. Check location permission and try again.'**
+  String get feeLocationFailed;
+
   /// No description provided for @feeAmount.
   ///
   /// In en, this message translates to:
@@ -4125,6 +4179,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{By order value · 1 tier} other{By order value · {count} tiers}}'**
   String feeSummarySlab(int count);
+
+  /// No description provided for @feeSummaryDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Road distance: base {base} + {rate}/km'**
+  String feeSummaryDistance(String base, String rate);
 
   /// No description provided for @postHint.
   ///
@@ -5314,6 +5374,18 @@ abstract class AppLocalizations {
   /// **'Current stock: {stock}'**
   String productCurrentStock(String stock);
 
+  /// No description provided for @productStockUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock count not configured'**
+  String get productStockUnknown;
+
+  /// No description provided for @productStockBackfillHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Count the units physically on hand and enter that number. Unknown stock is never filled with a guessed default.'**
+  String get productStockBackfillHelp;
+
   /// No description provided for @productStockSaveFailed.
   ///
   /// In en, this message translates to:
@@ -5877,6 +5949,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid delivery fee (0 or more).'**
   String get feeErrFlatInvalid;
+
+  /// No description provided for @feeErrDistanceBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a base fee from ₹0 to ₹1,000.'**
+  String get feeErrDistanceBase;
+
+  /// No description provided for @feeErrDistanceRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a per-kilometre rate above ₹0 and up to ₹1,000.'**
+  String get feeErrDistanceRate;
+
+  /// No description provided for @feeErrPaisePrecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Use no more than two decimal places.'**
+  String get feeErrPaisePrecision;
+
+  /// No description provided for @feeErrShopLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a valid shop location and delivery radius before saving this schedule.'**
+  String get feeErrShopLocation;
 
   /// No description provided for @feeErrTooHigh.
   ///

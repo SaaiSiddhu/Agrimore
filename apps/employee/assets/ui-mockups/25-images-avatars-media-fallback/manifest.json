@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "foundation": "C25: Images, avatars and media fallback",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "sales-associate",
+  "app_directory": "employee",
+  "display_name": "Agrimore Sales Associate",
+  "identity": "Premium royal blue with muted indigo, pearl and slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "aed38d713a0c285a75d2cbfcff81a3698ba5dacd",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272187
+  },
+  "domain_style": "Premium royal-blue initials and record icons, indigo asset-state context with pearl/slate quiet placeholders.",
+  "panels": [
+    {
+      "label": "Initials identity",
+      "specimen": "Panel \"Associate identity\": two circular samples \"AS\" and generic person outline captioned \"Synthetic initials\" and \"Empty-name fallback\"; size labels \"Compact / 40 px\" and \"Profile / 56 px\" outside samples. Indigo note \"Name and role remain readable beside the avatar\". No real person/name/photo."
+    },
+    {
+      "label": "Attributed-record media",
+      "specimen": "Panel \"Record icons\": two text-row skeletons with blue outlined bag/package icons inside same neutral square frame. Captions \"Order item icon\" and \"Record placeholder\". Indigo note \"Text identifies the record; media is supplementary\". No product photograph/price/commission/order status."
+    },
+    {
+      "label": "Bundled asset resilience",
+      "specimen": "Panel \"Asset states\": same-size tiles generic leaf/bag symbol \"Asset example\", skeleton \"Loading example\", image-off \"Asset unavailable\". Indigo note \"Keep the layout stable when an asset fails\". No actual company-logo redesign or button implying unsupported reload."
+    },
+    {
+      "label": "Supported media scope",
+      "specimen": "Panel \"Media actions\": neutral person and image-outline symbols with clear text \"Profile uses initials\" / \"No photo upload in this app\". Small \"Current supported scope\"; indigo note \"New upload controls require a supported flow\". No Add photo, camera/gallery/retry upload, identity document, offline queue or photo success state."
+    }
+  ],
+  "media_contract": [
+    "Stable reserved frames across loading, missing and failed media; keep record name/status/actions usable when a thumbnail fails.",
+    "Fit is deliberate: cover for catalogue/cover images with safe focal area, contain for detailed inspection/evidence; never stretch or crop identity detail. Ratios/sizes on boards are target examples, not a new crop editor.",
+    "Missing URL, network/decode failure, local preview, loading, permission failure and unsupported format are distinct; sanitized errors and meaningful retry only when the supported handler exists.",
+    "Neutral avatars use owned photo only when the app actually renders it, then initials/generic role fallback; empty names and unicode graphemes need tests. No avatar alone signals verified identity.",
+    "Useful image labels complement surrounding text; decorative repeated media is excluded from semantics. Announce async state change accessibly and keep controls comfortable with focus labels.",
+    "Local selection is not upload; upload is not attached record, parent save, published catalogue, document approval or delivery completion.",
+    "Progress only when measured; otherwise indeterminate. Cancel/retry/resume/offline queues are not invented across apps.",
+    "Maintain selected draft and per-file failure context where supported; preserve owner/generation across late upload/results and authenticated caches; no cross-account stale preview.",
+    "File validation is path/domain-specific; picker extensions/quality/MIME metadata do not prove valid decodable safe bytes. Client feedback must align with backend/storage limits without promising a universal accepted format.",
+    "Public catalogue media is separate from owned avatars/private documents/proof/support evidence. No raw tokens/storage paths or actual IDs in UI; no private-document fake assets.",
+    "Removal from a form, removing a record reference and deleting a Storage object differ; preserve existing asset until replacement/save confirmed and define orphan cleanup later.",
+    "Synthetic photos, monograms and placeholder evidence only; no live person, store, identity document, order, status, upload progress or actual file operation represented."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-sales-associate-images-avatars-media-fallback-light.png",
+      "sha256": "3f6e976a9f1fc42404a9e1cac59477fc47102413877be54f67ae33ee6d6730e7",
+      "bytes": 1314345,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#2D56C4",
+        "onPrimary": "#FFFFFF",
+        "support": "#6950A2",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#F7F8FC",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCFF",
+        "text": "#192840",
+        "muted": "#61708B",
+        "border": "#DDE3F0",
+        "strongBorder": "#94A0B7",
+        "selected": "#EAF0FE",
+        "focus": "#2D56C4"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#EDF1FB",
+          "text": "#31549E"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          34,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          18,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+        "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2ae26407-41cf-447d-8f49-8f778521be48.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "f532721058087b4010087d1f457b5e89d2a010c8bf91a538de8bc9dd61a03812",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+              "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2ae26407-41cf-447d-8f49-8f778521be48.png",
+          "source_output_sha256": "3f6e976a9f1fc42404a9e1cac59477fc47102413877be54f67ae33ee6d6730e7"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, app-specific synthetic media roles, stable loading/missing/failed frames, labelled independent example states, no real portraits/private documents/identifiers, no fabricated uploaded/approved/published/delivered outcome, no unsupported Associate upload controls, no sidebar and readable dark contrast. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-sales-associate-images-avatars-media-fallback-dark.png",
+      "sha256": "5d963a36384adffa83c2dbef5345010e8d691b56d828a6895b8a364ca06c1a21",
+      "bytes": 1530828,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#96B4FF",
+        "onPrimary": "#142241",
+        "support": "#C0ADE7",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#090B11",
+        "surface": "#131722",
+        "raised": "#1E2533",
+        "text": "#F2F5FC",
+        "muted": "#B9C5DD",
+        "border": "#354259",
+        "strongBorder": "#8393B2",
+        "selected": "#1B2C50",
+        "focus": "#96B4FF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#1A2B4C",
+          "text": "#B2C8FF"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          34,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          18,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+        "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-5003cd0a-1c23-4f0b-af30-2a133a899df1.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "4c795292f6d9dffa680e4fba38de26e2369cffa7e687b5a5f4f2975bc4917cd7",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+              "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2ae26407-41cf-447d-8f49-8f778521be48.png",
+              "sha256": "3f6e976a9f1fc42404a9e1cac59477fc47102413877be54f67ae33ee6d6730e7",
+              "reference_kind": "Generated C25 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-5003cd0a-1c23-4f0b-af30-2a133a899df1.png",
+          "source_output_sha256": "5d963a36384adffa83c2dbef5345010e8d691b56d828a6895b8a364ca06c1a21"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, app-specific synthetic media roles, stable loading/missing/failed frames, labelled independent example states, no real portraits/private documents/identifiers, no fabricated uploaded/approved/published/delivered outcome, no unsupported Associate upload controls, no sidebar and readable dark contrast. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "d7012062a258e9dc54a0af00a3d983a41667e633f59e9d0f538077019705cb51"
+}

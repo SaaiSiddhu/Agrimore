@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "foundation": "C20: Connectivity, freshness and recovery",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "066981a885caffbb917c102ef4d14de9fb64c9dc",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272048
+  },
+  "domain_style": "Professional-blue operational recovery, cyan read/context guidance, steel/slate order surfaces and precise uncertain-action boundaries.",
+  "panels": [
+    {
+      "label": "Operational read failure",
+      "specimen": "Card \"Could not load order data\", connection-slash icon, body \"Order records could not be refreshed.\" PRIMARY \"Reload order\". Cyan BOARD note \"Read unavailable / no empty-record claim\". No order ID, customer, metric or definitive internet state."
+    },
+    {
+      "label": "Unverified order context",
+      "specimen": "Card \"Order context\", cyan caution chip \"Latest state not verified\", EMPTY order-row skeletons. Body \"Reload before choosing the next action.\" BOARD note \"Freshness presentation proposed\". No Cached/approved/cancelled badge, timestamp or stock/money value."
+    },
+    {
+      "label": "Order read refresh",
+      "specimen": "Card \"Reloading order\", indeterminate spinner, EMPTY rows, DISABLED \"Reloading\u2026\" control. Cyan BOARD note \"Read only / preserve the current record\". No apply-status, success tick or percentage."
+    },
+    {
+      "label": "Unknown action outcome",
+      "specimen": "Card \"Action outcome unknown\", body \"The earlier action may have finished. Reload the order to review its state.\" PRIMARY \"Reload order\". Cyan BOARD note \"Reconcile before another action\" and \"Same-action retry requires retained identity\". No Apply again, guaranteed cancellation/refund/rollback, completed status or universal resume queue."
+    }
+  ],
+  "recovery_contract": [
+    "Keep device connectivity observations, service reachability, data source/freshness, authenticated access and rider availability as separate states. An exception or cache hit alone does not prove offline.",
+    "Show cached/last-known/unverified context honestly, including partial datasets. Failure is not empty, counts unavailable are not zero, and refresh completion is not a universal live-state guarantee.",
+    "Freshness badges/times require real provenance with defined meaning. Local cache write time is not server sync time; do not fabricate age, countdown, current badge or conflict-free state.",
+    "Propagate snapshot source and pending-write metadata where appropriate; pending local writes must not be displayed as server-confirmed Saved/Synced. Source capability must be verified per provider.",
+    "Retry reads under the current owner/query and lifetime, preserving useful context and filters without duplicate loads. Drop stale replies as in C19; no old-account cached projection.",
+    "Read retry, mutation outcome check, same-logical-action retry and saved-stage resume have separate labels and prerequisites. No universal offline queue, autosync or blind replay.",
+    "An ambiguous mutation may already have committed. Preserve original owner/request/payload identity; reconcile actual state before new action. Known rejection and changed-state conflict have distinct recovery.",
+    "Supported resume depends on actual domain journals, stage, access, file and eligibility window. Locally retained data is not a remotely completed/paid/delivered/approved outcome.",
+    "Marketplace resumes only its owner-bound saved checkout stage; existing gateway reopen may be allowed. Seller stock has no evidenced universal durable replay journal.",
+    "Delivery cached work remains unverified; retained proof retries attach the photo only after file/window/assignment checks, never reconfirm delivery. Account-keyed local proof schema is not assumed.",
+    "Associate payout identity is retained by review-screen lifetime; admin pending identity is most-recent in-memory action. No safe across-restart resume claim without durable identity/status recovery.",
+    "Keep accessible persistent freshness/error explanation, labelled comfortable controls and duplicate-retry busy feedback. Accessible announcements, contrast, focus and runtime reconnection need separate rendered verification.",
+    "Reuse existing provider/journal/retry/state/feedback equivalents. Offline/cache design cannot weaken server authorization, stage validation or payment integrity."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-connectivity-freshness-recovery-light.png",
+      "sha256": "1c433449a2dffc63dd363b969eda5f4f5e03a4890e0b38d510b2e9ca08181e16",
+      "bytes": 1255391,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-94b6469f-6c81-4236-a473-8841d30a5ad7.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "0dcfef665b25048c696bec52fbabf90d1a0bcb2bab64fb235e83f5ad1ef97517",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-94b6469f-6c81-4236-a473-8841d30a5ad7.png",
+          "source_output_sha256": "1c433449a2dffc63dd363b969eda5f4f5e03a4890e0b38d510b2e9ca08181e16"
+        }
+      ],
+      "review": "Visually reviewed for app identity, readable source/freshness uncertainty, read versus mutation/recovery distinction, supported domain actions, empty records without PII/times/counts, no fake sync/success/offline queue guarantee, no sidebar and neutral dark surfaces. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-connectivity-freshness-recovery-dark.png",
+      "sha256": "af8d36c2011b642ed5c51dd7cb2e509c8043f85b901000a2a2a344f6329f7857",
+      "bytes": 1363585,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7b095637-65b8-44d2-937a-e3b7dc8e0037.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "9b41ab88575579ff8e46e05198dcf7c2e475297e97205bd8829df4d56602a47b",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-94b6469f-6c81-4236-a473-8841d30a5ad7.png",
+              "sha256": "1c433449a2dffc63dd363b969eda5f4f5e03a4890e0b38d510b2e9ca08181e16",
+              "reference_kind": "Generated C20 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7b095637-65b8-44d2-937a-e3b7dc8e0037.png",
+          "source_output_sha256": "af8d36c2011b642ed5c51dd7cb2e509c8043f85b901000a2a2a344f6329f7857"
+        }
+      ],
+      "review": "Visually reviewed for app identity, readable source/freshness uncertainty, read versus mutation/recovery distinction, supported domain actions, empty records without PII/times/counts, no fake sync/success/offline queue guarantee, no sidebar and neutral dark surfaces. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "31b830437e21ddb191b6a75fe317acbffc08eb346fa0a40c696c429f8e97538c"
+}

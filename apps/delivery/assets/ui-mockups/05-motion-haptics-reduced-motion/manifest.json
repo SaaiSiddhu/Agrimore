@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "foundation": "C05: Motion, haptics and reduced motion",
+  "version": "v1",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white; burgundy and burnt orange",
+  "generation_tool": "built-in image_gen",
+  "asset_kind": "Static Storybook-style PNG references",
+  "source_audit_head": "f87ce8cd53b6971650dd0aeb79ee164aa3865ef8",
+  "source_coverage": {
+    "files": 815,
+    "lines": 271458
+  },
+  "motion_roles_ms": [
+    [
+      "Press state",
+      120
+    ],
+    [
+      "Panel fade",
+      200
+    ],
+    [
+      "Result reveal",
+      200
+    ],
+    [
+      "Sheet enter",
+      320
+    ],
+    [
+      "Reduced motion",
+      0
+    ]
+  ],
+  "curve": "ease-out \u00b7 cubic(0.2, 0, 0, 1)",
+  "workflow_specimen": {
+    "title": "Proof upload",
+    "entity": "Order ORD-2048 \u00b7 Proof photo",
+    "states": [
+      [
+        "Ready",
+        "Upload proof"
+      ],
+      [
+        "Pending",
+        "Uploading proof\u2026"
+      ],
+      [
+        "Confirmed",
+        "Proof received"
+      ]
+    ],
+    "note": "Proof received does not mean delivery completed."
+  },
+  "progress_label": "Uploading proof\u2026",
+  "haptic_policy": [
+    [
+      "Task selected",
+      "Optional light impact"
+    ],
+    [
+      "Proof receipt confirmed",
+      "Optional medium impact"
+    ],
+    [
+      "GPS or upload retry",
+      "None"
+    ]
+  ],
+  "reduced_motion_rules": [
+    "Instant state changes \u00b7 0 ms",
+    "Static hourglass + progress text",
+    "No pulse, camera fly-in or zoom",
+    "Keep offer timer and GPS updates"
+  ],
+  "implementation_status": "Documentary proposal only; runtime behavior/asset registration unchanged.",
+  "numeric_policy": "Visual duration only; preserve operational timing and true outcomes.",
+  "limits": "Exact hex/numeric targets; raster approximation. No timing, haptic waveform, OCR, pixel-exact color or runtime accessibility certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-motion-haptics-reduced-motion-light.png",
+      "sha256": "722ace470370681d30dfb8e40c2cfed2ddec5621c522f468482291b3f4453b53",
+      "bytes": 1288728,
+      "width": 1586,
+      "height": 992,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-296a0906-8b0f-4d0c-9045-a38fa68e2279.png",
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "a25156049ebb97e9f5c38bf1660d0ba854b151cfe3db8391a3ad20ed4885a630",
+          "prompt_ends_with_newline": true,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cb4b21d9-aadf-49a9-bc6b-afd2cbb68455.png",
+          "source_output_sha256": "ddcf040b7dc711343b1f31b7df34ba6ffd59d31811f8f8aea339e34f41cc5944"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "ba2574b9df718810e14dfbb61359dc44f667542030360ef7647d477d1b55af79",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cb4b21d9-aadf-49a9-bc6b-afd2cbb68455.png",
+              "sha256": "ddcf040b7dc711343b1f31b7df34ba6ffd59d31811f8f8aea339e34f41cc5944",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-296a0906-8b0f-4d0c-9045-a38fa68e2279.png",
+          "source_output_sha256": "722ace470370681d30dfb8e40c2cfed2ddec5621c522f468482291b3f4453b53"
+        }
+      ],
+      "review": "Selected output visually inspected for state/role labels, static progress, optional haptics, identity and dark action text."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-motion-haptics-reduced-motion-dark.png",
+      "sha256": "5d32799c53142bd689d9902e1a9ad68d16fffe0d976613c2d26a2de7850a81a3",
+      "bytes": 1388189,
+      "width": 1586,
+      "height": 992,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ec0c5b4d-b8ed-447e-ae42-87842f39f81a.png",
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "3572f05cd09a77d0bad6cffbb152b60bc5c36c0535a5e563a3118d8d3e01d3aa",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cb4b21d9-aadf-49a9-bc6b-afd2cbb68455.png",
+              "sha256": "ddcf040b7dc711343b1f31b7df34ba6ffd59d31811f8f8aea339e34f41cc5944",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-44160a21-bafc-4166-97fe-6128a3c07e0a.png",
+          "source_output_sha256": "21d8874407cd35c60ef07587b7cb81219b21ba1688bf4226ee76cd8289c65daa"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "2950ca15cb7113b81ef1d8a7ed7b7420bc8ce235cefdcdde9a048802d993da3b",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-44160a21-bafc-4166-97fe-6128a3c07e0a.png",
+              "sha256": "21d8874407cd35c60ef07587b7cb81219b21ba1688bf4226ee76cd8289c65daa",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ec0c5b4d-b8ed-447e-ae42-87842f39f81a.png",
+          "source_output_sha256": "5d32799c53142bd689d9902e1a9ad68d16fffe0d976613c2d26a2de7850a81a3"
+        }
+      ],
+      "review": "Selected output visually inspected for state/role labels, static progress, optional haptics, identity and dark action text."
+    }
+  ],
+  "prompts_file_sha256": "09f1d6e7459f5921db6500ce7f65f996f1520fc5f28204fb1ff4d3dc6005c747"
+}

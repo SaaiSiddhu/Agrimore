@@ -1221,6 +1221,15 @@
   "feeIntro": "Choose how you charge customers for delivery.",
   "feeFlat": "Flat fee",
   "feeSlab": "By order value",
+  "feeDistance": "By road distance",
+  "feeDistanceBase": "Base delivery fee (₹)",
+  "feeDistanceRate": "Rate per kilometre (₹)",
+  "feeDistanceHelp": "Base fee plus the road-distance rate. Customers see the server-calculated amount before payment.",
+  "feeDistanceLocationReady": "Shop location is set. Delivery radius: {radius} km.",
+  "feeDistanceLocationMissing": "Set a shop location before choosing road-distance pricing.",
+  "feeSetLocation": "Use current shop location",
+  "feeLocationSaved": "Shop location saved",
+  "feeLocationFailed": "Couldn't set the shop location. Check location permission and try again.",
   "feeAmount": "Delivery fee (₹)",
   "feeFlatHelp": "Charged on every order, whatever its value",
   "feeSlabRule": "One tier must start at a minimum order value of ₹0.",
@@ -1247,6 +1256,8 @@
       }
     }
   },
+  "feeSummaryDistance": "Road distance: base {base} + {rate}/km",
+  "@feeSummaryDistance": {"placeholders": {"base": {"type": "String"}, "rate": {"type": "String"}}},
   "postHint": "What's new? Tell your followers about it",
   "postAddPhoto": "Add a photo",
   "postRemovePhoto": "Remove photo",
@@ -1810,6 +1821,8 @@
     }
   },
   "productCurrentStock": "Current stock: {stock}",
+  "productStockUnknown": "Stock count not configured",
+  "productStockBackfillHelp": "Count the units physically on hand and enter that number. Unknown stock is never filled with a guessed default.",
   "@productCurrentStock": {
     "placeholders": {
       "stock": {
@@ -2059,6 +2072,10 @@
   "healthMeasures": "Performance measures",
   "healthLast30": "Last 30 days",
   "feeErrFlatInvalid": "Enter a valid delivery fee (0 or more).",
+  "feeErrDistanceBase": "Enter a base fee from ₹0 to ₹1,000.",
+  "feeErrDistanceRate": "Enter a per-kilometre rate above ₹0 and up to ₹1,000.",
+  "feeErrPaisePrecision": "Use no more than two decimal places.",
+  "feeErrShopLocation": "Set a valid shop location and delivery radius before saving this schedule.",
   "feeErrTooHigh": "Delivery fee can't be more than {max}.",
   "@feeErrTooHigh": {
     "placeholders": {

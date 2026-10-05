@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "foundation": "C26: Accessibility and large text",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "f829ea26e6d226b99eca023d8d2b6504941d37ea",
+  "source_coverage": {
+    "files": 819,
+    "lines": 272406
+  },
+  "domain_style": "High-contrast black/white field guidance, burnt-orange own-border focus and burgundy document-context notes.",
+  "panels": [
+    {
+      "label": "High-contrast field controls",
+      "specimen": "Panel \"Field readability\": title \"Pickup instructions\" and readable body \"Review the collection instructions before continuing.\"; primary black/white \"Review pickup\"; secondary \"Help\". Orange note \"Use words and icons alongside colour\". No actual address, map route, ETA, delivery/paid/completed outcome."
+    },
+    {
+      "label": "Instruction reflow",
+      "specimen": "Panel \"Large-text instructions\": Standard text and Large text specimens with EXACT SAME title \"Pickup and drop-off instructions\" and secondary \"Review pickup\". Large title wraps and action STACKS below body; full label legible, tall control. Orange note \"Keep instructions readable; let the layout grow\". No clipped route/address or fake system text-size toggle."
+    },
+    {
+      "label": "Rider focus and targets",
+      "specimen": "Panel \"Focus and actions\": \"Review pickup\" outlined button with single strong burnt-orange own border, caption \"Keyboard focus example\"; secondary \"Help\" with labelled help icon. Orange note \"Focus stays visible above fixed actions\". No glow/second ring, actual keyboard overlay or coordinate."
+    },
+    {
+      "label": "Meaningful reading",
+      "specimen": "Panel \"Labels and updates\": ordered rows \"Task instructions\", \"Available action\", \"Relevant warning\"; external \"Reading order example\". Independent warning+text \"Could not load task details. Try again.\", outlined \"Try again\", caption \"Example notice\". Burgundy small note \"Describe private document purpose, not its contents\". No identity document number/verified tick, completed delivery, safety guarantee or emergency dispatch."
+    }
+  ],
+  "accessibility_contract": [
+    "Use approved text/surface/primary/onPrimary pairs, including inverse dark-mode button content. Supporting accents are not the sole carrier of status meaning.",
+    "Contrast is evaluated against actual rendered neighboring colors and states. Calculated locked sRGB token pairs are source data, not proof of runtime/raster contrast or WCAG conformance.",
+    "Keep essential labels/content available at large text: wrap, grow, stack and scroll. Do not reduce requested system font scaling to fit fixed height or rely only on hidden ellipsis.",
+    "Use TextScaler at actual font sizes; scale(1) threshold heuristics do not fully represent nonlinear scaling. No global production font-size slider is invented.",
+    "Preserve deliberate semantic and visual order through responsive changes. Heading, record/context and actions have useful names/roles/states; hide only decorative duplicate icons.",
+    "Keyboard focus is visible on the existing control border, without extra ring/halo/gap. Traversal, activation, modal focus/return and unobscured focused content need runtime checks.",
+    "Touch hit bounds remain comfortable independently of icon size. Native/web guideline units differ; minimum widget height does not certify target bounds.",
+    "Screen-reader announcements describe meaningful changes once without needless focus movement; decorative spinner rebuilds are not repeated alerts.",
+    "Essential financial quantities/signs and private-field purpose require correct accessible wording without inventing values or exposing masked raw data.",
+    "High contrast, bold text, reduced motion, display scaling and real OS large text are separate preferences; preserve meaningful progress states even without animation.",
+    "All specimens are labelled examples/target designs. No live record, actual announcement, AT testing result, accessible compliance badge or financial/identity/order outcome asserted.",
+    "Later implementation should reuse current helpers, measure the semantics/rendering tree and test actual TalkBack/VoiceOver/keyboard paths across all relevant screens."
+  ],
+  "locked_token_srgb_contrast_reference": [
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "body",
+      "foreground": "#1C1C1C",
+      "background": "#FFFFFF",
+      "ratio": 17.04206683163051
+    },
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "muted",
+      "foreground": "#686260",
+      "background": "#FFFFFF",
+      "ratio": 5.992141957539175
+    },
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "primary-content",
+      "foreground": "#FFFFFF",
+      "background": "#191919",
+      "ratio": 17.581691183046004
+    },
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "focus-on-surface",
+      "foreground": "#A94D24",
+      "background": "#FFFFFF",
+      "ratio": 5.564345004586959
+    },
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "strong-border",
+      "foreground": "#A49993",
+      "background": "#FFFFFF",
+      "ratio": 2.779133322107133
+    },
+    {
+      "app": "delivery",
+      "theme": "light",
+      "role": "default-border",
+      "foreground": "#DDD7D4",
+      "background": "#FFFFFF",
+      "ratio": 1.424182704936259
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "body",
+      "foreground": "#F5F3F2",
+      "background": "#151515",
+      "ratio": 16.508880763453867
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "muted",
+      "foreground": "#C3BAB7",
+      "background": "#151515",
+      "ratio": 9.58951980106103
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "primary-content",
+      "foreground": "#151515",
+      "background": "#F4F4F4",
+      "ratio": 16.603082529693054
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "focus-on-surface",
+      "foreground": "#ECA06D",
+      "background": "#151515",
+      "ratio": 8.535553309209766
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "strong-border",
+      "foreground": "#91857E",
+      "background": "#151515",
+      "ratio": 5.095939360877879
+    },
+    {
+      "app": "delivery",
+      "theme": "dark",
+      "role": "default-border",
+      "foreground": "#3C3633",
+      "background": "#151515",
+      "ratio": 1.5370708511968962
+    }
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-accessibility-large-text-light.png",
+      "sha256": "97a27c3d40565ae4a28789cafaff60fe78fe2b694f458e1cc7d84afd5dcce5ce",
+      "bytes": 1398355,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-9d99c6f1-b0d3-446b-934d-8d55bccbbdd1.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "28df9f7983ce030e1add67cef9ee96a0635bfa0bfddbcb6fd1ec484a3b406c65",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-4f348c3e-0137-4aed-b056-0d7e9b6ab310.png",
+          "source_output_sha256": "78c41bcce34b2e7aebb437fb8f0206432e4fb3f970433f29ae8aa95cf58a62ca"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "7a99b129338d3843de3a4bf71ce9bfad5cf1f10c85418d138409b018aa0dc684",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-4f348c3e-0137-4aed-b056-0d7e9b6ab310.png",
+              "sha256": "78c41bcce34b2e7aebb437fb8f0206432e4fb3f970433f29ae8aa95cf58a62ca",
+              "reference_kind": "Generated C26 composition reference outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-9d99c6f1-b0d3-446b-934d-8d55bccbbdd1.png",
+          "source_output_sha256": "97a27c3d40565ae4a28789cafaff60fe78fe2b694f458e1cc7d84afd5dcce5ce"
+        }
+      ],
+      "review": "Visually reviewed for locked identity and inverse content, app-specific large/wrapping text, labelled actions/notices, one own-border focus, reading-order examples, no actual records/PII/server outcomes, no fabricated WCAG/AT/contrast pass and no sidebar. Raster values approximate; no runtime accessibility certification."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-accessibility-large-text-dark.png",
+      "sha256": "b11ba7114c6db86dd1f2e044e84c01e18a2ae40cb0f4849dcabc7fcdbc2dc9f0",
+      "bytes": 1551310,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-16bc2b94-c8b8-4cbe-994e-ab15f25ec27d.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "bcc519d54d3ff8367f36531e61492815cd8201736633a2b5eb4bd1d7bdf725fb",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-9d99c6f1-b0d3-446b-934d-8d55bccbbdd1.png",
+              "sha256": "97a27c3d40565ae4a28789cafaff60fe78fe2b694f458e1cc7d84afd5dcce5ce",
+              "reference_kind": "Generated C26 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-16bc2b94-c8b8-4cbe-994e-ab15f25ec27d.png",
+          "source_output_sha256": "b11ba7114c6db86dd1f2e044e84c01e18a2ae40cb0f4849dcabc7fcdbc2dc9f0"
+        }
+      ],
+      "review": "Visually reviewed for locked identity and inverse content, app-specific large/wrapping text, labelled actions/notices, one own-border focus, reading-order examples, no actual records/PII/server outcomes, no fabricated WCAG/AT/contrast pass and no sidebar. Raster values approximate; no runtime accessibility certification."
+    }
+  ],
+  "prompts_file_sha256": "f127dbc464091d61e96bb33fe5b05e9785f486588876304b81a068e4489c39b1"
+}

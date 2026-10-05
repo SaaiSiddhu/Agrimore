@@ -60,7 +60,7 @@ class ProductVariantsSection extends StatelessWidget {
         for (var i = 0; i < variants.length; i++)
           SellerListRow(
             title: variants[i].name,
-            subtitle: l10n.variantsLine(SellerFormat.money(variants[i].salePrice), SellerFormat.count(variants[i].stock)),
+            subtitle: l10n.variantsLine(SellerFormat.money(variants[i].salePrice), variants[i].stockConfigured ? SellerFormat.count(variants[i].stock) : l10n.productStockUnknown),
             icon: SellerIcons.packing,
             showChevron: false,
             onTap: () => _edit(context, i),
@@ -98,7 +98,7 @@ class _VariantSheetState extends State<_VariantSheet> {
   final _form = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.initial?.name ?? '');
   late final _price = TextEditingController(text: widget.initial == null ? '' : _plain(widget.initial!.salePrice));
-  late final _stock = TextEditingController(text: widget.initial == null ? '' : '${widget.initial!.stock}');
+  late final _stock = TextEditingController(text: widget.initial == null || !widget.initial!.stockConfigured ? '' : '${widget.initial!.stock}');
 
   static String _plain(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
 
@@ -159,6 +159,10 @@ class _VariantSheetState extends State<_VariantSheet> {
       body: Form(
         key: _form,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (widget.initial != null && !widget.initial!.stockConfigured) ...[
+            SellerBanner(tone: SellerTone.info, message: l10n.productStockBackfillHelp),
+            const SizedBox(height: SellerSpace.s12),
+          ],
           SellerTextField(
             fieldKey: const ValueKey('variantName'),
             label: l10n.variantsName,

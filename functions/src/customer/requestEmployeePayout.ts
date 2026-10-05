@@ -23,6 +23,8 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { isExactMoneyAmount } from "../common/paymentIntegrity";
+import { payoutBalancePaise, payoutAmountFromPaise } from "../employee/employeePayoutMoney";
 
 const REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
@@ -32,10 +34,11 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
   }
 
   const uid = context.auth.uid;
-  const amount = Number(data?.amount);
-  if (!amount || amount <= 0) {
+  const requestedAmount = data?.amount;
+  if (!isExactMoneyAmount(requestedAmount)) {
     throw new functions.https.HttpsError("invalid-argument", "amount must be a positive number");
   }
+  const amount = Math.round(requestedAmount * 100) / 100;
   const requestId = String(data?.requestId || "").trim();
   if (!REQUEST_ID.test(requestId)) {
     throw new functions.https.HttpsError(
@@ -77,10 +80,13 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
 
     if (existingPayout.exists) {
       const prior = existingPayout.data()!;
+      if (prior.employeeId !== uid || !isExactMoneyAmount(prior.amount)) {
+        throw new functions.https.HttpsError("failed-precondition", "Payout details need review");
+      }
       // This requestId was already used for a DIFFERENT amount — never
       // silently return a stale cached result for a mismatched request
       // (mirrors adminUpdateOrderStatus's own mismatch-rejection, ADMR-38).
-      if ((prior.amount as number | undefined) !== amount) {
+      if (Math.round(prior.amount * 100) !== Math.round(amount * 100)) {
         throw new functions.https.HttpsError(
           "invalid-argument",
           "This requestId was already used for a different amount — retry with a new requestId."
@@ -96,18 +102,24 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
       };
     }
 
-    const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;
-
-    if (amount > currentBalance) {
+    const currentPaise = payoutBalancePaise(walletSnap.data()?.balance ?? 0);
+    if (currentPaise === null) {
+      throw new functions.https.HttpsError("failed-precondition", "Wallet balance needs review");
+    }
+    const amountPaise = Math.round(amount * 100);
+    if (amountPaise > currentPaise) {
       throw new functions.https.HttpsError("failed-precondition", "Insufficient balance");
     }
 
-    const balanceAfter = currentBalance - amount;
+    const balanceAfter = payoutAmountFromPaise(currentPaise - amountPaise);
+    if (balanceAfter === null) {
+      throw new functions.https.HttpsError("failed-precondition", "Wallet balance needs review");
+    }
 
     tx.set(
       walletRef,
       {
-        balance: admin.firestore.FieldValue.increment(-amount),
+        balance: balanceAfter,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true }

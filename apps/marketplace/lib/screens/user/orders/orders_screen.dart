@@ -1,14 +1,12 @@
 // lib/screens/user/orders/orders_screen.dart
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/order_provider.dart';
+import '../../../providers/auth_provider.dart';
 // import '../../../providers/cart_provider.dart'; // No longer needed
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../services/delivery_tracking_service.dart';
@@ -17,13 +15,33 @@ import 'order_details_screen.dart';
 import 'live_tracking_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({Key? key}) : super(key: key);
+  const OrdersScreen({super.key});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
 class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMixin {
+  late final AuthProvider _openingAuth;
+  late final OrderProvider _openingOrders;
+  late final String? _owner;
+  late final int _version;
+  bool get _owns =>
+      mounted &&
+      _owner != null &&
+      identical(context.read<AuthProvider>(), _openingAuth) &&
+      identical(context.read<OrderProvider>(), _openingOrders) &&
+      _openingAuth.isSessionCurrent(_owner, _version);
+  bool _ownsOrder(OrderModel order) =>
+      _owns && order.userId == _owner &&
+      order.id.isNotEmpty && !order.id.contains('/');
+  void _reload() {
+    if (_owns) _openingOrders.loadOrders();
+  }
+  Future<void> _refresh() async {
+    _reload();
+  }
+
   String _selectedFilter = 'All';
   
   final List<String> _filters = ['All', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
@@ -48,7 +66,10 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-
+    _openingAuth = context.read<AuthProvider>();
+    _openingOrders = context.read<OrderProvider>();
+    _owner = _openingAuth.currentUser?.uid;
+    _version = _openingAuth.sessionVersion;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -91,7 +112,8 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
     // --- End Toast Animations ---
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderProvider>(context, listen: false).loadOrders();
+      if (!_owns) return;
+      _reload();
       _animationController.forward();
     });
   }
@@ -108,7 +130,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
   // SHOW TOAST MESSAGE
   // ============================================
   void _showToastMessage(String message, {bool isSuccess = true}) {
-    if (!mounted) return;
+    if (!_owns) return;
     _toastTimer?.cancel();
 
     setState(() {
@@ -121,9 +143,9 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
     _toastAnimationController.forward();
 
     _toastTimer = Timer(const Duration(milliseconds: 2800), () {
-      if (mounted) {
+      if (_owns) {
         _toastAnimationController.reverse().then((_) {
-          if (mounted) setState(() => _showToast = false);
+          if (_owns) setState(() => _showToast = false);
         });
       }
     });
@@ -131,6 +153,15 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    context.watch<OrderProvider>();
+    if (!_owns) {
+      return const Scaffold(
+        body: Center(child: Text(
+          'Your session changed. Reopen orders to continue.',
+        )),
+      );
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -149,28 +180,28 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                     position: _slideAnimation,
                     child: Consumer<OrderProvider>(
                       builder: (context, orderProvider, child) {
-                        if (orderProvider.isLoading && orderProvider.orders.isEmpty) {
+                        final orders = List<OrderModel>.unmodifiable(
+                            orderProvider.orders.where(_ownsOrder));
+                        if (orderProvider.isLoading && orders.isEmpty) {
                           return _buildShimmerLoading(isDark);
                         }
 
-                        if (orderProvider.error != null && orderProvider.orders.isEmpty) {
-                          return _buildErrorState(orderProvider.error!, isDark);
+                        if (orderProvider.error != null && orders.isEmpty) {
+                          return _buildErrorState(isDark);
                         }
 
-                        if (orderProvider.orders.isEmpty) {
+                        if (orders.isEmpty) {
                           return _buildEmptyState(isDark);
                         }
 
                         final filteredOrders = _selectedFilter == 'All'
-                            ? orderProvider.orders
-                            : orderProvider.orders
+                            ? orders
+                            : orders
                                 .where((o) => o.orderStatus.toLowerCase() == _selectedFilter.toLowerCase())
                                 .toList();
 
                         return RefreshIndicator(
-                          onRefresh: () async {
-                            Provider.of<OrderProvider>(context, listen: false).loadOrders();
-                          },
+                          onRefresh: _refresh,
                           color: isDark ? AppColors.primaryLight : AppColors.primary,
                           backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                           child: filteredOrders.isEmpty
@@ -181,10 +212,12 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                                   itemBuilder: (context, index) {
                                     final order = filteredOrders[index];
                                     return _OrderCard(
+                                      key: ValueKey('$_owner:$_version:${order.id}'),
                                       order: order,
                                       index: index,
                                       isDark: isDark,
                                       onTap: () => _navigateToDetails(order),
+                                      onTrack: () => _navigateToTracking(order),
                                     );
                                   },
                                 ),
@@ -295,6 +328,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
+                  if (!_owns) return;
                   HapticFeedback.lightImpact();
                   Navigator.pop(context);
                 },
@@ -350,6 +384,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                 ),
                 child: GestureDetector(
                   onTap: () {
+                    if (!_owns) return;
                     setState(() => _selectedFilter = filter);
                   },
                   child: Container(
@@ -508,7 +543,9 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    if (_owns) Navigator.pop(context);
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -541,7 +578,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildErrorState(String error, bool isDark) {
+  Widget _buildErrorState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -573,7 +610,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              error,
+              'Please try loading your orders again.',
               style: TextStyle(
                 fontSize: 14,
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -599,9 +636,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  Provider.of<OrderProvider>(context, listen: false).loadOrders();
-                },
+                onTap: _reload,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -650,6 +685,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
   }
 
   void _navigateToDetails(OrderModel order) {
+    if (!_ownsOrder(order)) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -657,6 +693,19 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
       ),
     );
   }
+  void _navigateToTracking(OrderModel order) {
+    if (!_ownsOrder(order)) return;
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveTrackingScreen(
+          orderId: order.id, initialOrder: order,
+        ),
+      ),
+    );
+  }
+
 }
 
 // ✅ ENHANCED THEME-AWARE ORDER CARD
@@ -665,13 +714,16 @@ class _OrderCard extends StatefulWidget {
   final int index;
   final bool isDark;
   final VoidCallback onTap;
+  final VoidCallback onTrack;
   // final VoidCallback onReorder; // ✅ REMOVED
 
   const _OrderCard({
+    super.key,
     required this.order,
     required this.index,
     required this.isDark,
     required this.onTap,
+    required this.onTrack,
     // required this.onReorder, // ✅ REMOVED
   });
 
@@ -959,7 +1011,9 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
           Expanded(
             // Phase DLV-3B: the live stage-aware ETA, not fixed minutes.
             child: LiveEtaText(
+              key: ValueKey('${widget.order.userId}:${widget.order.id}'),
               orderId: widget.order.id,
+              ownerId: widget.order.userId,
               orderStatus: widget.order.orderStatus,
               isDark: widget.isDark,
             ),
@@ -967,18 +1021,7 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
           
           // Track Live button
           GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LiveTrackingScreen(
-                    orderId: widget.order.id,
-                    initialOrder: widget.order,
-                  ),
-                ),
-              );
-            },
+            onTap: widget.onTrack,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(

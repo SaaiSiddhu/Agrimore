@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../reviews/product_review_writer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:agrimore_core/models/product_model.dart';
 import 'package:agrimore_core/models/category_model.dart';
@@ -13,7 +15,15 @@ import 'package:agrimore_core/models/order_status.dart'; // This import seems un
 import 'package:agrimore_core/models/user_model.dart'; // ✅ NEW: Added for getUserProfile
 
 class DatabaseService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  DatabaseService({FirebaseFirestore? firestore, String? Function()? reviewUserId,
+    bool Function()? isReviewSessionCurrent})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _reviewUserId = reviewUserId ?? (() => FirebaseAuth.instance.currentUser?.uid),
+        _isReviewSessionCurrent = isReviewSessionCurrent ?? (() => true);
+
+  final FirebaseFirestore _firestore;
+  final String? Function() _reviewUserId;
+  final bool Function() _isReviewSessionCurrent;
 
   // ============================================
   // USERS
@@ -632,9 +642,10 @@ class DatabaseService {
   // Add address
   Future<String> addAddress(AddressModel address) async {
     try {
-      // Use the address's own ID if it has one
-      final docRef = _firestore.collection('addresses').doc(address.id);
-      await docRef.set(address.toMap());
+      // A new onboarding/GPS address has no ID yet; Firestore rejects ''.
+      final docRef = _firestore.collection('addresses').doc(
+          address.id.isEmpty ? null : address.id);
+      await docRef.set(address.copyWith(id: docRef.id).toMap());
       return docRef.id;
     } catch (e) {
       throw DatabaseException('Failed to add address: ${e.toString()}');
@@ -766,118 +777,23 @@ class DatabaseService {
     }
   }
 
-  Future<String> addReview(ReviewModel review) async {
-    try {
-      // REVIEW-UNIQUE-1: one review per buyer per product — the id is the
-      // buyer's uid, so reviewing again edits the earlier review.
-      final reviewRef = _firestore
-          .collection('products')
-          .doc(review.productId)
-          .collection('reviews')
-          .doc(review.userId);
-      final exists = (await reviewRef.get()).exists;
-      await reviewRef.set(reviewContentMap(review, isNew: !exists), SetOptions(merge: true));
+  ProductReviewWriter get _reviewWriter => ProductReviewWriter(
+    firestore: _firestore, currentUserId: _reviewUserId,
+    isSessionCurrent: _isReviewSessionCurrent,
+  );
 
-      await _updateReviewStats(review.productId);
-
-      debugPrint('✅ Review added: ${reviewRef.id}');
-      return reviewRef.id;
-    } catch (e) {
-      debugPrint('❌ Error adding review: $e');
-      throw DatabaseException('Failed to add review: ${e.toString()}');
-    }
-  }
+  Future<String> addReview(ReviewModel review) => _reviewWriter.save(review, edit: false);
 
   Future<void> updateReview(ReviewModel review) async {
-    try {
-      await _firestore
-          .collection('products')
-          .doc(review.productId)
-          .collection('reviews')
-          .doc(review.reviewId)
-          .update(review.toMap());
-
-      await _updateReviewStats(review.productId);
-
-      debugPrint('✅ Review updated: ${review.reviewId}');
-    } catch (e) {
-      debugPrint('❌ Error updating review: $e');
-      throw DatabaseException('Failed to update review: ${e.toString()}');
-    }
+    await _reviewWriter.save(review, edit: true);
   }
 
-  Future<void> deleteReview(String productId, String reviewId) async {
-    try {
-      await _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .doc(reviewId)
-          .delete();
-
-      await _updateReviewStats(productId);
-
-      debugPrint('✅ Review deleted: $reviewId');
-    } catch (e) {
-      debugPrint('❌ Error deleting review: $e');
-      throw DatabaseException('Failed to delete review: ${e.toString()}');
-    }
-  }
+  Future<void> deleteReview(String productId, String reviewId) =>
+      _reviewWriter.delete(productId, reviewId);
 
   Future<void> markReviewHelpful(
-    String productId,
-    String reviewId,
-    String userId,
-    bool isHelpful,
-  ) async {
-    try {
-      final reviewRef = _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .doc(reviewId);
-
-      final reviewDoc = await reviewRef.get();
-      if (!reviewDoc.exists) {
-        throw DataNotFoundException('Review not found');
-      }
-
-      final review = ReviewModel.fromMap(
-          reviewDoc.data() as Map<String, dynamic>, reviewId);
-
-      List<String> helpfulUsers = List.from(review.helpfulUsers);
-      List<String> unhelpfulUsers = List.from(review.unhelpfulUsers);
-
-      if (isHelpful) {
-        if (helpfulUsers.contains(userId)) {
-          helpfulUsers.remove(userId);
-        } else {
-          helpfulUsers.add(userId);
-          unhelpfulUsers.remove(userId);
-        }
-      } else {
-        if (unhelpfulUsers.contains(userId)) {
-          unhelpfulUsers.remove(userId);
-        } else {
-          unhelpfulUsers.add(userId);
-          helpfulUsers.remove(userId);
-        }
-      }
-
-      await reviewRef.update({
-        'helpfulUsers': helpfulUsers,
-        'unhelpfulUsers': unhelpfulUsers,
-        'helpfulCount': helpfulUsers.length,
-        'unhelpfulCount': unhelpfulUsers.length,
-      });
-
-      debugPrint(
-          '✅ Review marked as ${isHelpful ? 'helpful' : 'unhelpful'}: $reviewId');
-    } catch (e) {
-      debugPrint('❌ Error marking helpful: $e');
-      throw DatabaseException('Failed to mark helpful: ${e.toString()}');
-    }
-  }
+    String productId, String reviewId, String userId, bool isHelpful,
+  ) => _reviewWriter.vote(productId, reviewId, userId, isHelpful);
 
   Stream<List<ReviewModel>> getUserReviews(String userId) {
     try {
@@ -965,110 +881,6 @@ class DatabaseService {
     } catch (e) {
       debugPrint('❌ Error checking user review: $e');
       return null;
-    }
-  }
-
-  Future<void> _updateReviewStats(String productId) async {
-    try {
-      final snapshot = await _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .get();
-
-      final reviews = snapshot.docs
-          .map((doc) =>
-              ReviewModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
-
-      if (reviews.isEmpty) {
-        await _firestore
-            .collection('products')
-            .doc(productId)
-            .collection('reviewStats')
-            .doc('stats')
-            .set({
-          'totalReviews': 0,
-          'averageRating': 0.0,
-          'fiveStarCount': 0,
-          'fourStarCount': 0,
-          'threeStarCount': 0,
-          'twoStarCount': 0,
-          'oneStarCount': 0,
-          'ratingDistribution': {
-            '5': 0,
-            '4': 0,
-            '3': 0,
-            '2': 0,
-            '1': 0,
-          },
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        // Also update product document
-        await _firestore.collection('products').doc(productId).update({
-          'rating': 0.0,
-          'reviewCount': 0,
-        });
-
-        return;
-      }
-
-      double totalRating = 0;
-      int fiveStarCount = 0;
-      int fourStarCount = 0;
-      int threeStarCount = 0;
-      int twoStarCount = 0;
-      int oneStarCount = 0;
-
-      for (var review in reviews) {
-        totalRating += review.rating;
-        if (review.rating == 5)
-          fiveStarCount++;
-        else if (review.rating == 4)
-          fourStarCount++;
-        else if (review.rating == 3)
-          threeStarCount++;
-        else if (review.rating == 2)
-          twoStarCount++;
-        else if (review.rating == 1) oneStarCount++;
-      }
-
-      final averageRating = totalRating / reviews.length;
-
-      final stats = {
-        'totalReviews': reviews.length,
-        'averageRating': double.parse(averageRating.toStringAsFixed(1)),
-        'fiveStarCount': fiveStarCount,
-        'fourStarCount': fourStarCount,
-        'threeStarCount': threeStarCount,
-        'twoStarCount': twoStarCount,
-        'oneStarCount': oneStarCount,
-        'ratingDistribution': {
-          '5': fiveStarCount,
-          '4': fourStarCount,
-          '3': threeStarCount,
-          '2': twoStarCount,
-          '1': oneStarCount,
-        },
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviewStats')
-          .doc('stats')
-          .set(stats, SetOptions(merge: true));
-
-      await _firestore.collection('products').doc(productId).update({
-        'rating': double.parse(averageRating.toStringAsFixed(1)),
-        'reviewCount': reviews.length,
-      });
-
-      debugPrint('✅ Review stats updated for product: $productId');
-    } catch (e) {
-      debugPrint('❌ Error updating review stats: $e');
     }
   }
 

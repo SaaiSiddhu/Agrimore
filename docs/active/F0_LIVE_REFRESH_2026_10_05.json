@@ -1,0 +1,5673 @@
+{
+  "classification": "DATED_READ_ONLY_CLOUD_METADATA_AND_ARTIFACT_BYTE_COMPARISON_NOT_RELEASE_ACCEPTANCE",
+  "sourceCommit": "d6fc47da84ddcdd00017c9031f52cf87865ca1cf",
+  "claimCommit": "9620673f96e9a572602b9608db3093ed2905eb0c",
+  "checkedAtUtc": "2026-10-04T19:31:17.212Z",
+  "supplementCheckedAtUtc": "2026-10-04T19:32:09.319Z",
+  "sourceRuntime": "v22.23.3",
+  "sourceNetworkAttempts": 0,
+  "retrieval": {
+    "v1": {
+      "complete": false,
+      "pages": 0,
+      "partialCount": 0,
+      "error": {
+        "type": "FirebaseError",
+        "status": 500
+      }
+    },
+    "v2": {
+      "complete": true,
+      "pages": 1,
+      "count": 48,
+      "unreachable": []
+    },
+    "database": {
+      "complete": true,
+      "pages": 1
+    },
+    "indexes": {
+      "complete": true,
+      "pages": 1,
+      "count": 58
+    },
+    "v1Regional": {
+      "complete": true,
+      "region": "us-central1",
+      "pages": 1,
+      "count": 39,
+      "globalCompleteness": false
+    }
+  },
+  "globalV1Completeness": "UNKNOWN: global GET HTTP500; us-central1 regional GET exhausted only",
+  "database": {
+    "name": "projects/agrimore-66a4e/databases/(default)",
+    "locationId": "nam5",
+    "type": "FIRESTORE_NATIVE",
+    "concurrencyMode": "PESSIMISTIC",
+    "pointInTimeRecoveryEnablement": "POINT_IN_TIME_RECOVERY_DISABLED",
+    "earliestVersionTime": "2026-10-04T18:31:33.411551Z",
+    "versionRetentionPeriod": "3600s",
+    "deleteProtectionState": "DELETE_PROTECTION_DISABLED",
+    "createTime": "2026-03-18T08:30:59.419208Z",
+    "updateTime": "2026-03-18T08:30:59.419208Z"
+  },
+  "counts": {
+    "localEndpoints": 152,
+    "observedLiveFunctions": 87,
+    "matchedNames": 81,
+    "sourceOnlyObservedScope": 71,
+    "liveOnlyObservedScope": 6,
+    "runtimeMismatches": 15,
+    "generationMismatches": 0,
+    "regionMismatches": 0,
+    "liveRuntimes": {
+      "nodejs22": 72,
+      "nodejs20": 15
+    }
+  },
+  "functions": [
+    {
+      "name": "acceptDeliveryOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "acceptDeliveryOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/acceptDeliveryOffer",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "acceptDeliveryOffer",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:21.515665998Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "acceptDeliveryOffer/function-source.zip",
+          "generation": "1790257347931220"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "accrueMonthlyBenefits",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "accrueMonthlyBenefits",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "activateAssociateOnboarding",
+      "presence": "matched-name",
+      "source": {
+        "name": "activateAssociateOnboarding",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/activateAssociateOnboarding",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "activateAssociateOnboarding",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-12T03:13:35.025426636Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "activateAssociateOnboarding/function-source.zip",
+          "generation": "1789182803631614"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "addSupportCaseNote",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "addSupportCaseNote",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "adminUpdateOrderStatus",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "adminUpdateOrderStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "advanceDeliveryDispatch",
+      "presence": "matched-name",
+      "source": {
+        "name": "advanceDeliveryDispatch",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/advanceDeliveryDispatch",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "advanceDeliveryDispatch",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:33.801445546Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "advanceDeliveryDispatch/function-source.zip",
+          "generation": "1790257405431896"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "advanceDeliveryStep",
+      "presence": "matched-name",
+      "source": {
+        "name": "advanceDeliveryStep",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/advanceDeliveryStep",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "advanceDeliveryStep",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:55.663709189Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "advanceDeliveryStep/function-source.zip",
+          "generation": "1790222145128234"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "aiChatProxy",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "aiChatProxy",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "assignReferralCode",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "assignReferralCode",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "assignSupportCase",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "assignSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "attachDeliveryProof",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "attachDeliveryProof",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "attachSupportCaseEvidence",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "attachSupportCaseEvidence",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "buildRiderStatements",
+      "presence": "matched-name",
+      "source": {
+        "name": "buildRiderStatements",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/buildRiderStatements",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "buildRiderStatements",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:53.519752733Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "buildRiderStatements/function-source.zip",
+          "generation": "1790222145128281"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "calculateSellerPayout",
+      "presence": "matched-name",
+      "source": {
+        "name": "calculateSellerPayout",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/calculateSellerPayout",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "calculateSellerPayout",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:44.504Z",
+        "versionId": "11",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelEmployeePayoutChange",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "cancelEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "cancelSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/cancelSellerPayoutChange",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "cancelSellerPayoutChange",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:19.643732434Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "cancelSellerPayoutChange/function-source.zip",
+          "generation": "1790257391995429"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "cancelSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/cancelSellerWithdrawal",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "cancelSellerWithdrawal",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:20.491852846Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "cancelSellerWithdrawal/function-source.zip",
+          "generation": "1790257391977769"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "changeDateOfBirth",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "changeDateOfBirth",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "changeEmailAddress",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "changeEmailAddress",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "changePhoneNumber",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "changePhoneNumber",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "changeSupportCaseStatus",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "changeSupportCaseStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "claimScratchCard",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "claimScratchCard",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cleanupInvalidTokens",
+      "presence": "matched-name",
+      "source": {
+        "name": "cleanupInvalidTokens",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/cleanupInvalidTokens",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "cleanupInvalidTokens",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:40.107Z",
+        "versionId": "20",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cleanupReviewPhotoDraft",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "cleanupReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "completeReferralOnFirstDelivery",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "completeReferralOnFirstDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "completeUserProfile",
+      "presence": "matched-name",
+      "source": {
+        "name": "completeUserProfile",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/completeUserProfile",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "completeUserProfile",
+        "state": "ACTIVE",
+        "updateTime": "2026-08-30T16:28:35.330521047Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "completeUserProfile/function-source.zip",
+          "generation": "1788107252105368"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "confirmDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "confirmDelivery",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/confirmDelivery",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "confirmDelivery",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:46.952101361Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "confirmDelivery/function-source.zip",
+          "generation": "1790222104593027"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "confirmOrderReturnReceived",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "confirmOrderReturnReceived",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "connectAiProvider",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "connectAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "connectSellerAiProvider",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "connectSellerAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createAssociateOnboardingPayment",
+      "presence": "matched-name",
+      "source": {
+        "name": "createAssociateOnboardingPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createAssociateOnboardingPayment",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "createAssociateOnboardingPayment",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:09:15.757148732Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "createAssociateOnboardingPayment/function-source.zip",
+          "generation": "1790140085627858"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createBenefitEnrollment",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createBenefitEnrollment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createEmployeeByAdmin",
+      "presence": "matched-name",
+      "source": {
+        "name": "createEmployeeByAdmin",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createEmployeeByAdmin",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "createEmployeeByAdmin",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T15:11:51.471Z",
+        "versionId": "3",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createOnboardingWebHandoff",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createOnboardingWebHandoff",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "createOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createOrder",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "createOrder",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:53.399153696Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "createOrder/function-source.zip",
+          "generation": "1790222145853878"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createOrderFromRfq",
+      "presence": "matched-name",
+      "source": {
+        "name": "createOrderFromRfq",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createOrderFromRfq",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "createOrderFromRfq",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:30.964585807Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "createOrderFromRfq/function-source.zip",
+          "generation": "1790185614301389"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createRazorpayOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "createRazorpayOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createRazorpayOrder",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "createRazorpayOrder",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:18:36.397877896Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "createRazorpayOrder/function-source.zip",
+          "generation": "1790140659675782"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createReviewPhotoDraft",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createRfq",
+      "presence": "matched-name",
+      "source": {
+        "name": "createRfq",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createRfq",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "createRfq",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:37.277602576Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "createRfq/function-source.zip",
+          "generation": "1790185672162038"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSellerAiActivationOrder",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createSellerAiActivationOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSellerByAdmin",
+      "presence": "matched-name",
+      "source": {
+        "name": "createSellerByAdmin",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/createSellerByAdmin",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "createSellerByAdmin",
+        "state": "ACTIVE",
+        "updateTime": "2026-08-26T09:52:54.425Z",
+        "versionId": "18",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSupportCase",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSupportCaseFromSource",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "createSupportCaseFromSource",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "creditSignupBonus",
+      "presence": "matched-name",
+      "source": {
+        "name": "creditSignupBonus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/creditSignupBonus",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "creditSignupBonus",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:37:23.057951332Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "creditSignupBonus/function-source.zip",
+          "generation": "1788467789967718"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "declineDeliveryOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "declineDeliveryOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/declineDeliveryOffer",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "declineDeliveryOffer",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:35.827230302Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "declineDeliveryOffer/function-source.zip",
+          "generation": "1790257405473392"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "deleteUserData",
+      "presence": "matched-name",
+      "source": {
+        "name": "deleteUserData",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/deleteUserData",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "deleteUserData",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:29.817Z",
+        "versionId": "5",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "disconnectAiProvider",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "disconnectAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "ensureCheckoutSubscriptions",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "ensureCheckoutSubscriptions",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "expireProductCredits",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "expireProductCredits",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "financeReconciliationRecheckFinding",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "financeReconciliationRecheckFinding",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "financeReconciliationScan",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "financeReconciliationScan",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "getAssociateOnboardingConfig",
+      "presence": "matched-name",
+      "source": {
+        "name": "getAssociateOnboardingConfig",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/getAssociateOnboardingConfig",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "getAssociateOnboardingConfig",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:32:05.551979926Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "getAssociateOnboardingConfig/function-source.zip",
+          "generation": "1788467459837281"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "getNotificationStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "getNotificationStats",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/getNotificationStats",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "getNotificationStats",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:55.802Z",
+        "versionId": "21",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "getReviewPhotoDraftStatus",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "getReviewPhotoDraftStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "issueSellerInvoice",
+      "presence": "matched-name",
+      "source": {
+        "name": "issueSellerInvoice",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/issueSellerInvoice",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "issueSellerInvoice",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:30.400150385Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "issueSellerInvoice/function-source.zip",
+          "generation": "1790185672151566"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "linkSupportCaseRecord",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "linkSupportCaseRecord",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "markEmployeePayoutPaid",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "markEmployeePayoutPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "markRiderPayoutPaid",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "markRiderPayoutPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "markSellerWithdrawalPaid",
+      "presence": "matched-name",
+      "source": {
+        "name": "markSellerWithdrawalPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/markSellerWithdrawalPaid",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "markSellerWithdrawalPaid",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:20.172740442Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "markSellerWithdrawalPaid/function-source.zip",
+          "generation": "1790257391988917"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "notifyFollowersOnNewProduct",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "notifyFollowersOnNewProduct",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "notifySellerNewOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "notifySellerNewOrder",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/notifySellerNewOrder",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "notifySellerNewOrder",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:56.212Z",
+        "versionId": "11",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "notifySellerPayoutPaid",
+      "presence": "matched-name",
+      "source": {
+        "name": "notifySellerPayoutPaid",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/notifySellerPayoutPaid",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "notifySellerPayoutPaid",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:44:14.242Z",
+        "versionId": "2",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onOrderCreatedNotifications",
+      "presence": "matched-name",
+      "source": {
+        "name": "onOrderCreatedNotifications",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/onOrderCreatedNotifications",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "onOrderCreatedNotifications",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:06.069Z",
+        "versionId": "12",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onOrderStatusChanged",
+      "presence": "matched-name",
+      "source": {
+        "name": "onOrderStatusChanged",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/onOrderStatusChanged",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "onOrderStatusChanged",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:29.947Z",
+        "versionId": "20",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onProductReviewWrite",
+      "presence": "matched-name",
+      "source": {
+        "name": "onProductReviewWrite",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/onProductReviewWrite",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "onProductReviewWrite",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:14.774495503Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onProductStockChanged",
+      "presence": "matched-name",
+      "source": {
+        "name": "onProductStockChanged",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/onProductStockChanged",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "onProductStockChanged",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:32.015Z",
+        "versionId": "11",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onRiderDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "onRiderDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/onRiderDelivery",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "onRiderDelivery",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:56:12.613603108Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "payEmployeeCommissionOnDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "payEmployeeCommissionOnDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/payEmployeeCommissionOnDelivery",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "payEmployeeCommissionOnDelivery",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-22T04:58:07.549Z",
+        "versionId": "2",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "publishReviewPhotoDraft",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "publishReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "quoteDeliveryFees",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "quoteDeliveryFees",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "quoteOrderWithCredit",
+      "presence": "matched-name",
+      "source": {
+        "name": "quoteOrderWithCredit",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/quoteOrderWithCredit",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "quoteOrderWithCredit",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:30.408185849Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "quoteOrderWithCredit/function-source.zip",
+          "generation": "1790185671410432"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "razorpayOnboardingWebhook",
+      "presence": "matched-name",
+      "source": {
+        "name": "razorpayOnboardingWebhook",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/razorpayOnboardingWebhook",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "razorpayOnboardingWebhook",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:09:16.412850349Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "razorpayOnboardingWebhook/function-source.zip",
+          "generation": "1790140084851849"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rebuildMySellerStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "rebuildMySellerStats",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/rebuildMySellerStats",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "rebuildMySellerStats",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:22.768332346Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "rebuildMySellerStats/function-source.zip",
+          "generation": "1790257344373564"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reconcileProductCreditBalances",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reconcileProductCreditBalances",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reconcileStaleOnboardingPayments",
+      "presence": "matched-name",
+      "source": {
+        "name": "reconcileStaleOnboardingPayments",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/reconcileStaleOnboardingPayments",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "reconcileStaleOnboardingPayments",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:09:15.935370136Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "reconcileStaleOnboardingPayments/function-source.zip",
+          "generation": "1790140085656142"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recordAssociateOnboardingRefund",
+      "presence": "matched-name",
+      "source": {
+        "name": "recordAssociateOnboardingRefund",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/recordAssociateOnboardingRefund",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "recordAssociateOnboardingRefund",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:32:08.127318636Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "recordAssociateOnboardingRefund/function-source.zip",
+          "generation": "1788467520177133"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recordRiderCashDeposit",
+      "presence": "matched-name",
+      "source": {
+        "name": "recordRiderCashDeposit",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/recordRiderCashDeposit",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "recordRiderCashDeposit",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:53.417098790Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "recordRiderCashDeposit/function-source.zip",
+          "generation": "1790222145152224"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recoverCheckoutPayment",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "recoverCheckoutPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recoverWalletTopupPayment",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "recoverWalletTopupPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "redeemOnboardingWebHandoff",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "redeemOnboardingWebHandoff",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "redeemReferralCode",
+      "presence": "matched-name",
+      "source": {
+        "name": "redeemReferralCode",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/redeemReferralCode",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "redeemReferralCode",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:34:35.456793146Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "redeemReferralCode/function-source.zip",
+          "generation": "1788467602280741"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "refreshDeliveryRoute",
+      "presence": "matched-name",
+      "source": {
+        "name": "refreshDeliveryRoute",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "google.cloud.firestore.document.v1.written"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/refreshDeliveryRoute",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "refreshDeliveryRoute",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T16:35:18.660433073Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "refreshDeliveryRoute/function-source.zip",
+          "generation": "1790181219963259"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "refreshUserRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "refreshUserRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/refreshUserRoleClaims",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "refreshUserRoleClaims",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:06.775Z",
+        "versionId": "10",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rejectEmployeePayout",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "rejectEmployeePayout",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rejectSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "rejectSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/rejectSellerWithdrawal",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "rejectSellerWithdrawal",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:19.468225345Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "rejectSellerWithdrawal/function-source.zip",
+          "generation": "1790257390901911"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "releaseDeliveryOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "releaseDeliveryOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/releaseDeliveryOrder",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "releaseDeliveryOrder",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:53.456215423Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "releaseDeliveryOrder/function-source.zip",
+          "generation": "1790222145149823"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "releaseExpiredProductCreditHolds",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "releaseExpiredProductCreditHolds",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "releaseProductCreditHold",
+      "presence": "matched-name",
+      "source": {
+        "name": "releaseProductCreditHold",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/releaseProductCreditHold",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "releaseProductCreditHold",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:31.062097222Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "releaseProductCreditHold/function-source.zip",
+          "generation": "1790185672170643"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reopenSupportCase",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reopenSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "replyToReview",
+      "presence": "matched-name",
+      "source": {
+        "name": "replyToReview",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/replyToReview",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "replyToReview",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:30.804046451Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "replyToReview/function-source.zip",
+          "generation": "1790185672162948"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reportDeliveryException",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reportDeliveryException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reportRiderIncident",
+      "presence": "matched-name",
+      "source": {
+        "name": "reportRiderIncident",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/reportRiderIncident",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "reportRiderIncident",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:33.988566507Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "reportRiderIncident/function-source.zip",
+          "generation": "1790257405391253"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestAssociateOnboardingRefundOnSuspend",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestAssociateOnboardingRefundOnSuspend",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/requestAssociateOnboardingRefundOnSuspend",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "requestAssociateOnboardingRefundOnSuspend",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:32:32.009344863Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayout",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestEmployeePayout",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/requestEmployeePayout",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "requestEmployeePayout",
+        "state": "ACTIVE",
+        "updateTime": "2026-08-25T02:22:06.071377650Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayoutChange",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "requestEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestRiderBankChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestRiderBankChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/requestRiderBankChange",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "requestRiderBankChange",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:54.294061598Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "requestRiderBankChange/function-source.zip",
+          "generation": "1790222145205824"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestRiderIdentityChange",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "requestRiderIdentityChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/requestSellerPayoutChange",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "requestSellerPayoutChange",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:19.823054616Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "requestSellerPayoutChange/function-source.zip",
+          "generation": "1790257391958742"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/requestSellerWithdrawal",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "requestSellerWithdrawal",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:21.162499891Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "requestSellerWithdrawal/function-source.zip",
+          "generation": "1790257391980347"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "resolveGoogleIdentity",
+      "presence": "matched-name",
+      "source": {
+        "name": "resolveGoogleIdentity",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/resolveGoogleIdentity",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "resolveGoogleIdentity",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-12T08:12:42.905170959Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "resolveSupportCase",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "resolveSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "respondToRfqOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "respondToRfqOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/respondToRfqOffer",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "respondToRfqOffer",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:31.251126204Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "respondToRfqOffer/function-source.zip",
+          "generation": "1790185672254090"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "restoreStockOnCancellation",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "restoreStockOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "retryCommissionException",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "retryCommissionException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "retryFailedNotifications",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/retryFailedNotifications",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "retryFailedNotifications",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:57.096Z",
+        "versionId": "3",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reverseEmployeeCommissionOnCancellation",
+      "presence": "matched-name",
+      "source": {
+        "name": "reverseEmployeeCommissionOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/reverseEmployeeCommissionOnCancellation",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "reverseEmployeeCommissionOnCancellation",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-22T04:58:15.466746718Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reverseProductCreditOnCancellation",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reverseProductCreditOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewDocumentSubmission",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reviewDocumentSubmission",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewEmployeePayoutChange",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reviewEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewRiderBankChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "reviewRiderBankChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/reviewRiderBankChange",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "reviewRiderBankChange",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:55.056223142Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "reviewRiderBankChange/function-source.zip",
+          "generation": "1790222145146170"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewRiderIdentityChange",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "reviewRiderIdentityChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "reviewSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/reviewSellerPayoutChange",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "reviewSellerPayoutChange",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:21.231616719Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "reviewSellerPayoutChange/function-source.zip",
+          "generation": "1790257391982339"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "riderMoneySummary",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "riderMoneySummary",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rollupSellerStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "rollupSellerStats",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/rollupSellerStats",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "rollupSellerStats",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:29.495Z",
+        "versionId": "2",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "runBenefitAccrualNow",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "runBenefitAccrualNow",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sellerAiChatProxy",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "sellerAiChatProxy",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sellerTransitionOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "sellerTransitionOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sellerTransitionOrder",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "sellerTransitionOrder",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:32.377110397Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "sellerTransitionOrder/function-source.zip",
+          "generation": "1790185672163553"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sellerWalletSummary",
+      "presence": "matched-name",
+      "source": {
+        "name": "sellerWalletSummary",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sellerWalletSummary",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "sellerWalletSummary",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T13:43:18.235133799Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "sellerWalletSummary/function-source.zip",
+          "generation": "1790257345149055"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendAfternoonGreeting",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendAfternoonGreeting",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendAfternoonGreeting",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:57:26.633Z",
+        "versionId": "4",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendBroadcastNotification",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendBroadcastNotification",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendBroadcastNotification",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendBroadcastNotification",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:57:26.531Z",
+        "versionId": "21",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendEmailOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendEmailOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendEmailOTP",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "sendEmailOTP",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-02T18:24:19.367Z",
+        "versionId": "22",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendEveningGreeting",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendEveningGreeting",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendEveningGreeting",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:53.456Z",
+        "versionId": "4",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendMorningGreeting",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendMorningGreeting",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendMorningGreeting",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:57:02.273Z",
+        "versionId": "4",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendNightGreeting",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendNightGreeting",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendNightGreeting",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:50.654Z",
+        "versionId": "4",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendNotificationToUser",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendNotificationToUser",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendNotificationToUser",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendNotificationToUser",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:52.237Z",
+        "versionId": "21",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendOrderUpdateNotification",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendOrderUpdateNotification",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendOrderUpdateNotification",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendOrderUpdateNotification",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:38.883Z",
+        "versionId": "21",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendPhoneOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendPhoneOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/sendPhoneOTP",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "sendPhoneOTP",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:05.870Z",
+        "versionId": "7",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setBenefitFeatureFlag",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "setBenefitFeatureFlag",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setBenefitProgramConfig",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "setBenefitProgramConfig",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setComplianceStatus",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "setComplianceStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setEnrollmentStatus",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "setEnrollmentStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setLowStockThreshold",
+      "presence": "matched-name",
+      "source": {
+        "name": "setLowStockThreshold",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/setLowStockThreshold",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "setLowStockThreshold",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:31.926Z",
+        "versionId": "11",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setUserRole",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "setUserRole",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitDocumentReplacement",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "submitDocumentReplacement",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitRfqOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "submitRfqOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/submitRfqOffer",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "submitRfqOffer",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:32.325535017Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "submitRfqOffer/function-source.zip",
+          "generation": "1790185672122838"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitRiderApplication",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "submitRiderApplication",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitSellerApplication",
+      "presence": "matched-name",
+      "source": {
+        "name": "submitSellerApplication",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/submitSellerApplication",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "submitSellerApplication",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:33.292908243Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "submitSellerApplication/function-source.zip",
+          "generation": "1790185672138794"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitSupportRequest",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "submitSupportRequest",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "subscriptionChecker",
+      "presence": "live-only-observed-scope",
+      "source": null,
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/subscriptionChecker",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "subscriptionChecker",
+        "state": "ACTIVE",
+        "updateTime": "2026-06-22T06:56:54.145Z",
+        "versionId": "2",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncDeliveryRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncDeliveryRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/syncDeliveryRoleClaims",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "syncDeliveryRoleClaims",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:08.016Z",
+        "versionId": "10",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncDeliveryTask",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncDeliveryTask",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/syncDeliveryTask",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "syncDeliveryTask",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:56:12.796985543Z",
+        "versionId": "1",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncEmployeeRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncEmployeeRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/syncEmployeeRoleClaims",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "syncEmployeeRoleClaims",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:07.575Z",
+        "versionId": "3",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncSellerRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncSellerRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/syncSellerRoleClaims",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "syncSellerRoleClaims",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:07.864Z",
+        "versionId": "10",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncUserRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncUserRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/syncUserRoleClaims",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "syncUserRoleClaims",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:05.929Z",
+        "versionId": "10",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "unlinkSupportCaseRecord",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "unlinkSupportCaseRecord",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "updateDeliveryException",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "updateDeliveryException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "updateRiderContact",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "updateRiderContact",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "updateRiderIncident",
+      "presence": "matched-name",
+      "source": {
+        "name": "updateRiderIncident",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/updateRiderIncident",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "updateRiderIncident",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-24T03:55:53.491332249Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "updateRiderIncident/function-source.zip",
+          "generation": "1790222145214307"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "updateSupportRequest",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "updateSupportRequest",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "uploadReviewPhotoAsset",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "uploadReviewPhotoAsset",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyAssociateCode",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyAssociateCode",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyAssociateCode",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "verifyAssociateCode",
+        "state": "ACTIVE",
+        "updateTime": "2026-08-31T16:27:38.898620088Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "verifyAssociateCode/function-source.zip",
+          "generation": "1788193569034909"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyEmailForProfile",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyEmailForProfile",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyEmailForProfile",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "verifyEmailForProfile",
+        "state": "ACTIVE",
+        "updateTime": "2026-08-30T16:28:45.728310649Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "verifyEmailForProfile/function-source.zip",
+          "generation": "1788107317149866"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyEmailOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyEmailOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyEmailOTP",
+        "generation": "gcfv1",
+        "runtime": "nodejs20",
+        "entryPoint": "verifyEmailOTP",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-02T18:24:17.365Z",
+        "versionId": "21",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyPhoneOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyPhoneOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyPhoneOTP",
+        "generation": "gcfv1",
+        "runtime": "nodejs22",
+        "entryPoint": "verifyPhoneOTP",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T17:48:07.368Z",
+        "versionId": "6",
+        "source": null,
+        "sourceDescriptorBasis": "unavailable",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": true
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyRazorpayPayment",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyRazorpayPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyRazorpayPayment",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "verifyRazorpayPayment",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:18:45.291129510Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "verifyRazorpayPayment/function-source.zip",
+          "generation": "1790140716570806"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyWalletTopup",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyWalletTopup",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/verifyWalletTopup",
+        "generation": "gcfv2",
+        "runtime": "nodejs22",
+        "entryPoint": "verifyWalletTopup",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-23T05:09:13.715883050Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "verifyWalletTopup/function-source.zip",
+          "generation": "1790140085750183"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "viewSupportCaseEvidence",
+      "presence": "source-only-observed-scope",
+      "source": {
+        "name": "viewSupportCaseEvidence",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "waiveAssociateOnboardingFee",
+      "presence": "matched-name",
+      "source": {
+        "name": "waiveAssociateOnboardingFee",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "name": "projects/agrimore-66a4e/locations/us-central1/functions/waiveAssociateOnboardingFee",
+        "generation": "gcfv2",
+        "runtime": "nodejs20",
+        "entryPoint": "waiveAssociateOnboardingFee",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-03T20:32:08.403303950Z",
+        "versionId": null,
+        "source": {
+          "bucket": "gcf-v2-sources-1082819024270-us-central1",
+          "object": "waiveAssociateOnboardingFee/function-source.zip",
+          "generation": "1788467520247338"
+        },
+        "sourceDescriptorBasis": "resolvedStorageSource",
+        "v1SourceArchiveUrlPresent": false,
+        "v1SourceUploadUrlPresent": false
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+    }
+  ],
+  "indexes": {
+    "normalization": "collectionGroup/queryScope/ordered user fieldPath+order+arrayConfig; omit implicit __name__; excludes extra API metadata; no query planner proof",
+    "liveCount": 58,
+    "liveStates": {
+      "READY": 58
+    },
+    "committedCount": 76,
+    "workingCount": 79,
+    "committedMissingLive": [
+      {
+        "collectionGroup": "commission_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeUid",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "delivery_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "employee_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "orders",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderNumber",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_cash_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_earnings",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_earnings",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "statementId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_incidents",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "seller_withdrawals",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_events",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_evidence",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "uploadedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_notes",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "linkedRecords",
+            "arrayConfig": "CONTAINS"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "assignedTo",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "primaryActor.type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "primaryActor.id",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "ownerWorkingOnly": [
+      {
+        "collectionGroup": "product_credit_holds",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "product_credit_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "verified_payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "liveOnlyCommitted": [],
+    "live": [
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_partners/indexes/CICAgNiroIEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNjpgYIJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/banners/indexes/CICAgLiIkYMJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/sellerRequests/indexes/CICAgPig2YMJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/sellers/indexes/CICAgJjmiJEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payouts/indexes/CICAgPjC4pEJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/vendors/indexes/CICAgJiUsZIJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/business_posts/indexes/CICAgPj-05MJ",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgPjChIAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isRead",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgNiav4AK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "unread",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJim14AK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isAvailable",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "soldCount",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLjy8IAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgOjXh4EK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/product_credit_ledger/indexes/CICAgPi9lIEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "customerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNiroIEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/coupons/indexes/CICAgJj7z4EK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiry",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgLiT6IEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgNjpgYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/threads/indexes/CICAgPj-pYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgLjRyYIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "productId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJjF9oIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLiIkYMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgJiUpoMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryName",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "priority",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPiftYMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeUid",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/notifications/indexes/CICAgPig2YMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/banners/indexes/CICAgNi47oMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "priority",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_requests/indexes/CICAgJjUgIcK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/razorpay_orders/indexes/CICAgJjmnIgK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "purpose",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPjC9ogK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "deliveredAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/device_tokens/indexes/CICAgJiHgokK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_dispatch/indexes/CICAgNiryokK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "nextActionAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_withdrawals/indexes/CICAgOi39IkK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payout_change_requests/indexes/CICAgPigl4sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJiUzYsK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_withdrawals/indexes/CICAgPif34sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/coupons/indexes/CICAgLiI64sK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "validTo",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/follows/indexes/CICAgPi9ipAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/threads/indexes/CICAgOi3kJAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "customerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/employee_payouts/indexes/CICAgNirtJAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJiH2JAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/deliveryRequests/indexes/CICAgLiT_JAK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgJjmiJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/rider_incidents/indexes/CICAgLjyrJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgNjaxJEK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgPjC4pEK",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/products/indexes/CICAgLiIjZIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "rating",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPifq5IK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/categories/indexes/CICAgJiUsZIK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isActive",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/referrals/indexes/CICAgPigw5IK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "referredUserId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isCompleted",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_requests/indexes/CICAgLjRnZMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/reviews/indexes/CICAgJjFqZMK",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_stats_daily/indexes/CICAgPj-05MK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "day",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "ASCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payouts/indexes/CICAgNjp5ZMK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/rider_earnings/indexes/CICAgJjUlJYK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "statementId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/delivery_exceptions/indexes/CICAgNir3pgK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/orders/indexes/CICAgPjCqZkK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderStatus",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/seller_payout_change_requests/indexes/CICAgPjfxJoK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "sellerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      },
+      {
+        "name": "projects/agrimore-66a4e/databases/(default)/collectionGroups/wallet_transactions/indexes/CICAgJiU25oK",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ],
+        "state": "READY",
+        "density": "SPARSE_ALL"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "name": "sellerWalletSummary",
+      "source": {
+        "bucket": "gcf-v2-sources-1082819024270-us-central1",
+        "object": "sellerWalletSummary/function-source.zip",
+        "generation": "1790257345149055"
+      },
+      "checkedAtUtc": "2026-10-04T19:32:40.927Z",
+      "status": "GET_COMPLETE",
+      "bytes": 1192484,
+      "sha256": "ec4d7b1742bdb5bcc4d973e5218c25a1eb16661a02afb182092271f83b9c0e99",
+      "metadataGeneration": "1790257345149055",
+      "comparison": {
+        "scope": "Byte hashes of allowlisted code/manifest members only. No extraction or execution; env/secrets/logs/other members not read. Current compiled tree last built by c9fdfce8 postcommit gate.",
+        "counts": {
+          "excludedMembersNotRead": 188,
+          "different": 95,
+          "equal": 179,
+          "localOnlyCodeFiles": 90
+        },
+        "selectedMembers": [
+          {
+            "path": "lib/delivery/riderMoney.js",
+            "archiveSha256": "8dcaa32b2fc966f85ed109beb500d500568c0c21ddac88644ae5e36891d8ec63",
+            "localSha256": "bc84c479ceb2d846ed35679a2504ce7a06e25c7e3bcd35f34e99e8e0984b80e8",
+            "comparison": "different"
+          },
+          {
+            "path": "lib/index.js",
+            "archiveSha256": "b6265342c15bbf5d44cd9936b10148755f7ff491436c64acc75867fe8995ab87",
+            "localSha256": "122d10a74059db75968ae88382814d0a57f98d2d6a1e2dbf756cdcf0bb04572c",
+            "comparison": "different"
+          },
+          {
+            "path": "lib/seller/sellerWallet.js",
+            "archiveSha256": "d4175a1082de4bce709ab8b2c4e862be07a7fa67e61f4cda30236ab8278b7154",
+            "localSha256": "216438153cba839f0a8c8191bcc5cc771becc7e3faca30b6e20a1ed88ed9daa9",
+            "comparison": "different"
+          },
+          {
+            "path": "package-lock.json",
+            "archiveSha256": "eac62b5df0e59c8f47602926d56997bbcc31573735d8ce78d1ec227dc6168e73",
+            "localSha256": "b7d04dde19d4a003b377aeac3707465097643d8da61ef60f198ddb0fda2f711d",
+            "comparison": "different"
+          },
+          {
+            "path": "package.json",
+            "archiveSha256": "2ea2654dddf058760bc9b92900215ca41febcc6104f2b92d9d68f9e5435aeb9f",
+            "localSha256": "d88e403f99ee502b1816a126dabc8352d48356fd79fd5a4c745eff6811a40146",
+            "comparison": "different"
+          },
+          {
+            "path": "src/delivery/riderMoney.ts",
+            "archiveSha256": "503badd1b2715fd5a42829d302227b4d5e222361d7437457393ef87db879d2c9",
+            "localSha256": "8712e6cb8a53d07edd163354a5b7a13cfcd95d9357d903fd19379608f6689e05",
+            "comparison": "different"
+          },
+          {
+            "path": "src/seller/sellerWallet.ts",
+            "archiveSha256": "106a43455850693d74cc887535c7de2f501f5107d8eddd7e2d9b7a341312fa24",
+            "localSha256": "2bb0890cb5a226cacae0f1ba5b3b660580634df499314c3be8350bdc918a8d63",
+            "comparison": "different"
+          }
+        ],
+        "codeManifestSha256": "865adb496fe230735083c2386758a92faee873fe44851e818ffabeeac735ce75",
+        "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+      }
+    },
+    {
+      "name": "requestSellerWithdrawal",
+      "source": {
+        "bucket": "gcf-v2-sources-1082819024270-us-central1",
+        "object": "requestSellerWithdrawal/function-source.zip",
+        "generation": "1790257391980347"
+      },
+      "checkedAtUtc": "2026-10-04T19:32:43.733Z",
+      "status": "GET_COMPLETE",
+      "bytes": 1192484,
+      "sha256": "ec4d7b1742bdb5bcc4d973e5218c25a1eb16661a02afb182092271f83b9c0e99",
+      "metadataGeneration": "1790257391980347",
+      "comparison": {
+        "scope": "Byte hashes of allowlisted code/manifest members only. No extraction or execution; env/secrets/logs/other members not read. Current compiled tree last built by c9fdfce8 postcommit gate.",
+        "counts": {
+          "excludedMembersNotRead": 188,
+          "different": 95,
+          "equal": 179,
+          "localOnlyCodeFiles": 90
+        },
+        "selectedMembers": [
+          {
+            "path": "lib/delivery/riderMoney.js",
+            "archiveSha256": "8dcaa32b2fc966f85ed109beb500d500568c0c21ddac88644ae5e36891d8ec63",
+            "localSha256": "bc84c479ceb2d846ed35679a2504ce7a06e25c7e3bcd35f34e99e8e0984b80e8",
+            "comparison": "different"
+          },
+          {
+            "path": "lib/index.js",
+            "archiveSha256": "b6265342c15bbf5d44cd9936b10148755f7ff491436c64acc75867fe8995ab87",
+            "localSha256": "122d10a74059db75968ae88382814d0a57f98d2d6a1e2dbf756cdcf0bb04572c",
+            "comparison": "different"
+          },
+          {
+            "path": "lib/seller/sellerWallet.js",
+            "archiveSha256": "d4175a1082de4bce709ab8b2c4e862be07a7fa67e61f4cda30236ab8278b7154",
+            "localSha256": "216438153cba839f0a8c8191bcc5cc771becc7e3faca30b6e20a1ed88ed9daa9",
+            "comparison": "different"
+          },
+          {
+            "path": "package-lock.json",
+            "archiveSha256": "eac62b5df0e59c8f47602926d56997bbcc31573735d8ce78d1ec227dc6168e73",
+            "localSha256": "b7d04dde19d4a003b377aeac3707465097643d8da61ef60f198ddb0fda2f711d",
+            "comparison": "different"
+          },
+          {
+            "path": "package.json",
+            "archiveSha256": "2ea2654dddf058760bc9b92900215ca41febcc6104f2b92d9d68f9e5435aeb9f",
+            "localSha256": "d88e403f99ee502b1816a126dabc8352d48356fd79fd5a4c745eff6811a40146",
+            "comparison": "different"
+          },
+          {
+            "path": "src/delivery/riderMoney.ts",
+            "archiveSha256": "503badd1b2715fd5a42829d302227b4d5e222361d7437457393ef87db879d2c9",
+            "localSha256": "8712e6cb8a53d07edd163354a5b7a13cfcd95d9357d903fd19379608f6689e05",
+            "comparison": "different"
+          },
+          {
+            "path": "src/seller/sellerWallet.ts",
+            "archiveSha256": "106a43455850693d74cc887535c7de2f501f5107d8eddd7e2d9b7a341312fa24",
+            "localSha256": "2bb0890cb5a226cacae0f1ba5b3b660580634df499314c3be8350bdc918a8d63",
+            "comparison": "different"
+          }
+        ],
+        "codeManifestSha256": "865adb496fe230735083c2386758a92faee873fe44851e818ffabeeac735ce75",
+        "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+      }
+    },
+    {
+      "name": "confirmDelivery",
+      "source": {
+        "bucket": "gcf-v2-sources-1082819024270-us-central1",
+        "object": "confirmDelivery/function-source.zip",
+        "generation": "1790222104593027"
+      },
+      "checkedAtUtc": "2026-10-04T19:32:46.388Z",
+      "status": "GET_COMPLETE",
+      "bytes": 1096034,
+      "sha256": "e01d1ac6320eaff2f9cf492599fa758c082da1cb77200e45ff736170965884ec",
+      "metadataGeneration": "1790222104593027",
+      "comparison": {
+        "scope": "Byte hashes of allowlisted code/manifest members only. No extraction or execution; env/secrets/logs/other members not read. Current compiled tree last built by c9fdfce8 postcommit gate.",
+        "counts": {
+          "excludedMembersNotRead": 176,
+          "different": 92,
+          "equal": 164,
+          "localOnlyCodeFiles": 108
+        },
+        "selectedMembers": [
+          {
+            "path": "lib/delivery/riderMoney.js",
+            "archiveSha256": "98a2164d27e5675dc6b53b2159563ad6bbb04add3a6c5b928123cd270e8afc6e",
+            "localSha256": "bc84c479ceb2d846ed35679a2504ce7a06e25c7e3bcd35f34e99e8e0984b80e8",
+            "comparison": "different"
+          },
+          {
+            "path": "lib/index.js",
+            "archiveSha256": "afe2836df7d1b52aa6c2d47b60cf09c83906987638e6c6e479bc72261ba7d9a4",
+            "localSha256": "122d10a74059db75968ae88382814d0a57f98d2d6a1e2dbf756cdcf0bb04572c",
+            "comparison": "different"
+          },
+          {
+            "path": "package-lock.json",
+            "archiveSha256": "eac62b5df0e59c8f47602926d56997bbcc31573735d8ce78d1ec227dc6168e73",
+            "localSha256": "b7d04dde19d4a003b377aeac3707465097643d8da61ef60f198ddb0fda2f711d",
+            "comparison": "different"
+          },
+          {
+            "path": "package.json",
+            "archiveSha256": "2ea2654dddf058760bc9b92900215ca41febcc6104f2b92d9d68f9e5435aeb9f",
+            "localSha256": "d88e403f99ee502b1816a126dabc8352d48356fd79fd5a4c745eff6811a40146",
+            "comparison": "different"
+          },
+          {
+            "path": "src/delivery/riderMoney.ts",
+            "archiveSha256": "a5a5e4c9b710bd7897f19ce8ff140ee388fd56318d3728f82d86480cde53b249",
+            "localSha256": "8712e6cb8a53d07edd163354a5b7a13cfcd95d9357d903fd19379608f6689e05",
+            "comparison": "different"
+          }
+        ],
+        "codeManifestSha256": "b367ce39aa95bd7928dc6d634b9864a5a9e4974c8ae9919cfee304f44b20ade6",
+        "executedBodyEquality": "UNKNOWN_LIVE_STATE"
+      }
+    }
+  ],
+  "limits": [
+    "No deployment, production document access, cloud write, provider transaction, native device/signing, push or merge.",
+    "Archive byte equality/difference concerns pinned input source artifacts, not actual managed runtime/container body or environment.",
+    "Only three v2 archives sampled; no v1 artifact code comparison; no global v1 absence proof.",
+    "READY applies to 58 observed live shapes; 18 committed and three additional owner-only shapes are absent from this fresh listing.",
+    "PITR/delete protection disabled is fresh metadata; backup/restore RPO/RTO acceptance remains OPEN.",
+    "Full F0-F9 acceptance OPEN; Product Credit redemption remains gated."
+  ]
+}

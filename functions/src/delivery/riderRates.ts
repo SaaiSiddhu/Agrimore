@@ -4,6 +4,7 @@
 //  the payout/bank callables and their dependencies.
 // ============================================================
 import { RiderPayRates, sanitizeRates } from "./riderPay";
+import { readRiderCashPaise } from "./riderCashBalance";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -20,8 +21,19 @@ export async function loadRiderPayRates(db: Db): Promise<RiderPayRates> {
   return rates;
 }
 
-/** Riders at or over the cash limit: no COD offers until a deposit (D-DLV-COD). */
-export async function ridersAtCashLimit(db: Db, limit: number): Promise<Set<string>> {
-  const snap = await db.collection("rider_accounts").where("cashHeld", ">=", limit).get();
-  return new Set(snap.docs.map((d) => d.id));
+/** Candidate-only cash reads, including malformed balances that cannot receive COD. */
+export async function ridersAtCashLimit(db: Db, limit: number, riderIds: readonly string[]): Promise<Set<string>> {
+  const ids = [...new Set(riderIds)];
+  const excluded = new Set<string>();
+  // Direct reads avoid filtering on a stale rupee display or scanning unrelated accounts.
+  // Keep each request bounded; no new composite query/index is introduced.
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    const refs = ids.slice(offset, offset + 100).map((id) => db.collection("rider_accounts").doc(id));
+    const accounts = await db.getAll(...refs);
+    for (const account of accounts) {
+      const held = readRiderCashPaise(account.data());
+      if (held === null || !Number.isFinite(limit) || limit < 0 || held >= limit * 100) excluded.add(account.id);
+    }
+  }
+  return excluded;
 }

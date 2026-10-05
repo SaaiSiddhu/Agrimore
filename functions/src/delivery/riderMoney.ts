@@ -43,18 +43,23 @@ import {
   statementCutoff, tripKm, validateBankDetails,
 } from "./riderPay";
 import { loadRiderPayRates } from "./riderRates";
+import { isExactMoneyAmount } from "../common/paymentIntegrity";
+import { readRiderCashPaise } from "./riderCashBalance";
 
 type Db = FirebaseFirestore.Firestore;
 
 export const riderAccountRef = (db: Db, riderId: string) => db.collection("rider_accounts").doc(riderId);
+
+/** Only absent/null markers are clear, matching the legacy paid-transition rule. */
+function hasBankChangeMarker(account: FirebaseFirestore.DocumentData): boolean {
+  return account.bankChangePending != null;
+}
 
 function millis(v: unknown): number | null {
   if (v instanceof Timestamp) return v.toMillis();
   if (v && typeof (v as { toMillis?: unknown }).toMillis === "function") return (v as { toMillis: () => number }).toMillis();
   return null;
 }
-const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
-const rupees = (x: number) => Math.round(x * 100) / 100;
 
 // ── DLV-M1: exact money ──
 // Balances used to move by FieldValue.increment of rupee floats and drifted
@@ -66,23 +71,56 @@ const rupees = (x: number) => Math.round(x * 100) / 100;
 export const toPaise = (rupeeAmount: number) => Math.round(rupeeAmount * 100);
 export const fromPaise = (paise: number) => paise / 100;
 
-/** The account's balances in paise: the paise fields, else the legacy rupee fields. */
-export function accountPaise(a: FirebaseFirestore.DocumentData | undefined): { cashP: number; earnedP: number } {
-  const cashP = Number.isInteger(a?.cashHeldPaise) ? (a!.cashHeldPaise as number) : toPaise(num(a?.cashHeld) ?? 0);
-  const earnedP = Number.isInteger(a?.earningsUnsettledPaise)
-    ? (a!.earningsUnsettledPaise as number) : toPaise(num(a?.earningsUnsettled) ?? 0);
-  return { cashP, earnedP };
+function badMoneyState(): never {
+  throw new HttpsError("failed-precondition", "The rider money record needs review", { reason: "bad_money_state" });
 }
 
-/** The exact balance fields to write (paise authoritative, rupees derived). */
+/** Safe paise must also survive the rupee display used by existing clients. */
+function checkedPaise(value: number, signed = false): number {
+  if (!Number.isSafeInteger(value) || (!signed && value < 0) ||
+      toPaise(fromPaise(value)) !== value) badMoneyState();
+  return value;
+}
+
+function exactRupeePaise(value: unknown, signed = false): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || (!signed && value < 0)) badMoneyState();
+  const p = toPaise(value);
+  if (Math.abs(value * 100 - p) >= 1e-7) badMoneyState();
+  return checkedPaise(p, signed);
+}
+
+function storedPaise(
+  data: FirebaseFirestore.DocumentData, paiseKey: string, rupeeKey: string,
+  missingZero: boolean, signed = false
+): number {
+  // Explicit paise corruption cannot fall back to a stale display balance.
+  if (Object.prototype.hasOwnProperty.call(data, paiseKey)) {
+    if (typeof data[paiseKey] !== "number") badMoneyState();
+    return checkedPaise(data[paiseKey], signed);
+  }
+  if (missingZero && !Object.prototype.hasOwnProperty.call(data, rupeeKey)) return 0;
+  return exactRupeePaise(data[rupeeKey], signed);
+}
+
+/** Paise is authoritative; only absent optional legacy balances default to zero. */
+export function accountPaise(a: FirebaseFirestore.DocumentData | undefined): { cashP: number; earnedP: number } {
+  const cashP = readRiderCashPaise(a);
+  if (cashP === null) badMoneyState();
+  return {
+    cashP,
+    earnedP: storedPaise(a ?? {}, "earningsUnsettledPaise", "earningsUnsettled", true, true),
+  };
+}
+
+/** Validate arithmetic before writing exact paise and its compatible rupee display. */
 export const balanceFields = (cashP: number, earnedP: number) => ({
-  cashHeld: fromPaise(cashP), cashHeldPaise: cashP,
-  earningsUnsettled: fromPaise(earnedP), earningsUnsettledPaise: earnedP,
+  cashHeld: fromPaise(checkedPaise(cashP)), cashHeldPaise: cashP,
+  earningsUnsettled: fromPaise(checkedPaise(earnedP, true)), earningsUnsettledPaise: earnedP,
 });
 
-/** An earning's pay in paise (totalPaise when recorded, else its rupee total). */
+/** An earning must contain valid nonnegative money; missing money is not zero pay. */
 const earningPaise = (d: FirebaseFirestore.DocumentData) =>
-  Number.isInteger(d.totalPaise) ? (d.totalPaise as number) : toPaise(num(d.total) ?? 0);
+  storedPaise(d, "totalPaise", "total", false);
 
 export type EarningVerdict =
   | { kind: "created"; total: number; cod: number }
@@ -126,13 +164,14 @@ export async function recordDeliveryEarningCore(db: Db, orderId: string, nowMs: 
       r,
     );
     const pay = riderPay(r, trip.km, wait);
-    const cod = isCashOnDelivery(o.paymentMethod) && !isPaid(o.paymentStatus) ? rupees(num(o.total) ?? 0) : 0;
+    const codP = isCashOnDelivery(o.paymentMethod) && !isPaid(o.paymentStatus) ? exactRupeePaise(o.total) : 0;
+    const cod = fromPaise(codP);
     const at = Timestamp.fromMillis(nowMs);
     const accRef = riderAccountRef(db, riderId);
     const acc = await tx.get(accRef);
     const { cashP, earnedP } = accountPaise(acc.data());
-    const payP = toPaise(pay.total);
-    const codP = toPaise(cod);
+    const payP = exactRupeePaise(pay.total);
+    const nextBalances = balanceFields(cashP + codP, earnedP + payP);
 
     tx.create(earnRef, {
       orderId,
@@ -150,7 +189,7 @@ export async function recordDeliveryEarningCore(db: Db, orderId: string, nowMs: 
       statementId: null,
       createdAt: at,
     });
-    tx.set(accRef, { riderId, ...balanceFields(cashP + codP, earnedP + payP), updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, ...nextBalances, updatedAt: at }, { merge: true });
     if (cod > 0) {
       tx.set(db.collection("rider_cash_ledger").doc(), {
         riderId, type: "cash_collected", amount: cod, amountPaise: codP, orderId, at,
@@ -178,22 +217,22 @@ export const onRiderDelivery = functions.firestore
 
 export type DepositVerdict =
   | { kind: "recorded"; cashHeld: number; already?: boolean }
-  | { kind: "refused"; reason: "more_than_held" | "bad_amount" | "bad_reference" | "bad_request_id" | "request_reused" };
+  | { kind: "refused"; reason: "more_than_held" | "bad_amount" | "bad_reference" | "bad_request_id" | "request_reused" | "bad_money_state" };
 
 const DEPOSIT_REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
 /**
  * An admin records cash a rider handed over. DLV-M1: exact paise; an amount
- * that rounds to zero paise is refused; with a request id (the admin app
+ * with fractional paise or a nonnumeric value is refused; with a request id (the admin app
  * sends one per deposit dialog) a retried call returns the first result
  * instead of recording the deposit twice, and the same id with a different
  * rider, amount or reference is refused.
  */
 export async function recordCashDepositCore(
-  db: Db, adminUid: string, riderId: string, amount: number, reference: string, nowMs: number,
+  db: Db, adminUid: string, riderId: string, amount: unknown, reference: string, nowMs: number,
   requestId: string | null = null
 ): Promise<DepositVerdict> {
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) return { kind: "refused", reason: "bad_amount" };
+  if (!isExactMoneyAmount(amount) || amount > 1000000) return { kind: "refused", reason: "bad_amount" };
   const amtP = toPaise(amount);
   if (amtP <= 0) return { kind: "refused", reason: "bad_amount" };
   if (reference.length < 2 || reference.length > 64) return { kind: "refused", reason: "bad_reference" };
@@ -204,7 +243,16 @@ export async function recordCashDepositCore(
     : db.collection("rider_cash_ledger").doc();
   return db.runTransaction(async (tx): Promise<DepositVerdict> => {
     const [acc, prior] = await Promise.all([tx.get(accRef), requestId ? tx.get(ledgerRef) : Promise.resolve(null)]);
-    const { cashP, earnedP } = accountPaise(acc.data());
+    let cashP: number, earnedP: number;
+    try {
+      ({ cashP, earnedP } = accountPaise(acc.data()));
+    } catch (error) {
+      const details = error instanceof HttpsError ? error.details as { reason?: unknown } | undefined : undefined;
+      if (details?.reason === "bad_money_state") {
+        return { kind: "refused", reason: "bad_money_state" };
+      }
+      throw error;
+    }
     if (prior?.exists) {
       const p = prior.data()!;
       const same = p.riderId === riderId && p.amountPaise === amtP && p.reference === reference;
@@ -250,26 +298,34 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
   const payoutRef = db.collection("rider_payouts").doc(id);
   const accRef = riderAccountRef(db, riderId);
   const partnerRef = db.collection("delivery_partners").doc(riderId);
-  const unsettled = db.collection("rider_earnings").where("riderId", "==", riderId).where("statementId", "==", null);
+  const unsettled = db.collection("rider_earnings")
+    .where("riderId", "==", riderId).where("statementId", "==", null)
+    .where("createdAt", "<", Timestamp.fromMillis(cutoffMs))
+    .orderBy("createdAt", "asc").limit(MAX_LINES_PER_STATEMENT + 1);
   return db.runTransaction(async (tx): Promise<StatementVerdict> => {
-    const [existing, acc, partner, lines] = await Promise.all([tx.get(payoutRef), tx.get(accRef), tx.get(partnerRef), tx.get(unsettled)]);
+    // A completed part is immutable: retry needs only its transaction anchor,
+    // not a new account/destination read or another unsettled-earnings scan.
+    const existing = await tx.get(payoutRef);
     if (existing.exists) return { kind: "exists" };
+    const [acc, partner, lines] = await Promise.all([tx.get(accRef), tx.get(partnerRef), tx.get(unsettled)]);
     const eligible = lines.docs
       .filter((d) => (millis(d.data().createdAt) ?? Infinity) < cutoffMs)
       .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0));
     const covered = eligible.slice(0, MAX_LINES_PER_STATEMENT);
     const more = eligible.length > covered.length;
-    const earnedP = covered.reduce((sum, d) => sum + earningPaise(d.data()), 0);
+    const earnedP = covered.reduce((sum, d) => checkedPaise(sum + earningPaise(d.data())), 0);
     const a = acc.data() ?? {};
     const { cashP, earnedP: unsettledP } = accountPaise(a);
     if (earnedP <= 0 && (part > 1 || cashP <= 0)) return { kind: "nothing" };
     const nettedP = Math.min(Math.max(earnedP, 0), Math.max(cashP, 0));
     const payoutP = earnedP - nettedP;
-    const cashAfterP = cashP - nettedP;
+    const cashAfterP = checkedPaise(cashP - nettedP);
+    checkedPaise(payoutP);
+    const nextBalances = balanceFields(cashAfterP, unsettledP - earnedP);
     let status = "nothing_to_pay";
     let holdReason: string | null = null;
     if (payoutP > 0) {
-      if (typeof a.bankChangePending === "string" && a.bankChangePending) { status = "on_hold"; holdReason = "bank_change_pending"; }
+      if (hasBankChangeMarker(a)) { status = "on_hold"; holdReason = "bank_change_pending"; }
       else if (!hasPayoutDestination(partner.data())) { status = "on_hold"; holdReason = "no_bank_details"; }
       else status = "pending";
     }
@@ -284,7 +340,7 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
       orderCount: covered.length, status, holdReason, createdAt: at, updatedAt: at,
     });
     for (const d of covered) tx.update(d.ref, { statementId: id, settledAt: at });
-    tx.set(accRef, { riderId, ...balanceFields(cashAfterP, unsettledP - earnedP), lastStatementId: id, updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, ...nextBalances, lastStatementId: id, updatedAt: at }, { merge: true });
     if (nettedP > 0) {
       tx.set(db.collection("rider_cash_ledger").doc(), {
         riderId, type: "netted_against_payout", amount: fromPaise(nettedP), amountPaise: nettedP, statementId: id, at,
@@ -305,26 +361,40 @@ export async function buildRiderStatementParts(db: Db, riderId: string, nowMs: n
   return out;
 }
 
+// The account population is one snapshot even while per-rider transactions
+// update balances. Read-only callbacks are not retried by this SDK; economic
+// writes stay in the existing independently anchored per-rider transactions.
+const RIDER_ACCOUNT_PAGE_SIZE = 100;
+
 export async function buildAllStatements(db: Db, nowMs: number) {
-  const accounts = await db.collection("rider_accounts").get();
-  const out = { created: 0, exists: 0, nothing: 0, failed: 0 };
-  for (const a of accounts.docs) {
-    try {
-      for (const v of await buildRiderStatementParts(db, a.id, nowMs)) {
-        out[v.kind === "created" ? "created" : v.kind] += 1;
-        if (v.kind === "created") {
-          // DLV-N1: the inbox says a statement was made — not that money was sent.
-          const p = (await db.collection("rider_payouts").doc(v.id).get()).data() ?? {};
-          await tellRider(db, a.id, statementNotice({ id: v.id, amountPaise: Number(p.amountPaise ?? 0),
-            status: String(p.status ?? ""), holdReason: p.holdReason ?? null }), nowMs);
+  return db.runTransaction(async (readTx) => {
+    const query = db.collection("rider_accounts").select();
+    let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+    const out = { created: 0, exists: 0, nothing: 0, failed: 0 };
+    for (;;) {
+      const pageQuery = last ? query.startAfter(last).limit(RIDER_ACCOUNT_PAGE_SIZE) : query.limit(RIDER_ACCOUNT_PAGE_SIZE);
+      const accounts = await readTx.get(pageQuery);
+      for (const a of accounts.docs) {
+        try {
+          for (const v of await buildRiderStatementParts(db, a.id, nowMs)) {
+            out[v.kind === "created" ? "created" : v.kind] += 1;
+            if (v.kind === "created") {
+              // DLV-N1: the inbox says a statement was made — not that money was sent.
+              const p = (await db.collection("rider_payouts").doc(v.id).get()).data() ?? {};
+              await tellRider(db, a.id, statementNotice({ id: v.id, amountPaise: Number(p.amountPaise ?? 0),
+                status: String(p.status ?? ""), holdReason: p.holdReason ?? null }), nowMs);
+            }
+          }
+        } catch (e) {
+          out.failed += 1;
+          console.error(`[buildRiderStatements] ${a.id}: ${(e as Error)?.message ?? e}`);
         }
       }
-    } catch (e) {
-      out.failed += 1;
-      console.error(`[buildRiderStatements] ${a.id}: ${(e as Error)?.message ?? e}`);
+      if (accounts.size < RIDER_ACCOUNT_PAGE_SIZE) break;
+      last = accounts.docs[accounts.docs.length - 1];
     }
-  }
-  return out;
+    return out;
+  }, { readOnly: true });
 }
 
 export const buildRiderStatements = onSchedule(
@@ -337,6 +407,20 @@ export const buildRiderStatements = onSchedule(
 
 // ── bank details (D-DLV-BANK) ──
 
+const BANK_PAYOUT_QUERY_PAGE_SIZE = 100;
+
+/** Complete query snapshot traversal; all reads finish before bank-change writes. */
+async function* bankPayoutPages(tx: FirebaseFirestore.Transaction, query: FirebaseFirestore.Query) {
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  for (;;) {
+    const pageQuery = last ? query.startAfter(last).limit(BANK_PAYOUT_QUERY_PAGE_SIZE) : query.limit(BANK_PAYOUT_QUERY_PAGE_SIZE);
+    const page = await tx.get(pageQuery);
+    yield page;
+    if (page.size < BANK_PAYOUT_QUERY_PAGE_SIZE) return;
+    last = page.docs[page.docs.length - 1];
+  }
+}
+
 export type BankRequestVerdict = { kind: "requested"; id: string } | { kind: "refused"; reason: "not_a_rider" | "already_pending" | string };
 
 export async function requestBankChangeCore(db: Db, riderId: string, data: unknown, nowMs: number): Promise<BankRequestVerdict> {
@@ -348,22 +432,34 @@ export async function requestBankChangeCore(db: Db, riderId: string, data: unkno
   // DLV-M1: statements already waiting to be paid are held too — before, a
   // change requested after a statement became pending did not stop an
   // admin paying the old destination.
-  const pendingPayouts = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "pending");
+  const pendingPayouts = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "pending").select();
   return db.runTransaction(async (tx): Promise<BankRequestVerdict> => {
-    const [partner, acc, pending] = await Promise.all([tx.get(partnerRef), tx.get(accRef), tx.get(pendingPayouts)]);
+    const [partner, acc] = await Promise.all([tx.get(partnerRef), tx.get(accRef)]);
     if (!partner.exists) return { kind: "refused", reason: "not_a_rider" };
-    if (typeof acc.data()?.bankChangePending === "string" && acc.data()!.bankChangePending) return { kind: "refused", reason: "already_pending" };
+    if (hasBankChangeMarker(acc.data() ?? {})) return { kind: "refused", reason: "already_pending" };
+    const pendingRefs: FirebaseFirestore.DocumentReference[] = [];
+    for await (const page of bankPayoutPages(tx, pendingPayouts)) {
+      for (const p of page.docs) pendingRefs.push(p.ref);
+    }
     const at = Timestamp.fromMillis(nowMs);
     tx.create(reqRef, { riderId, ...v.value, status: "pending", createdAt: at, updatedAt: at });
     tx.set(accRef, { riderId, bankChangePending: reqRef.id, updatedAt: at }, { merge: true });
-    for (const p of pending.docs) {
-      tx.update(p.ref, { status: "on_hold", holdReason: "bank_change_pending", heldAt: at, updatedAt: at });
+    for (const ref of pendingRefs) {
+      tx.update(ref, { status: "on_hold", holdReason: "bank_change_pending", heldAt: at, updatedAt: at });
     }
     return { kind: "requested", id: reqRef.id };
   });
 }
 
-export type BankReviewVerdict = { kind: "approved" | "rejected"; released: number } | { kind: "refused"; reason: "not_found" | "not_pending" | "reason_required" };
+export type BankReviewVerdict = { kind: "approved" | "rejected"; released: number } | { kind: "refused"; reason: "not_found" | "not_pending" | "reason_required" | "bank_review_state" };
+
+/** A stored rider owner must be one Firestore document ID, not a path. */
+function validRiderDocumentId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= 1500 && !value.includes("/") &&
+    value !== "." && value !== ".." && !/^__.*__$/.test(value) &&
+    Buffer.from(value, "utf8").toString("utf8") === value;
+}
 
 export async function reviewBankChangeCore(
   db: Db, adminUid: string, requestId: string, approve: boolean, reason: string | null, nowMs: number
@@ -375,12 +471,27 @@ export async function reviewBankChangeCore(
     if (!req.exists) return { kind: "refused", reason: "not_found" };
     const r = req.data()!;
     if (r.status !== "pending") return { kind: "refused", reason: "not_pending" };
-    const riderId = r.riderId as string;
+    if (!validRiderDocumentId(r.riderId)) return { kind: "refused", reason: "bank_review_state" };
+    const riderId = r.riderId;
     const partnerRef = db.collection("delivery_partners").doc(riderId);
-    const held = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "on_hold");
-    const [partner, holds] = await Promise.all([tx.get(partnerRef), tx.get(held)]);
+    const accRef = riderAccountRef(db, riderId);
+    const [partner, acc] = await Promise.all([tx.get(partnerRef), tx.get(accRef)]);
+    const account = acc.data() ?? {};
+    if (!partner.exists || !acc.exists || account.bankChangePending !== requestId ||
+        (Object.prototype.hasOwnProperty.call(account, "riderId") && account.riderId !== riderId)) {
+      return { kind: "refused", reason: "bank_review_state" };
+    }
+    const validated = approve ? validateBankDetails(r) : null;
+    if (approve && !validated?.ok) return { kind: "refused", reason: "bank_review_state" };
+    const held = db.collection("rider_payouts").where("riderId", "==", riderId).where("status", "==", "on_hold").select("holdReason");
+    const releasableRefs: FirebaseFirestore.DocumentReference[] = [];
+    for await (const page of bankPayoutPages(tx, held)) {
+      for (const h of page.docs) {
+        if (["bank_change_pending", "no_bank_details"].includes(h.data().holdReason)) releasableRefs.push(h.ref);
+      }
+    }
     const at = Timestamp.fromMillis(nowMs);
-    const details = {
+    const details = validated?.ok ? validated.value : {
       accountHolderName: r.accountHolderName ?? null,
       bankAccountNumber: r.bankAccountNumber ?? null,
       ifscCode: r.ifscCode ?? null,
@@ -393,14 +504,12 @@ export async function reviewBankChangeCore(
       reviewedBy: adminUid, reviewedAt: at, rejectionReason: approve ? null : reason, updatedAt: at,
     });
     if (approve) tx.update(partnerRef, { ...details, bankDetailsUpdatedAt: at });
-    tx.set(riderAccountRef(db, riderId), { riderId, bankChangePending: null, updatedAt: at }, { merge: true });
+    tx.set(accRef, { riderId, bankChangePending: null, updatedAt: at }, { merge: true });
     let released = 0;
     if (hasPayoutDestination(destination)) {
-      for (const h of holds.docs) {
-        if (["bank_change_pending", "no_bank_details"].includes(h.data().holdReason)) {
-          tx.update(h.ref, { status: "pending", holdReason: null, releasedAt: at, updatedAt: at });
-          released += 1;
-        }
+      for (const ref of releasableRefs) {
+        tx.update(ref, { status: "pending", holdReason: null, releasedAt: at, updatedAt: at });
+        released += 1;
       }
     }
     return { kind: approve ? "approved" : "rejected", released };
@@ -411,7 +520,7 @@ export async function reviewBankChangeCore(
 
 export type PaidVerdict =
   | { kind: "paid" | "already"; paidTo: Record<string, unknown> }
-  | { kind: "refused"; reason: "not_found" | "payout_not_pending" | "bank_change_pending" | "no_destination" | "bad_reference" | "bad_method" };
+  | { kind: "refused"; reason: "not_found" | "payout_not_pending" | "payout_review_state" | "bank_change_pending" | "no_destination" | "bad_reference" | "bad_method" };
 
 /**
  * DLV-M1: an admin marks a pending statement paid, in a transaction that
@@ -433,9 +542,14 @@ export async function markPayoutPaidCore(
     const p = payout.data()!;
     if (p.status === "paid" && p.paymentReference === ref) return { kind: "already", paidTo: p.paidTo ?? {} };
     if (p.status !== "pending") return { kind: "refused", reason: "payout_not_pending" };
-    const riderId = String(p.riderId);
+    if (!validRiderDocumentId(p.riderId)) return { kind: "refused", reason: "payout_review_state" };
+    const riderId = p.riderId;
     const [acc, partner] = await Promise.all([tx.get(riderAccountRef(db, riderId)), tx.get(db.collection("delivery_partners").doc(riderId))]);
-    if (typeof acc.data()?.bankChangePending === "string" && acc.data()!.bankChangePending) {
+    const account = acc.data() ?? {};
+    if (!acc.exists || (account.riderId !== undefined && account.riderId !== riderId)) {
+      return { kind: "refused", reason: "payout_review_state" };
+    }
+    if (hasBankChangeMarker(acc.data() ?? {})) {
       return { kind: "refused", reason: "bank_change_pending" };
     }
     const d = partner.data() ?? {};
@@ -469,10 +583,12 @@ async function requireAdmin(request: { auth?: { uid: string; token: Record<strin
 const REFUSAL_TEXT: Record<string, string> = {
   more_than_held: "That is more cash than the rider holds",
   bad_amount: "Enter an amount greater than zero",
+  bad_money_state: "The rider balance needs review before recording cash",
   bad_reference: "Enter a receipt or reference (2–64 characters)",
   bad_request_id: "The request could not be read",
   request_reused: "This deposit was already recorded with different details",
   payout_not_pending: "This statement is not waiting to be paid",
+  payout_review_state: "This statement needs review against the rider's current payout records",
   bank_change_pending: "The rider has a payout-detail change waiting for review",
   no_destination: "The rider has no payout details for that method",
   bad_method: "Choose bank or UPI",
@@ -480,6 +596,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   already_pending: "A change is already waiting for review",
   not_found: "Request not found",
   not_pending: "This request has already been reviewed",
+  bank_review_state: "This bank change needs review against the rider's current payout records",
   reason_required: "Give a reason for rejecting (3–200 characters)",
 };
 function refuse(reason: string): never {
@@ -492,7 +609,7 @@ export const recordRiderCashDeposit = onCall({ minInstances: 0, memory: "256MiB"
   const d = (request.data ?? {}) as Record<string, unknown>;
   const riderId = typeof d.riderId === "string" ? d.riderId.trim() : "";
   if (!riderId) throw new HttpsError("invalid-argument", "riderId is required");
-  const v = await recordCashDepositCore(admin.firestore(), adminUid, riderId, Number(d.amount),
+  const v = await recordCashDepositCore(admin.firestore(), adminUid, riderId, d.amount,
     typeof d.reference === "string" ? d.reference.trim() : "", Date.now(),
     typeof d.requestId === "string" ? d.requestId : null);
   if (v.kind === "refused") refuse(v.reason);

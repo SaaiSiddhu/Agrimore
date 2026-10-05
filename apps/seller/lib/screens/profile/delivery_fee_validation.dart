@@ -11,7 +11,7 @@ const int kMaxFeeRupees = 1000;
 const int kMaxSlabs = 10;
 
 /// Why a schedule was refused.
-enum FeeError { flatInvalid, tooHigh, noTiers, tooManyTiers, tierMin, tierFee, noZeroTier }
+enum FeeError { flatInvalid, tooHigh, distanceBase, distanceRate, precision, noLocation, noTiers, tooManyTiers, tierMin, tierFee, noZeroTier }
 
 /// One slab row's already-parsed numeric inputs — null means the field
 /// could not be parsed as a number (e.g. empty or non-numeric text).
@@ -21,6 +21,18 @@ typedef SlabInput = ({double? minOrderValue, double? fee});
 FeeError? validateFlatFee(double? amount) {
   if (amount == null || amount < 0) return FeeError.flatInvalid;
   if (amount > kMaxFeeRupees) return FeeError.tooHigh;
+  return null;
+}
+
+/// Distance fee components are stored as integer paise and must fit the
+/// server's safe-money bounds. A positive rate is required; base may be zero.
+FeeError? validateDistanceFee({required double? baseRupees, required double? rateRupeesPerKm}) {
+  if (baseRupees == null || !baseRupees.isFinite || baseRupees < 0 || baseRupees > kMaxFeeRupees) return FeeError.distanceBase;
+  if (rateRupeesPerKm == null || !rateRupeesPerKm.isFinite || rateRupeesPerKm <= 0 || rateRupeesPerKm > kMaxFeeRupees) return FeeError.distanceRate;
+  if ((baseRupees * 100 - (baseRupees * 100).round()).abs() > 1e-7 ||
+      (rateRupeesPerKm * 100 - (rateRupeesPerKm * 100).round()).abs() > 1e-7) {
+    return FeeError.precision;
+  }
   return null;
 }
 
@@ -46,6 +58,10 @@ FeeError? validateSlabSchedule(List<SlabInput> slabs) {
 String feeErrorText(AppLocalizations l10n, FeeError e, String maxFee) => switch (e) {
       FeeError.flatInvalid => l10n.feeErrFlatInvalid,
       FeeError.tooHigh => l10n.feeErrTooHigh(maxFee),
+      FeeError.distanceBase => l10n.feeErrDistanceBase,
+      FeeError.distanceRate => l10n.feeErrDistanceRate,
+      FeeError.precision => l10n.feeErrPaisePrecision,
+      FeeError.noLocation => l10n.feeErrShopLocation,
       FeeError.noTiers => l10n.feeErrNoTiers,
       FeeError.tooManyTiers => l10n.feeErrTooManyTiers(kMaxSlabs),
       FeeError.tierMin => l10n.feeErrTierMin,

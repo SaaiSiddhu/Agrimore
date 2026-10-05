@@ -1,0 +1,54 @@
+# Agrimore Delivery — C14 exact image prompts
+
+Built-in image_gen; **PROVISIONAL_DIRECTION / TARGET_IMPLEMENTATION**. Exact fenced prompts and reference inputs recorded for every selected generation stage. For a false Original final newline, omit the separator newline before the closing fence when reproducing the hash.
+
+## Light — initial generation
+
+Prompt SHA-256: fa976379fafd06465fb90713cf2b04c7b7d5df0032d47fe4e369ac1a549b2869. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png · SHA-256 2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C14 premium Storybook design-system board, Agrimore Delivery / LIGHT, full landscape image approximately 1536 x 1024.
+Input image 1 is the APPROVED C01 light color identity reference ONLY. Inherit its palette, Inter hierarchy, surface/radius/elevation language. New subject: Loading, empty, error and restricted states. Do not reproduce a token table.
+No sidebar or device/browser chrome. Heading exactly "Agrimore Delivery" and a small "Light" theme chip. Subtitle exactly "Loading, empty, error and restricted states". Small "C14 / Design proposal". Four generous specimen panels in a clearly separated 2x2 grid, labelled Loading, Empty, Error, Restricted in reading order. Each panel combines a real app-domain state specimen with short helpful annotations. Make content legible, concise, premium and generous, never tiny dense prose. Domain character: High-contrast black/white field-use states with large controls, burgundy restrictions, burnt-orange connectivity cues and calm neutral cached-data guidance.
+Locked palette: primary #191919; onPrimary #FFFFFF; support #A94D24; canvas #F8F7F6; surface #FFFFFF; raised #FAF9F8; text #1C1C1C; muted #686260; border #DDD7D4; strongBorder #A49993; selected #F5E7EC; focus #A94D24; burgundy #7A2840. Status pairs [{"role": "Success", "container": "#E7F5ED", "text": "#146C43"}, {"role": "Warning", "container": "#FBEDE3", "text": "#88451E"}, {"role": "Error", "container": "#F5E7EC", "text": "#7A2840"}, {"role": "Info", "container": "#ECEAE8", "text": "#59534F"}]. ALL primary-filled actions use #191919 and inverse label #FFFFFF, INCLUDING Retry. Supporting accents for contextual cues only; never replace primary actions with generic green or bright cyan. Error and warning tone appears in icon/helper containers, not the whole panel. Dark canvas neutral near-black with dark-grey surfaces, no saturated green/blue panels, white cards, neon or glossy gradients. Pale dark-mode filled actions require DARK labels.
+Inter scale [32, 24, 20, 17, 14, 12], weights [700, 600, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 8, "Card": 12, "Sheet / dialog": 18}px; 1px borders, 2px focus, 48px comfortable targets. Use simple outline icons plus explicit state text, not color alone.
+Exact four panel content:
+1. Loading: Wide task skeleton with neutral icon block and text bars. Heading "Loading active work". Helper "Checking assigned orders". Thin neutral inset "Cached work / Last-known information" with text "Refresh unavailable"; note "Do not treat cached status as live". No map, address, task ID or fabricated job.
+2. Empty: Minimal parcel outline. Title "No active assignments". Body "Your assigned-work list is empty." Outlined button "View history". Small burnt-orange caption "Only after a successful current read". Do not promise work will arrive, imply online status, or display Go online.
+3. Error: Offline icon with title "Couldn’t connect". Body "Check your connection and try loading again." Large primary button "Retry". Separate small inset labelled Access error: "Can’t read orders" and text actions "Sign in again" and "Contact support". No generic Retry on the permission-error inset.
+4. Restricted: Two distinct small cases. Pending review: "Application under review", helper "Work access waits for approval", button "Edit application". Suspended: "Account suspended", helper "An admin must restore work access", actions "Contact support" and "Sign out". Burgundy restricted accents; burnt-orange context. No approval time, automatic reinstatement or resubmit action on suspended case.
+Non-negotiable semantics: skeletons indicate unknown content, never fabricate a product record, live amount or ID. First load versus refresh versus cached/last-known are distinct. Empty can only follow successful applicable loading; no-match is scoped to loaded records. An error is never shown as empty. Retry loads the recoverable read only, not a mutation, account approval or permission bypass. Rejected/pending/suspended/auth-required remain separate. No invented totals, percentages, wait time, progress completion, ETA, money, actual names, phone/email, address, record/order code, backend exception, success tick or outcome guarantees.
+All four panels are separate illustrative examples, not simultaneous live states. Footer exactly "Illustrative states / Target design / C01 identity". No sidebar, unrelated token chart, fake metrics, watermark or promotional copy.
+```
+
+## Dark — initial generation
+
+Prompt SHA-256: 8a12ddb73f90909ae109b4c850b788e456bdabf8bd87073fe4467ed15dcbad3b. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png · SHA-256 745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4
+- /Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ea974acf-8ed0-4372-bea1-2513d15b9eb0.png · SHA-256 76c99eb74da02599fed95f2643c9f1885284cb2ab258f2d2dbcecfc769e3227d
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C14 premium Storybook design-system board, Agrimore Delivery / DARK, full landscape image approximately 1536 x 1024.
+Input image 1 is the APPROVED C01 dark color identity reference ONLY. Inherit its palette, Inter hierarchy, surface/radius/elevation language. New subject: Loading, empty, error and restricted states. Do not reproduce a token table.
+No sidebar or device/browser chrome. Heading exactly "Agrimore Delivery" and a small "Dark" theme chip. Subtitle exactly "Loading, empty, error and restricted states". Small "C14 / Design proposal". Four generous specimen panels in a clearly separated 2x2 grid, labelled Loading, Empty, Error, Restricted in reading order. Each panel combines a real app-domain state specimen with short helpful annotations. Make content legible, concise, premium and generous, never tiny dense prose. Domain character: High-contrast black/white field-use states with large controls, burgundy restrictions, burnt-orange connectivity cues and calm neutral cached-data guidance.
+Locked palette: primary #F4F4F4; onPrimary #151515; support #ECA06D; canvas #090909; surface #151515; raised #222222; text #F5F3F2; muted #C3BAB7; border #3C3633; strongBorder #91857E; selected #3B2029; focus #ECA06D; burgundy #DCA0B1. Status pairs [{"role": "Success", "container": "#102C20", "text": "#8DE0B0"}, {"role": "Warning", "container": "#342418", "text": "#F0BE98"}, {"role": "Error", "container": "#3B2029", "text": "#E3A8B9"}, {"role": "Info", "container": "#282523", "text": "#D3C8C1"}]. ALL primary-filled actions use #F4F4F4 and inverse label #151515, INCLUDING Retry. Supporting accents for contextual cues only; never replace primary actions with generic green or bright cyan. Error and warning tone appears in icon/helper containers, not the whole panel. Dark canvas neutral near-black with dark-grey surfaces, no saturated green/blue panels, white cards, neon or glossy gradients. Pale dark-mode filled actions require DARK labels.
+Inter scale [32, 24, 20, 17, 14, 12], weights [700, 600, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 8, "Card": 12, "Sheet / dialog": 18}px; 1px borders, 2px focus, 48px comfortable targets. Use simple outline icons plus explicit state text, not color alone.
+Exact four panel content:
+1. Loading: Wide task skeleton with neutral icon block and text bars. Heading "Loading active work". Helper "Checking assigned orders". Thin neutral inset "Cached work / Last-known information" with text "Refresh unavailable"; note "Do not treat cached status as live". No map, address, task ID or fabricated job.
+2. Empty: Minimal parcel outline. Title "No active assignments". Body "Your assigned-work list is empty." Outlined button "View history". Small burnt-orange caption "Only after a successful current read". Do not promise work will arrive, imply online status, or display Go online.
+3. Error: Offline icon with title "Couldn’t connect". Body "Check your connection and try loading again." Large primary button "Retry". Separate small inset labelled Access error: "Can’t read orders" and text actions "Sign in again" and "Contact support". No generic Retry on the permission-error inset.
+4. Restricted: Two distinct small cases. Pending review: "Application under review", helper "Work access waits for approval", button "Edit application". Suspended: "Account suspended", helper "An admin must restore work access", actions "Contact support" and "Sign out". Burgundy restricted accents; burnt-orange context. No approval time, automatic reinstatement or resubmit action on suspended case.
+Non-negotiable semantics: skeletons indicate unknown content, never fabricate a product record, live amount or ID. First load versus refresh versus cached/last-known are distinct. Empty can only follow successful applicable loading; no-match is scoped to loaded records. An error is never shown as empty. Retry loads the recoverable read only, not a mutation, account approval or permission bypass. Rejected/pending/suspended/auth-required remain separate. No invented totals, percentages, wait time, progress completion, ETA, money, actual names, phone/email, address, record/order code, backend exception, success tick or outcome guarantees.
+All four panels are separate illustrative examples, not simultaneous live states. Footer exactly "Illustrative states / Target design / C01 identity". No sidebar, unrelated token chart, fake metrics, watermark or promotional copy.
+Additional references: image 1 is C01 DARK and governs all colors. Image 2 is this app's selected C14 LIGHT board, used ONLY to preserve the four-panel composition and exact domain labels/actions. Rebuild the entire canvas, cards, skeletons, inset surfaces, status containers and text with the locked DARK palette. Retain independent cases and readable hierarchy. ALL filled buttons, including Retry and Contact support, must use primary #F4F4F4 with dark inverse text #151515. Do not copy white light-mode text onto pale buttons. Dark panels are neutral #151515 / #222222, not saturated hue.
+```
+

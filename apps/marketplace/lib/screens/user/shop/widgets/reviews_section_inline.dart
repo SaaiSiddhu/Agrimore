@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/review_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import 'add_review_dialog.dart';
 import 'review_card.dart';
+import 'review_feed.dart';
 
 /// Inline version of ReviewsSection for use in CustomScrollView (no Expanded)
 class ReviewsSectionInline extends StatefulWidget {
@@ -26,12 +26,37 @@ class ReviewsSectionInline extends StatefulWidget {
 }
 
 class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
+  ReviewProvider? _statsProvider;
+  String? _statsProduct;
+  int _statsRequest = 0;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleStats();
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewsSectionInline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleStats();
+  }
+
+  void _scheduleStats() {
+    final provider = Provider.of<ReviewProvider>(context);
+    final product = widget.productId;
+    if (identical(provider, _statsProvider) && product == _statsProduct) return;
+    _statsProvider = provider;
+    _statsProduct = product;
+    final request = ++_statsRequest;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ReviewProvider>(context, listen: false)
-          .loadReviewStats(widget.productId);
+      if (!mounted ||
+          request != _statsRequest ||
+          product != widget.productId ||
+          !identical(context.read<ReviewProvider>(), provider)) {
+        return;
+      }
+      provider.loadReviewStats(product);
     });
   }
 
@@ -41,7 +66,8 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
   /// this file's own scope, so this reuses the same ReviewProvider stream
   /// and ReviewCard already imported here, in a scrollable sheet.
   void _showAllReviews(BuildContext context) {
-    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    final product = widget.productId;
+    final dark = widget.isDark;
 
     showModalBottomSheet(
       context: context,
@@ -56,8 +82,9 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
           builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
-                color: widget.isDark ? AppColors.surfaceDark : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                color: dark ? AppColors.surfaceDark : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
                 children: [
@@ -66,7 +93,7 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: widget.isDark ? Colors.grey[700] : Colors.grey[300],
+                      color: dark ? Colors.grey[700] : Colors.grey[300],
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -79,24 +106,22 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
                           'All Reviews',
                           style: AppTextStyles.titleLarge.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: widget.isDark ? Colors.white : Colors.black87,
+                            color: dark ? Colors.white : Colors.black87,
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: widget.isDark ? Colors.grey[400] : Colors.grey[600]),
+                          icon: Icon(Icons.close,
+                              color:
+                                  dark ? Colors.grey[400] : Colors.grey[600]),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
                   ),
                   Expanded(
-                    child: StreamBuilder<List<ReviewModel>>(
-                      stream: reviewProvider.getReviewsStream(widget.productId),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        final reviews = snapshot.data ?? [];
+                    child: ReviewFeed(
+                      productId: product,
+                      builder: (context, reviews) {
                         if (reviews.isEmpty) {
                           return _buildEmptyState();
                         }
@@ -106,7 +131,8 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
                           itemCount: reviews.length,
                           itemBuilder: (context, index) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: ReviewCard(review: reviews[index], isDark: widget.isDark),
+                            child: ReviewCard(
+                                review: reviews[index], isDark: dark),
                           ),
                         );
                       },
@@ -141,8 +167,9 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = widget.isDark ? AppColors.primaryLight : AppColors.primary;
-    
+    final accentColor =
+        widget.isDark ? AppColors.primaryLight : AppColors.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -151,65 +178,60 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Customer Reviews',
-              style: AppTextStyles.titleLarge.copyWith(
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.white : Colors.black87,
+            Expanded(
+              child: Text(
+                'Customer Reviews',
+                style: AppTextStyles.titleLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: widget.isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ),
             TextButton.icon(
               onPressed: _showAddReviewDialog,
-              icon: Icon(Icons.add_comment_outlined, size: 16, color: accentColor),
-              label: Text('Add Review', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.add_comment_outlined,
+                  size: 16, color: accentColor),
+              label: Text('Add Review',
+                  style: TextStyle(
+                      color: accentColor, fontWeight: FontWeight.bold)),
               style: TextButton.styleFrom(
                 backgroundColor: accentColor.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        
+
         // Stats Section
         _buildStatsSection(),
-        
+
         const SizedBox(height: 24),
-        
+
         // Reviews List (limited to show first few reviews)
-        StreamBuilder<List<ReviewModel>>(
-          stream: Provider.of<ReviewProvider>(context, listen: false)
-              .getReviewsStream(widget.productId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            
-            final reviews = snapshot.data ?? [];
-            
+        ReviewFeed(
+          productId: widget.productId,
+          builder: (context, reviews) {
             if (reviews.isEmpty) {
               return _buildEmptyState();
             }
-            
+
             // Show first 3 reviews inline
             final displayReviews = reviews.take(3).toList();
             return Column(
               children: [
                 ...displayReviews.map((review) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ReviewCard(review: review, isDark: widget.isDark),
-                )),
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: ReviewCard(review: review, isDark: widget.isDark),
+                    )),
                 if (reviews.length > 3)
                   TextButton(
                     onPressed: () => _showAllReviews(context),
                     child: Text(
                       'View all ${reviews.length} reviews',
-                      style: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: accentColor, fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -223,13 +245,27 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
   Widget _buildStatsSection() {
     return Consumer<ReviewProvider>(
       builder: (context, provider, child) {
-        if (provider.reviewStats == null) {
+        final product = widget.productId;
+        if (provider.hasStatsError(product)) {
+          return ErrorView(
+            message: 'Review ratings are unavailable right now.',
+            useThemeColors: true,
+            onRetry: () {
+              if (mounted &&
+                  product == widget.productId &&
+                  identical(context.read<ReviewProvider>(), provider)) {
+                provider.loadReviewStats(product);
+              }
+            },
+          );
+        }
+        if (provider.reviewStatsFor(widget.productId) == null) {
           return const SizedBox(
             height: 120,
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final stats = provider.reviewStats!;
+        final stats = provider.reviewStatsFor(widget.productId)!;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -253,18 +289,23 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (i) => Icon(
-                        i < stats.averageRating.floor() ? Icons.star_rounded : Icons.star_border_rounded,
-                        color: Colors.amber[700],
-                        size: 14,
-                      )),
+                      children: List.generate(
+                          5,
+                          (i) => Icon(
+                                i < stats.averageRating.floor()
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color: Colors.amber[700],
+                                size: 14,
+                              )),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${stats.totalReviews} Reviews',
                       style: TextStyle(
                         fontSize: 12,
-                        color: widget.isDark ? Colors.grey[400] : Colors.grey[600],
+                        color:
+                            widget.isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -304,7 +345,10 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
         children: [
           Text(
             '$stars',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.grey[400] : Colors.grey[600]),
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: widget.isDark ? Colors.grey[400] : Colors.grey[600]),
           ),
           const SizedBox(width: 4),
           Icon(Icons.star, color: Colors.amber[700], size: 10),
@@ -314,7 +358,8 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
               borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(
                 value: percentage / 100,
-                backgroundColor: widget.isDark ? Colors.grey[700] : Colors.grey[300],
+                backgroundColor:
+                    widget.isDark ? Colors.grey[700] : Colors.grey[300],
                 color: Colors.amber[700],
                 minHeight: 5,
               ),
@@ -332,16 +377,23 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.reviews_outlined, size: 48, color: widget.isDark ? Colors.grey[700] : Colors.grey[400]),
+            Icon(Icons.reviews_outlined,
+                size: 48,
+                color: widget.isDark ? Colors.grey[700] : Colors.grey[400]),
             const SizedBox(height: 12),
             Text(
               'No Reviews Yet',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white70 : Colors.black87),
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: widget.isDark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(height: 6),
             Text(
               'Be the first to share your thoughts!',
-              style: TextStyle(fontSize: 13, color: widget.isDark ? Colors.grey[500] : Colors.grey[600]),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: widget.isDark ? Colors.grey[500] : Colors.grey[600]),
             ),
           ],
         ),

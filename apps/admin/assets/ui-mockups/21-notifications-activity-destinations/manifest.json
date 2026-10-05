@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "foundation": "C21: Notifications, activity and destinations",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "066981a885caffbb917c102ef4d14de9fb64c9dc",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272064
+  },
+  "domain_style": "Professional-blue notification operations/history, cyan destination preview guidance, steel/slate immutable activity rows and restrained operational provenance labels.",
+  "panels": [
+    {
+      "label": "Outbound and case activity",
+      "specimen": "Card \"Notification history\" with generic row \"Notification record\", outline history icon, EMPTY body skeletons and small type chip \"General\"; second slim row \"Case activity\" with EMPTY skeleton. Cyan BOARD notes \"Outbound history / not a personal inbox\" and \"Activity entries are not mark-read controls\". No unread badge on outbound record, sent/delivered/read recipient receipt or metrics."
+    },
+    {
+      "label": "Operational timestamp provenance",
+      "specimen": "Card \"Recorded time\", exact fixed FORMAT EXAMPLE \"18 Sep 2026 \u00b7 09:40\"; secondary \"Time unavailable\". Cyan BOARD notes \"Format example / use authoritative event time\" and \"History time is not a read receipt\". No relative age, Just now, created success or invented operator."
+    },
+    {
+      "label": "Recipient state preview",
+      "specimen": "CLEAR heading \"Recipient preview only\". Two compact synthetic preview rows \"Notification\" with EMPTY body skeleton: one blue dot, bold \"Unread\"; one normal \"Read\" and no dot. Cyan BOARD annotation \"Styling preview / no recipient receipt\". NO Mark all read, success tick, read statistics or claim admin observes actual recipient reads."
+    },
+    {
+      "label": "Destination review",
+      "specimen": "Card \"Review notification destination\", outline link icon, neutral destination descriptor \"Order details\", PRIMARY \"Review destination\". Cyan BOARD notes \"Proposed typed preview\" and \"Verify role, record and access before sending\". No actual Send/Broadcast control, raw URL, target ID, user identity or external-launch guarantee."
+    }
+  ],
+  "notice_contract": [
+    "Read/unread is notification attention state, not order approval, payment settlement, task completion, deletion or recipient delivery proof.",
+    "Normalize documented writer schemas deliberately across unread/read/legacy isRead and existing title/body/message/actionUrl locations. Badge/query interpretation must match rows; owner rules permit only approved read fields.",
+    "Unknown badge/read load is not zero/caught up. Bound/capped counts need honest saturation; operation scope must say loaded, query snapshot or whole supported domain.",
+    "Mark-read has pending, acknowledged and failed/partial states; guard duplicate taps and keep notice readable. Announce confirmed read status only after the supported write completes; pending local projection is not server acknowledgement.",
+    "Reading/opening a notice and destination navigation are separate outcomes. Mark-read failure cannot fabricate navigation failure or business failure; destination failure cannot fabricate unread restoration.",
+    "Mark-all scope must be real: Seller loaded slice differs from Delivery server query and Associate read==false legacy compatibility. New notices during the action remain separate; partial batch completion is recoverable.",
+    "Show timestamps only from valid source fields with defined timezone and meaning. Missing/null/invalid/pending/future values cannot become Just now/Today. Event time, recorded time, transport time and readAt are distinct.",
+    "Board timestamp examples are fixed synthetic format specimens, not live events. Relative age requires actual valid time and clock; include an absolute accessible alternative for future implementation.",
+    "Payload links are untrusted routing hints, not access grants. Allowlist by app/role, validate identifiers, reread current authorised entity and preserve account/session/entity/route ownership from C19.",
+    "Missing/deleted/reassigned/forbidden/unsupported target and network-read failure require distinct safe explanations/actions. Domain legacy fallbacks must be evidenced; do not guess latest record.",
+    "Deduplicate foreground/local push/background/cold-start/inbox routing and wait for current navigator/auth/access readiness without indefinite old-session navigation.",
+    "Admin outbound history/case events have no personal unread state or recipient read receipts here. Recipient previews are clearly labelled, and push transport success is not observed/read delivery.",
+    "Reuse existing inbox models, formatters, typed destinations, auth predicates and feedback/navigation equivalents; no generic handler that weakens access or invents an app route.",
+    "Accessible labels express unread/read beyond color, comfortable full-row targets and labelled mark-read actions; preserve focus/list position and support text scaling/reduced motion. Runtime AT/contrast/routing verification remains future work."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-notifications-activity-destinations-light.png",
+      "sha256": "37ad34bf920e157af339c87fa73a4c1841b1a915a06abd0a2f610078a524210a",
+      "bytes": 1287549,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-da3a459b-c167-4402-94e9-d147ce2cbd39.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "71f82e5ce2edbb45f773e9c00fd1c1c822883e73111c233deb7da8e20f1fc616",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-da3a459b-c167-4402-94e9-d147ce2cbd39.png",
+          "source_output_sha256": "37ad34bf920e157af339c87fa73a4c1841b1a915a06abd0a2f610078a524210a"
+        }
+      ],
+      "review": "Visually reviewed for app identity, explicit unread/read labels, illustrative timestamp and missing-time hierarchy, independent busy/confirmed/failure read examples, domain destination boundaries, Admin preview-only distinction, no PII/count/money/receipt/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-notifications-activity-destinations-dark.png",
+      "sha256": "6bd64864686d7a87c50465630a97ccb0451bdbbb03d58cca980edb2e017cda00",
+      "bytes": 1425656,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-fa113506-8c1a-42a7-a618-22c8589972a0.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "44da103d7f2b86e22fa946fbbd5eb1e4f2bf2766f695e426c19c5d437246aa3c",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-da3a459b-c167-4402-94e9-d147ce2cbd39.png",
+              "sha256": "37ad34bf920e157af339c87fa73a4c1841b1a915a06abd0a2f610078a524210a",
+              "reference_kind": "Generated C21 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-fa113506-8c1a-42a7-a618-22c8589972a0.png",
+          "source_output_sha256": "6bd64864686d7a87c50465630a97ccb0451bdbbb03d58cca980edb2e017cda00"
+        }
+      ],
+      "review": "Visually reviewed for app identity, explicit unread/read labels, illustrative timestamp and missing-time hierarchy, independent busy/confirmed/failure read examples, domain destination boundaries, Admin preview-only distinction, no PII/count/money/receipt/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "159cc04a9cf92caf6e8f72d5f6a543789cbf4d437e4fc730b5411ccb286fb468"
+}

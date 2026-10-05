@@ -28,6 +28,7 @@ import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../location/location_policy.dart';
+import '../location/location_disclosure.dart';
 import '../location/rider_platform.dart';
 
 class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
@@ -57,11 +58,17 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _hasUnsentFix = false;
   bool _uploading = false;
   bool _native = false;
+  int _trackingGeneration = 0;
+
+  bool get _ios => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  bool _requestCurrent(int? generation) =>
+      generation == null || generation == _trackingGeneration;
 
   // Getters
   Position? get currentPosition => _currentPosition;
   bool get isTracking => _isTracking;
   bool get hasPermission => _hasPermission;
+
   /// Why location is not working, for diagnostics (not shown to the rider:
   /// going online reports its own GoOnlineResult).
   LocationIssue? get issue => _issue;
@@ -102,15 +109,21 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Location services on and permission granted (asking if not yet asked).
-  Future<GoOnlineResult> ensurePermission() async {
+  Future<GoOnlineResult> ensurePermission() => _ensurePermission();
+
+  Future<GoOnlineResult> _ensurePermission({int? generation}) async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!_requestCurrent(generation)) return GoOnlineResult.failed;
+      if (!enabled) {
         _setPermission(false, LocationIssue.servicesOff);
         return GoOnlineResult.servicesOff;
       }
       var permission = await Geolocator.checkPermission();
+      if (!_requestCurrent(generation)) return GoOnlineResult.failed;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!_requestCurrent(generation)) return GoOnlineResult.failed;
       }
       if (permission == LocationPermission.deniedForever) {
         _setPermission(false, LocationIssue.deniedForever);
@@ -125,6 +138,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       return GoOnlineResult.started;
     } catch (e) {
       debugPrint('Location permission check failed: $e');
+      if (!_requestCurrent(generation)) return GoOnlineResult.failed;
       _setPermission(false, LocationIssue.checkFailed);
       return GoOnlineResult.failed;
     }
@@ -158,11 +172,19 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// disclosure first (dashboard_screen.dart).
   Future<GoOnlineResult> startTracking(String partnerId) async {
     if (_isTracking && _partnerId == partnerId) return GoOnlineResult.started;
-    final permission = await ensurePermission();
+    final generation = ++_trackingGeneration;
+    final iosGeneration = _ios ? generation : null;
+    if (_ios) {
+      final disclosed = await locationDisclosureAccepted();
+      if (!_requestCurrent(iosGeneration)) return GoOnlineResult.failed;
+      if (!disclosed) return GoOnlineResult.disclosureDeclined;
+    }
+    final permission = await _ensurePermission(generation: iosGeneration);
+    if (!_requestCurrent(iosGeneration)) return GoOnlineResult.failed;
     if (permission != GoOnlineResult.started) return permission;
-    _partnerId = partnerId;
+    Position? position;
     try {
-      _currentPosition = await Geolocator.getCurrentPosition(
+      position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: DeliveryTiming.goOnlineFixTimeout,
@@ -170,13 +192,17 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
     } catch (e) {
       debugPrint('Initial fix failed: $e');
-      _currentPosition = await Geolocator.getLastKnownPosition();
-      if (_currentPosition == null) {
-        _issue = LocationIssue.noFix;
-        notifyListeners();
-        return GoOnlineResult.failed;
-      }
+      if (!_requestCurrent(iosGeneration)) return GoOnlineResult.failed;
+      position = await Geolocator.getLastKnownPosition();
     }
+    if (!_requestCurrent(iosGeneration)) return GoOnlineResult.failed;
+    if (position == null) {
+      _issue = LocationIssue.noFix;
+      notifyListeners();
+      return GoOnlineResult.failed;
+    }
+    _partnerId = partnerId;
+    _currentPosition = position;
     _hasUnsentFix = true;
     if (RiderPlatform.available) {
       // The caller has already set delivery_partners.isOnline true: the
@@ -197,6 +223,11 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     _startStream();
     _startHeartbeat();
     await _maybeUpload(force: true);
+    if (!_requestCurrent(generation) ||
+        !_isTracking ||
+        _partnerId != partnerId) {
+      return GoOnlineResult.failed;
+    }
     notifyListeners();
     return GoOnlineResult.started;
   }
@@ -227,6 +258,16 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         ),
       );
     }
+    if (_ios) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: p.distanceFilterMeters,
+        activityType: ActivityType.otherNavigation,
+        pauseLocationUpdatesAutomatically: false,
+        allowBackgroundLocationUpdates: true,
+        showBackgroundLocationIndicator: true,
+      );
+    }
     return LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: p.distanceFilterMeters,
@@ -234,15 +275,24 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _startStream() {
+    final generation = _ios ? _trackingGeneration : null;
     _positionSubscription?.cancel();
-    _positionSubscription =
-        Geolocator.getPositionStream(locationSettings: _settingsFor(samplingProfile))
-            .listen((position) {
+    _positionSubscription = Geolocator.getPositionStream(
+            locationSettings: _settingsFor(samplingProfile))
+        .listen((position) {
+      if (generation != null &&
+          (!_requestCurrent(generation) || !_isTracking)) {
+        return;
+      }
       _currentPosition = position;
       _hasUnsentFix = true;
       notifyListeners();
       _maybeUpload();
     }, onError: (Object e) {
+      if (generation != null &&
+          (!_requestCurrent(generation) || !_isTracking)) {
+        return;
+      }
       // Location switched off mid-shift: keep the service; the heartbeat
       // re-sends the last fix and the rider sees the error.
       debugPrint('Position stream error: $e');
@@ -253,8 +303,8 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startHeartbeat() {
     _heartbeat?.cancel();
-    _heartbeat =
-        Timer.periodic(DeliveryTiming.uploadCheckInterval, (_) => _maybeUpload());
+    _heartbeat = Timer.periodic(
+        DeliveryTiming.uploadCheckInterval, (_) => _maybeUpload());
   }
 
   /// Switches cadence when an order starts or ends, and routes the live
@@ -288,6 +338,13 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (!isValidFix(pos.latitude, pos.longitude)) return;
+    final generation = _trackingGeneration;
+    final orderIds = List<String>.of(_activeOrderIds);
+    bool ownsUpload() =>
+        generation == _trackingGeneration &&
+        _isTracking &&
+        _partnerId == uid &&
+        !_native;
     _uploading = true;
     try {
       await _firestore.collection('delivery_partners').doc(uid).update({
@@ -295,9 +352,14 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         'currentLng': pos.longitude,
         'lastLocationUpdate': FieldValue.serverTimestamp(),
       });
+      // The already-issued SDK write cannot be recalled. Its response must
+      // not refresh a newer shift or send the old fix to newly assigned tasks.
+      if (!ownsUpload()) return;
       _lastUploadAt = now;
-      _hasUnsentFix = false;
-      for (final orderId in _activeOrderIds) {
+      if (identical(_currentPosition, pos)) _hasUnsentFix = false;
+      for (final orderId in orderIds) {
+        if (!ownsUpload()) return;
+        if (!_activeOrderIds.contains(orderId)) continue;
         try {
           await _firestore
               .collection('delivery_tasks')
@@ -340,17 +402,20 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// then refuses to start a new one from the background.
   Future<bool> refreshNow() async {
     if (_native || !_isTracking) return false;
+    final generation = _ios ? _trackingGeneration : null;
     try {
-      _currentPosition = await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: DeliveryTiming.goOnlineFixTimeout,
         ),
       );
+      if (!_requestCurrent(generation)) return false;
+      _currentPosition = position;
       _hasUnsentFix = true;
       notifyListeners();
       await _maybeUpload(force: true);
-      return true;
+      return _requestCurrent(generation) && _isTracking;
     } catch (e) {
       debugPrint('LocationProvider.refreshNow: $e');
       return false;
@@ -359,6 +424,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Stops the stream, the foreground service and the heartbeat.
   void stopTracking() {
+    ++_trackingGeneration;
     if (RiderPlatform.available) RiderPlatform.stop();
     _native = false;
     _positionSubscription?.cancel();
@@ -387,6 +453,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    ++_trackingGeneration;
     WidgetsBinding.instance.removeObserver(this);
     // Only this provider's own stream and timer: tearing down the widget
     // tree must never end the rider's shift — the native service stops on
@@ -398,4 +465,12 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
 }
 
 /// Why location is not working (LocationProvider.issue).
-enum LocationIssue { servicesOff, denied, deniedForever, checkFailed, noFix, serviceStartFailed, streamLost }
+enum LocationIssue {
+  servicesOff,
+  denied,
+  deniedForever,
+  checkFailed,
+  noFix,
+  serviceStartFailed,
+  streamLost
+}

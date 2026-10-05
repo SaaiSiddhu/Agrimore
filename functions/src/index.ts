@@ -94,6 +94,8 @@ export { createOrder } from "./customer/createOrder";
 // locked finalPrice/finalQuantity. NEW export — does not exist on
 // agrimore-66a4e yet.
 export { createOrderFromRfq } from "./customer/createOrderFromRfq";
+// F3.3: server-only, owner-bound quote for seller distance delivery fees.
+export { quoteDeliveryFees } from "./customer/deliveryDistanceQuote";
 // Phase FIX-5 (finding N-5, P1): server-side delivery verification. NEW export —
 // this function does not exist on agrimore-66a4e yet, so the owner deploy is a
 // CREATE, not an update. It does NOT close N-5 on its own: the direct status
@@ -220,6 +222,8 @@ export {
   rejectSellerWithdrawal, requestSellerPayoutChange, cancelSellerPayoutChange, reviewSellerPayoutChange,
 } from "./seller/sellerWallet";
 export { onProductReviewWrite, replyToReview } from "./seller/reviews";
+// Default-off photo rollout. App Check approval/native recovery must precede activation.
+export { createReviewPhotoDraft, uploadReviewPhotoAsset, publishReviewPhotoDraft, getReviewPhotoDraftStatus, cleanupReviewPhotoDraft } from "./seller/reviewPhotoRpc";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)

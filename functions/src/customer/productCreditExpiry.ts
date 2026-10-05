@@ -33,11 +33,45 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
 import { auditEntry, resolveIsAdmin } from "../admin/complianceGate";
-import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
+import { appendLedgerEntry, toProjectionFields, LEDGER_ENTRY_TYPES } from "./productCreditLedger";
 
 const MAX_EXPIRY_ENTRIES_PER_RUN = 500;
+
+interface CreditExpiryCursor {
+  version: number;
+  lastExpiresAt: Timestamp | null;
+  lastEntryId: string | null;
+}
+
+function parseCreditExpiryCursor(data: FirebaseFirestore.DocumentData | undefined): CreditExpiryCursor | null {
+  if (!data) return null;
+  const reset = data.lastExpiresAt === null && data.lastEntryId === null;
+  if (!Number.isSafeInteger(data.version) || data.version < 1 || data.version >= Number.MAX_SAFE_INTEGER ||
+      (!reset && (!(data.lastExpiresAt instanceof Timestamp) ||
+        typeof data.lastEntryId !== "string" || !data.lastEntryId || data.lastEntryId.includes("/")))) {
+    throw new Error("Invalid Product Credit expiry cursor");
+  }
+  return data as CreditExpiryCursor;
+}
+
+async function advanceCreditExpiryCursor(
+  db: FirebaseFirestore.Firestore, ref: FirebaseFirestore.DocumentReference,
+  expectedVersion: number, last: FirebaseFirestore.QueryDocumentSnapshot | null
+): Promise<boolean> {
+  const expiresAt = last ? last.get("expiresAt") : null;
+  if (last && !(expiresAt instanceof Timestamp)) throw new Error("Invalid Product Credit expiry timestamp");
+  return db.runTransaction(async tx => {
+    const current = parseCreditExpiryCursor((await tx.get(ref)).data());
+    if ((current?.version ?? 0) !== expectedVersion) return false;
+    tx.set(ref, {
+      version: expectedVersion + 1, lastExpiresAt: expiresAt,
+      lastEntryId: last?.id ?? null, updatedAt: Timestamp.now(),
+    });
+    return true;
+  });
+}
 
 async function expireOneCreditEntry(
   db: admin.firestore.Firestore,
@@ -99,13 +133,18 @@ export const expireProductCredits = functions.pubsub
   .onRun(async () => {
     const db = admin.firestore();
     const now = Timestamp.now();
+    const cursorRef = db.collection("product_credit_expiry_cursors").doc("credits");
+    const cursor = parseCreditExpiryCursor((await cursorRef.get()).data());
 
-    const dueSnap = await db
+    const baseQuery = db
       .collection("product_credit_ledger")
       .where("type", "==", "CREDIT")
       .where("expiresAt", "<=", now)
-      .limit(MAX_EXPIRY_ENTRIES_PER_RUN + 1)
-      .get();
+      .orderBy("expiresAt", "asc").orderBy(FieldPath.documentId(), "asc")
+      .limit(MAX_EXPIRY_ENTRIES_PER_RUN + 1);
+    const dueSnap = await (cursor?.lastExpiresAt
+      ? baseQuery.startAfter(cursor.lastExpiresAt, cursor.lastEntryId)
+      : baseQuery).get();
 
     const truncated = dueSnap.size > MAX_EXPIRY_ENTRIES_PER_RUN;
     const docs = truncated ? dueSnap.docs.slice(0, MAX_EXPIRY_ENTRIES_PER_RUN) : dueSnap.docs;
@@ -124,6 +163,12 @@ export const expireProductCredits = functions.pubsub
       if (outcome === "expired") expired++;
       else skipped++;
     }
+
+    // Advance only after the complete page succeeds. A failure replays safely
+    // through immutable expiry idempotency. Reset at cycle end so entries added
+    // behind the cursor or previously unavailable credits are revisited.
+    await advanceCreditExpiryCursor(db, cursorRef, cursor?.version ?? 0,
+      truncated ? docs[docs.length - 1] : null);
 
     console.log(
       `[ProductCreditExpiry] processed=${docs.length} expired=${expired} skipped=${skipped} truncated=${truncated}`
@@ -223,15 +268,19 @@ export const releaseExpiredProductCreditHolds = functions.pubsub
     return { processed: docs.length, released, skipped, truncated };
   });
 
-async function computeLedgerSumAvailable(
-  db: admin.firestore.Firestore,
-  customerId: string
-): Promise<number> {
-  const ledgerSnap = await db.collection("product_credit_ledger").where("customerId", "==", customerId).get();
+function computeLedgerSumAvailable(
+  ledgerSnap: FirebaseFirestore.QuerySnapshot
+): number {
   let available = 0;
   for (const doc of ledgerSnap.docs) {
     const entry = doc.data();
-    const amount = typeof entry.amount === "number" ? entry.amount : 0;
+    if (!LEDGER_ENTRY_TYPES.includes(entry.type) || typeof entry.amount !== "number" ||
+        !Number.isFinite(entry.amount) || entry.amount < 0 ||
+        (entry.type === "ADJUSTMENT" && !["credit", "debit"].includes(entry.metadata?.direction)) ||
+        (entry.type === "REDEMPTION" && entry.relatedEntryId != null && typeof entry.relatedEntryId !== "string")) {
+      throw new HttpsError("failed-precondition", "Product Credit ledger needs review before reconciliation.");
+    }
+    const amount = entry.amount;
     switch (entry.type) {
       case "CREDIT":
       case "RELEASE":
@@ -239,6 +288,10 @@ async function computeLedgerSumAvailable(
         available += amount;
         break;
       case "REDEMPTION":
+        // A related HOLD already reduced available. Match the canonical
+        // appendLedgerEntry arithmetic; only a direct spend reduces it here.
+        if (!entry.relatedEntryId) available -= amount;
+        break;
       case "EXPIRY":
       case "HOLD":
         available -= amount;
@@ -248,7 +301,11 @@ async function computeLedgerSumAvailable(
         break;
     }
   }
-  return Math.round(available * 100) / 100;
+  const paise = Math.round(available * 100);
+  if (!Number.isSafeInteger(paise) || paise < 0) {
+    throw new HttpsError("failed-precondition", "Product Credit ledger needs review before reconciliation.");
+  }
+  return paise / 100;
 }
 
 interface ReconcileResult {
@@ -265,35 +322,43 @@ async function reconcileOneCustomer(
   actorEmail: string | null,
   reason: string
 ): Promise<ReconcileResult | null> {
-  // Non-transactional pre-read of the full ledger — the ledger is
-  // append-only, so a new entry landing between this read and the
-  // transaction below only means this run under-counts a just-arrived
-  // entry, which the NEXT reconciliation run picks up. Acceptable for a
-  // maintenance/reporting operation, not a security enforcement point.
-  const computedAvailable = await computeLedgerSumAvailable(db, customerId);
-
+  const ledgerQuery = db.collection("product_credit_ledger").where("customerId", "==", customerId);
   const projectionRef = db.collection("product_credit_balances").doc(customerId);
   const auditRef = db.collection("compliance_audit_log").doc();
 
   return db.runTransaction(async (tx) => {
-    const projectionSnap = await tx.get(projectionRef);
+    // Ledger and projection must share this transaction's snapshot. A stale
+    // pre-read can offset a legitimate interleaved credit/hold with an adjustment.
+    const [ledgerSnap, projectionSnap] = await Promise.all([
+      tx.get(ledgerQuery), tx.get(projectionRef),
+    ]);
+    const computedAvailable = computeLedgerSumAvailable(ledgerSnap);
     const currentProjection = toProjectionFields(projectionSnap.data());
+    if (!Number.isFinite(currentProjection.available) || currentProjection.available < 0 ||
+        !Number.isSafeInteger(Math.round(currentProjection.available * 100))) {
+      throw new HttpsError("failed-precondition", "Product Credit balance needs review before reconciliation.");
+    }
     const drift = Math.round((currentProjection.available - computedAvailable) * 100) / 100;
 
     if (Math.abs(drift) < 0.01) {
       return null;
     }
 
-    // Correct via an explicit ADJUSTMENT entry — never by silently
-    // overwriting the projection (D4).
+    // Repair the cache, not the customer's economic ledger. A nonzero
+    // adjustment would move ledger truth too and cause drift on the next run.
+    // Preserve D4's explicit immutable adjustment/audit with zero monetary effect.
     appendLedgerEntry(tx, db, {
       customerId,
       enrollmentId: "",
       type: "ADJUSTMENT",
-      amount: Math.abs(drift),
-      currentProjection,
+      amount: 0,
+      currentProjection: { ...currentProjection, available: computedAvailable },
       description: `Reconciliation: projection.available (${currentProjection.available}) vs ledger sum (${computedAvailable})`,
-      metadata: { direction: drift > 0 ? "debit" : "credit", reconciliation: true },
+      metadata: {
+        direction: drift > 0 ? "debit" : "credit", reconciliation: true,
+        projectionRepair: true, previousProjectionAvailable: currentProjection.available,
+        ledgerAvailable: computedAvailable, drift,
+      },
     });
 
     tx.set(

@@ -1,0 +1,5773 @@
+{
+  "classification": "VERIFIED_REPOSITORY_FACT_AND_DATED_READ_ONLY_CLOUD_METADATA_NOT_RELEASE_ACCEPTANCE",
+  "sourceCommit": "4766754faaa81188a2ad6790eb020f721266fd0a",
+  "sourceRuntime": "v22.23.3",
+  "sourceNetworkAttempts": 0,
+  "sourceCapturedAt": "2026-10-04T09:39:01.135996+00:00",
+  "liveReadStatus": {
+    "functions": {
+      "exitCode": 0,
+      "success": true,
+      "count": 87,
+      "capturedAt": "2026-10-04T09:38:54.515400+00:00"
+    },
+    "indexes": {
+      "exitCode": 0,
+      "success": true,
+      "count": null,
+      "capturedAt": "2026-10-04T09:38:58.199413+00:00"
+    }
+  },
+  "counts": {
+    "sourceEndpoints": 152,
+    "liveFunctions": 87,
+    "matchedNames": 81,
+    "sourceOnly": 71,
+    "liveOnlyOrphans": 6,
+    "generationMismatches": 0,
+    "regionMismatches": 0,
+    "runtimeMismatches": 15,
+    "clientInvocationSites": 99,
+    "literalClientSites": 87,
+    "dynamicWrappersTraced": 12,
+    "distinctClientNames": 97,
+    "distinctClientSourceOnlyNames": 52,
+    "clientSitesDependingOnSourceOnly": 53,
+    "liveRuntimes": {
+      "nodejs22": 72,
+      "nodejs20": 15
+    },
+    "sourceGenerations": {
+      "gcfv2": 111,
+      "gcfv1": 41
+    },
+    "sourceTriggers": {
+      "callableTrigger": 115,
+      "scheduleTrigger": 7,
+      "eventTrigger": 23,
+      "httpsTrigger": 7
+    }
+  },
+  "functions": [
+    {
+      "name": "acceptDeliveryOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "acceptDeliveryOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "acceptDeliveryOffer",
+        "entryPoint": "acceptDeliveryOffer",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/providers/offer_provider.dart",
+          "line": 161,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "accrueMonthlyBenefits",
+      "presence": "source-only",
+      "source": {
+        "name": "accrueMonthlyBenefits",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "activateAssociateOnboarding",
+      "presence": "matched-name",
+      "source": {
+        "name": "activateAssociateOnboarding",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "activateAssociateOnboarding",
+        "entryPoint": "activateAssociateOnboarding",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+          "line": 253,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "addSupportCaseNote",
+      "presence": "source-only",
+      "source": {
+        "name": "addSupportCaseNote",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "adminUpdateOrderStatus",
+      "presence": "source-only",
+      "source": {
+        "name": "adminUpdateOrderStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/providers/order_provider.dart",
+          "line": 791,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "advanceDeliveryDispatch",
+      "presence": "matched-name",
+      "source": {
+        "name": "advanceDeliveryDispatch",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "advanceDeliveryDispatch",
+        "entryPoint": "advanceDeliveryDispatch",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "advanceDeliveryStep",
+      "presence": "matched-name",
+      "source": {
+        "name": "advanceDeliveryStep",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "advanceDeliveryStep",
+        "entryPoint": "advanceDeliveryStep",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/delivery/rider_steps.dart",
+          "line": 180,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "aiChatProxy",
+      "presence": "source-only",
+      "source": {
+        "name": "aiChatProxy",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/ai/ai_chat_service.dart",
+          "line": 118,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "assignReferralCode",
+      "presence": "source-only",
+      "source": {
+        "name": "assignReferralCode",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "assignSupportCase",
+      "presence": "source-only",
+      "source": {
+        "name": "assignSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "attachDeliveryProof",
+      "presence": "source-only",
+      "source": {
+        "name": "attachDeliveryProof",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/delivery/delivery_problems.dart",
+          "line": 100,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "attachSupportCaseEvidence",
+      "presence": "source-only",
+      "source": {
+        "name": "attachSupportCaseEvidence",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 1040,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "buildRiderStatements",
+      "presence": "matched-name",
+      "source": {
+        "name": "buildRiderStatements",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "buildRiderStatements",
+        "entryPoint": "buildRiderStatements",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "calculateSellerPayout",
+      "presence": "matched-name",
+      "source": {
+        "name": "calculateSellerPayout",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "calculateSellerPayout",
+        "entryPoint": "calculateSellerPayout",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelEmployeePayoutChange",
+      "presence": "source-only",
+      "source": {
+        "name": "cancelEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "line": 167,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "cancelSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "cancelSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "cancelSellerPayoutChange",
+        "entryPoint": "cancelSellerPayoutChange",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/payments/wallet.dart",
+          "line": 143,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "cancelSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "cancelSellerWithdrawal",
+        "entryPoint": "cancelSellerWithdrawal",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/payments/wallet.dart",
+          "line": 143,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "changeDateOfBirth",
+      "presence": "source-only",
+      "source": {
+        "name": "changeDateOfBirth",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 843,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "changeEmailAddress",
+      "presence": "source-only",
+      "source": {
+        "name": "changeEmailAddress",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 843,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "changePhoneNumber",
+      "presence": "source-only",
+      "source": {
+        "name": "changePhoneNumber",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 843,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "changeSupportCaseStatus",
+      "presence": "source-only",
+      "source": {
+        "name": "changeSupportCaseStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "claimScratchCard",
+      "presence": "source-only",
+      "source": {
+        "name": "claimScratchCard",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/user/rewards/rewards_screen.dart",
+          "line": 73,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "cleanupInvalidTokens",
+      "presence": "matched-name",
+      "source": {
+        "name": "cleanupInvalidTokens",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "cleanupInvalidTokens",
+        "entryPoint": "cleanupInvalidTokens",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cleanupReviewPhotoDraft",
+      "presence": "source-only",
+      "source": {
+        "name": "cleanupReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "completeReferralOnFirstDelivery",
+      "presence": "source-only",
+      "source": {
+        "name": "completeReferralOnFirstDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "completeUserProfile",
+      "presence": "matched-name",
+      "source": {
+        "name": "completeUserProfile",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "completeUserProfile",
+        "entryPoint": "completeUserProfile",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 843,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "confirmDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "confirmDelivery",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "confirmDelivery",
+        "entryPoint": "confirmDelivery",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "line": 971,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "confirmOrderReturnReceived",
+      "presence": "source-only",
+      "source": {
+        "name": "confirmOrderReturnReceived",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/providers/order_provider.dart",
+          "line": 880,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "connectAiProvider",
+      "presence": "source-only",
+      "source": {
+        "name": "connectAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/ai_connection_provider.dart",
+          "line": 80,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "connectSellerAiProvider",
+      "presence": "source-only",
+      "source": {
+        "name": "connectSellerAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+          "line": 113,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createAssociateOnboardingPayment",
+      "presence": "matched-name",
+      "source": {
+        "name": "createAssociateOnboardingPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createAssociateOnboardingPayment",
+        "entryPoint": "createAssociateOnboardingPayment",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+          "line": 101,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createBenefitEnrollment",
+      "presence": "source-only",
+      "source": {
+        "name": "createBenefitEnrollment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createEmployeeByAdmin",
+      "presence": "matched-name",
+      "source": {
+        "name": "createEmployeeByAdmin",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createEmployeeByAdmin",
+        "entryPoint": "createEmployeeByAdmin",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/employees/add_employee_screen.dart",
+          "line": 37,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createOnboardingWebHandoff",
+      "presence": "source-only",
+      "source": {
+        "name": "createOnboardingWebHandoff",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+          "line": 177,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "createOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createOrder",
+        "entryPoint": "createOrder",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/user/cart/mobile_cart_screen.dart",
+          "line": 3134,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/payment_method_screen.dart",
+          "line": 302,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+          "line": 429,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createOrderFromRfq",
+      "presence": "matched-name",
+      "source": {
+        "name": "createOrderFromRfq",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createOrderFromRfq",
+        "entryPoint": "createOrderFromRfq",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/rfq_provider.dart",
+          "line": 36,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createRazorpayOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "createRazorpayOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createRazorpayOrder",
+        "entryPoint": "createRazorpayOrder",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/services/razorpay_service.dart",
+          "line": 145,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/razorpay_web.dart",
+          "line": 65,
+          "invocation": "literal"
+        },
+        {
+          "path": "packages/agrimore_services/lib/payment/custom_payment_service.dart",
+          "line": 52,
+          "invocation": "literal"
+        },
+        {
+          "path": "packages/agrimore_services/lib/payment/payment_service.dart",
+          "line": 38,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createReviewPhotoDraft",
+      "presence": "source-only",
+      "source": {
+        "name": "createReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createRfq",
+      "presence": "matched-name",
+      "source": {
+        "name": "createRfq",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createRfq",
+        "entryPoint": "createRfq",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/rfq_provider.dart",
+          "line": 36,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSellerAiActivationOrder",
+      "presence": "source-only",
+      "source": {
+        "name": "createSellerAiActivationOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+          "line": 87,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createSellerByAdmin",
+      "presence": "matched-name",
+      "source": {
+        "name": "createSellerByAdmin",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "createSellerByAdmin",
+        "entryPoint": "createSellerByAdmin",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/add_seller_screen.dart",
+          "line": 38,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "createSupportCase",
+      "presence": "source-only",
+      "source": {
+        "name": "createSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+          "line": 445,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_queue_screen.dart",
+          "line": 241,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+          "line": 243,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+          "line": 359,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "createSupportCaseFromSource",
+      "presence": "source-only",
+      "source": {
+        "name": "createSupportCaseFromSource",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+          "line": 447,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "creditSignupBonus",
+      "presence": "matched-name",
+      "source": {
+        "name": "creditSignupBonus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "creditSignupBonus",
+        "entryPoint": "creditSignupBonus",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+          "line": 234,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "declineDeliveryOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "declineDeliveryOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "declineDeliveryOffer",
+        "entryPoint": "declineDeliveryOffer",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/providers/offer_provider.dart",
+          "line": 161,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "deleteUserData",
+      "presence": "matched-name",
+      "source": {
+        "name": "deleteUserData",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "deleteUserData",
+        "entryPoint": "deleteUserData",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/account/rider_account.dart",
+          "line": 99,
+          "invocation": "literal"
+        },
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 1271,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "disconnectAiProvider",
+      "presence": "source-only",
+      "source": {
+        "name": "disconnectAiProvider",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/ai_connection_provider.dart",
+          "line": 105,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+          "line": 140,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "ensureCheckoutSubscriptions",
+      "presence": "source-only",
+      "source": {
+        "name": "ensureCheckoutSubscriptions",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+          "line": 459,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "expireProductCredits",
+      "presence": "source-only",
+      "source": {
+        "name": "expireProductCredits",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "financeReconciliationRecheckFinding",
+      "presence": "source-only",
+      "source": {
+        "name": "financeReconciliationRecheckFinding",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+          "line": 135,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "financeReconciliationScan",
+      "presence": "source-only",
+      "source": {
+        "name": "financeReconciliationScan",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_models.dart",
+          "line": 171,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "getAssociateOnboardingConfig",
+      "presence": "matched-name",
+      "source": {
+        "name": "getAssociateOnboardingConfig",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "getAssociateOnboardingConfig",
+        "entryPoint": "getAssociateOnboardingConfig",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart",
+          "line": 104,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "getNotificationStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "getNotificationStats",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "getNotificationStats",
+        "entryPoint": "getNotificationStats",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "getReviewPhotoDraftStatus",
+      "presence": "source-only",
+      "source": {
+        "name": "getReviewPhotoDraftStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "issueSellerInvoice",
+      "presence": "matched-name",
+      "source": {
+        "name": "issueSellerInvoice",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "issueSellerInvoice",
+        "entryPoint": "issueSellerInvoice",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/orders/widgets/order_invoice_card.dart",
+          "line": 74,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "linkSupportCaseRecord",
+      "presence": "source-only",
+      "source": {
+        "name": "linkSupportCaseRecord",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "markEmployeePayoutPaid",
+      "presence": "source-only",
+      "source": {
+        "name": "markEmployeePayoutPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+          "line": 149,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+          "line": 105,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "markRiderPayoutPaid",
+      "presence": "source-only",
+      "source": {
+        "name": "markRiderPayoutPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "line": 244,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "markSellerWithdrawalPaid",
+      "presence": "matched-name",
+      "source": {
+        "name": "markSellerWithdrawalPaid",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "markSellerWithdrawalPaid",
+        "entryPoint": "markSellerWithdrawalPaid",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+          "line": 153,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "notifyFollowersOnNewProduct",
+      "presence": "source-only",
+      "source": {
+        "name": "notifyFollowersOnNewProduct",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "notifySellerNewOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "notifySellerNewOrder",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": {
+        "id": "notifySellerNewOrder",
+        "entryPoint": "notifySellerNewOrder",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "notifySellerPayoutPaid",
+      "presence": "matched-name",
+      "source": {
+        "name": "notifySellerPayoutPaid",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "notifySellerPayoutPaid",
+        "entryPoint": "notifySellerPayoutPaid",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onOrderCreatedNotifications",
+      "presence": "matched-name",
+      "source": {
+        "name": "onOrderCreatedNotifications",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.create"
+      },
+      "live": {
+        "id": "onOrderCreatedNotifications",
+        "entryPoint": "onOrderCreatedNotifications",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onOrderStatusChanged",
+      "presence": "matched-name",
+      "source": {
+        "name": "onOrderStatusChanged",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "onOrderStatusChanged",
+        "entryPoint": "onOrderStatusChanged",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onProductReviewWrite",
+      "presence": "matched-name",
+      "source": {
+        "name": "onProductReviewWrite",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "onProductReviewWrite",
+        "entryPoint": "onProductReviewWrite",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onProductStockChanged",
+      "presence": "matched-name",
+      "source": {
+        "name": "onProductStockChanged",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "onProductStockChanged",
+        "entryPoint": "onProductStockChanged",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "onRiderDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "onRiderDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "onRiderDelivery",
+        "entryPoint": "onRiderDelivery",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "payEmployeeCommissionOnDelivery",
+      "presence": "matched-name",
+      "source": {
+        "name": "payEmployeeCommissionOnDelivery",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "payEmployeeCommissionOnDelivery",
+        "entryPoint": "payEmployeeCommissionOnDelivery",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "publishReviewPhotoDraft",
+      "presence": "source-only",
+      "source": {
+        "name": "publishReviewPhotoDraft",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "quoteDeliveryFees",
+      "presence": "source-only",
+      "source": {
+        "name": "quoteDeliveryFees",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/checkout_screen.dart",
+          "line": 742,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "line": 142,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "quoteOrderWithCredit",
+      "presence": "matched-name",
+      "source": {
+        "name": "quoteOrderWithCredit",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "quoteOrderWithCredit",
+        "entryPoint": "quoteOrderWithCredit",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "razorpayOnboardingWebhook",
+      "presence": "matched-name",
+      "source": {
+        "name": "razorpayOnboardingWebhook",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "razorpayOnboardingWebhook",
+        "entryPoint": "razorpayOnboardingWebhook",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rebuildMySellerStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "rebuildMySellerStats",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "rebuildMySellerStats",
+        "entryPoint": "rebuildMySellerStats",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/home/dashboard_screen.dart",
+          "line": 142,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reconcileProductCreditBalances",
+      "presence": "source-only",
+      "source": {
+        "name": "reconcileProductCreditBalances",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reconcileStaleOnboardingPayments",
+      "presence": "matched-name",
+      "source": {
+        "name": "reconcileStaleOnboardingPayments",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "reconcileStaleOnboardingPayments",
+        "entryPoint": "reconcileStaleOnboardingPayments",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recordAssociateOnboardingRefund",
+      "presence": "matched-name",
+      "source": {
+        "name": "recordAssociateOnboardingRefund",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "recordAssociateOnboardingRefund",
+        "entryPoint": "recordAssociateOnboardingRefund",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recordRiderCashDeposit",
+      "presence": "matched-name",
+      "source": {
+        "name": "recordRiderCashDeposit",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "recordRiderCashDeposit",
+        "entryPoint": "recordRiderCashDeposit",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "line": 438,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recoverCheckoutPayment",
+      "presence": "source-only",
+      "source": {
+        "name": "recoverCheckoutPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+          "line": 361,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/razorpay_service.dart",
+          "line": 283,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "recoverWalletTopupPayment",
+      "presence": "source-only",
+      "source": {
+        "name": "recoverWalletTopupPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/services/razorpay_service.dart",
+          "line": 283,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        },
+        {
+          "path": "apps/marketplace/lib/services/wallet_topup_recovery_service.dart",
+          "line": 312,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "redeemOnboardingWebHandoff",
+      "presence": "source-only",
+      "source": {
+        "name": "redeemOnboardingWebHandoff",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart",
+          "line": 85,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "redeemReferralCode",
+      "presence": "matched-name",
+      "source": {
+        "name": "redeemReferralCode",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "redeemReferralCode",
+        "entryPoint": "redeemReferralCode",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+          "line": 415,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "refreshDeliveryRoute",
+      "presence": "matched-name",
+      "source": {
+        "name": "refreshDeliveryRoute",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "google.cloud.firestore.document.v1.written"
+      },
+      "live": {
+        "id": "refreshDeliveryRoute",
+        "entryPoint": "refreshDeliveryRoute",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "refreshUserRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "refreshUserRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "refreshUserRoleClaims",
+        "entryPoint": "refreshUserRoleClaims",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rejectEmployeePayout",
+      "presence": "source-only",
+      "source": {
+        "name": "rejectEmployeePayout",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+          "line": 232,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "rejectSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "rejectSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "rejectSellerWithdrawal",
+        "entryPoint": "rejectSellerWithdrawal",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+          "line": 153,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "releaseDeliveryOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "releaseDeliveryOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "releaseDeliveryOrder",
+        "entryPoint": "releaseDeliveryOrder",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/delivery/rider_steps.dart",
+          "line": 194,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "releaseExpiredProductCreditHolds",
+      "presence": "source-only",
+      "source": {
+        "name": "releaseExpiredProductCreditHolds",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "scheduleTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "releaseProductCreditHold",
+      "presence": "matched-name",
+      "source": {
+        "name": "releaseProductCreditHold",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "releaseProductCreditHold",
+        "entryPoint": "releaseProductCreditHold",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reopenSupportCase",
+      "presence": "source-only",
+      "source": {
+        "name": "reopenSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "replyToReview",
+      "presence": "matched-name",
+      "source": {
+        "name": "replyToReview",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "replyToReview",
+        "entryPoint": "replyToReview",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/reviews/reviews_screen.dart",
+          "line": 38,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reportDeliveryException",
+      "presence": "source-only",
+      "source": {
+        "name": "reportDeliveryException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/delivery/delivery_problems.dart",
+          "line": 84,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reportRiderIncident",
+      "presence": "matched-name",
+      "source": {
+        "name": "reportRiderIncident",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "reportRiderIncident",
+        "entryPoint": "reportRiderIncident",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/safety/incident_report.dart",
+          "line": 90,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestAssociateOnboardingRefundOnSuspend",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestAssociateOnboardingRefundOnSuspend",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "requestAssociateOnboardingRefundOnSuspend",
+        "entryPoint": "requestAssociateOnboardingRefundOnSuspend",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayout",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestEmployeePayout",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "requestEmployeePayout",
+        "entryPoint": "requestEmployeePayout",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+          "line": 51,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayoutChange",
+      "presence": "source-only",
+      "source": {
+        "name": "requestEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "line": 113,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "requestRiderBankChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestRiderBankChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "requestRiderBankChange",
+        "entryPoint": "requestRiderBankChange",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/money/rider_money.dart",
+          "line": 462,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestRiderIdentityChange",
+      "presence": "source-only",
+      "source": {
+        "name": "requestRiderIdentityChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/identity/rider_identity.dart",
+          "line": 135,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "requestSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "requestSellerPayoutChange",
+        "entryPoint": "requestSellerPayoutChange",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/payments/wallet.dart",
+          "line": 143,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestSellerWithdrawal",
+      "presence": "matched-name",
+      "source": {
+        "name": "requestSellerWithdrawal",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "requestSellerWithdrawal",
+        "entryPoint": "requestSellerWithdrawal",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/payments/wallet.dart",
+          "line": 143,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "resolveGoogleIdentity",
+      "presence": "matched-name",
+      "source": {
+        "name": "resolveGoogleIdentity",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "resolveGoogleIdentity",
+        "entryPoint": "resolveGoogleIdentity",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "resolveSupportCase",
+      "presence": "source-only",
+      "source": {
+        "name": "resolveSupportCase",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "respondToRfqOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "respondToRfqOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "respondToRfqOffer",
+        "entryPoint": "respondToRfqOffer",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/rfq_provider.dart",
+          "line": 36,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        },
+        {
+          "path": "apps/seller/lib/providers/rfq_provider.dart",
+          "line": 96,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "restoreStockOnCancellation",
+      "presence": "source-only",
+      "source": {
+        "name": "restoreStockOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "retryCommissionException",
+      "presence": "source-only",
+      "source": {
+        "name": "retryCommissionException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+          "line": 51,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "retryFailedNotifications",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "retryFailedNotifications",
+        "entryPoint": "retryFailedNotifications",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reverseEmployeeCommissionOnCancellation",
+      "presence": "matched-name",
+      "source": {
+        "name": "reverseEmployeeCommissionOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "reverseEmployeeCommissionOnCancellation",
+        "entryPoint": "reverseEmployeeCommissionOnCancellation",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reverseProductCreditOnCancellation",
+      "presence": "source-only",
+      "source": {
+        "name": "reverseProductCreditOnCancellation",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reviewDocumentSubmission",
+      "presence": "source-only",
+      "source": {
+        "name": "reviewDocumentSubmission",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+          "line": 297,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "line": 917,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reviewEmployeePayoutChange",
+      "presence": "source-only",
+      "source": {
+        "name": "reviewEmployeePayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/employees/associate_detail_screen.dart",
+          "line": 612,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+          "line": 37,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reviewRiderBankChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "reviewRiderBankChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "reviewRiderBankChange",
+        "entryPoint": "reviewRiderBankChange",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+          "line": 696,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "line": 574,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewRiderIdentityChange",
+      "presence": "source-only",
+      "source": {
+        "name": "reviewRiderIdentityChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+          "line": 297,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "line": 722,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reviewSellerPayoutChange",
+      "presence": "matched-name",
+      "source": {
+        "name": "reviewSellerPayoutChange",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "reviewSellerPayoutChange",
+        "entryPoint": "reviewSellerPayoutChange",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart",
+          "line": 598,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+          "line": 153,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "riderMoneySummary",
+      "presence": "source-only",
+      "source": {
+        "name": "riderMoneySummary",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/money/rider_money.dart",
+          "line": 450,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "rollupSellerStats",
+      "presence": "matched-name",
+      "source": {
+        "name": "rollupSellerStats",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "rollupSellerStats",
+        "entryPoint": "rollupSellerStats",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "runBenefitAccrualNow",
+      "presence": "source-only",
+      "source": {
+        "name": "runBenefitAccrualNow",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sellerAiChatProxy",
+      "presence": "source-only",
+      "source": {
+        "name": "sellerAiChatProxy",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/providers/seller_ai_chat_provider.dart",
+          "line": 93,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sellerTransitionOrder",
+      "presence": "matched-name",
+      "source": {
+        "name": "sellerTransitionOrder",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sellerTransitionOrder",
+        "entryPoint": "sellerTransitionOrder",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/providers/seller_order_provider.dart",
+          "line": 209,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sellerWalletSummary",
+      "presence": "matched-name",
+      "source": {
+        "name": "sellerWalletSummary",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sellerWalletSummary",
+        "entryPoint": "sellerWalletSummary",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/screens/payments/wallet.dart",
+          "line": 143,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendAfternoonGreeting",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "sendAfternoonGreeting",
+        "entryPoint": "sendAfternoonGreeting",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sendBroadcastNotification",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendBroadcastNotification",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sendBroadcastNotification",
+        "entryPoint": "sendBroadcastNotification",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+          "line": 315,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendEmailOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendEmailOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sendEmailOTP",
+        "entryPoint": "sendEmailOTP",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendEveningGreeting",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "sendEveningGreeting",
+        "entryPoint": "sendEveningGreeting",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sendMorningGreeting",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "sendMorningGreeting",
+        "entryPoint": "sendMorningGreeting",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sendNightGreeting",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "sendNightGreeting",
+        "entryPoint": "sendNightGreeting",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sendNotificationToUser",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendNotificationToUser",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sendNotificationToUser",
+        "entryPoint": "sendNotificationToUser",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+          "line": 328,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendOrderUpdateNotification",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendOrderUpdateNotification",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sendOrderUpdateNotification",
+        "entryPoint": "sendOrderUpdateNotification",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "sendPhoneOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "sendPhoneOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "sendPhoneOTP",
+        "entryPoint": "sendPhoneOTP",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setBenefitFeatureFlag",
+      "presence": "source-only",
+      "source": {
+        "name": "setBenefitFeatureFlag",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/providers/benefit_compliance_provider.dart",
+          "line": 170,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "setBenefitProgramConfig",
+      "presence": "source-only",
+      "source": {
+        "name": "setBenefitProgramConfig",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "setComplianceStatus",
+      "presence": "source-only",
+      "source": {
+        "name": "setComplianceStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/providers/benefit_compliance_provider.dart",
+          "line": 200,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "setEnrollmentStatus",
+      "presence": "source-only",
+      "source": {
+        "name": "setEnrollmentStatus",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "setLowStockThreshold",
+      "presence": "matched-name",
+      "source": {
+        "name": "setLowStockThreshold",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "setLowStockThreshold",
+        "entryPoint": "setLowStockThreshold",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "setUserRole",
+      "presence": "source-only",
+      "source": {
+        "name": "setUserRole",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/admin/admin_service.dart",
+          "line": 131,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "submitDocumentReplacement",
+      "presence": "source-only",
+      "source": {
+        "name": "submitDocumentReplacement",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/identity/rider_document_review.dart",
+          "line": 180,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "submitRfqOffer",
+      "presence": "matched-name",
+      "source": {
+        "name": "submitRfqOffer",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "submitRfqOffer",
+        "entryPoint": "submitRfqOffer",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/rfq_provider.dart",
+          "line": 36,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        },
+        {
+          "path": "apps/seller/lib/providers/rfq_provider.dart",
+          "line": 96,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitRiderApplication",
+      "presence": "source-only",
+      "source": {
+        "name": "submitRiderApplication",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/registration/rider_application.dart",
+          "line": 203,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "submitSellerApplication",
+      "presence": "matched-name",
+      "source": {
+        "name": "submitSellerApplication",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "submitSellerApplication",
+        "entryPoint": "submitSellerApplication",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/seller/lib/providers/seller_application_provider.dart",
+          "line": 206,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "submitSupportRequest",
+      "presence": "source-only",
+      "source": {
+        "name": "submitSupportRequest",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/support/rider_support.dart",
+          "line": 166,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "subscriptionChecker",
+      "presence": "live-only-orphan",
+      "source": null,
+      "live": {
+        "id": "subscriptionChecker",
+        "entryPoint": "subscriptionChecker",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "syncDeliveryRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncDeliveryRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "syncDeliveryRoleClaims",
+        "entryPoint": "syncDeliveryRoleClaims",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncDeliveryTask",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncDeliveryTask",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.update"
+      },
+      "live": {
+        "id": "syncDeliveryTask",
+        "entryPoint": "syncDeliveryTask",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncEmployeeRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncEmployeeRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "syncEmployeeRoleClaims",
+        "entryPoint": "syncEmployeeRoleClaims",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncSellerRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncSellerRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "syncSellerRoleClaims",
+        "entryPoint": "syncSellerRoleClaims",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "syncUserRoleClaims",
+      "presence": "matched-name",
+      "source": {
+        "name": "syncUserRoleClaims",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "eventTrigger",
+        "eventType": "providers/cloud.firestore/eventTypes/document.write"
+      },
+      "live": {
+        "id": "syncUserRoleClaims",
+        "entryPoint": "syncUserRoleClaims",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "unlinkSupportCaseRecord",
+      "presence": "source-only",
+      "source": {
+        "name": "unlinkSupportCaseRecord",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "line": 85,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "updateDeliveryException",
+      "presence": "source-only",
+      "source": {
+        "name": "updateDeliveryException",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart",
+          "line": 110,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "updateRiderContact",
+      "presence": "source-only",
+      "source": {
+        "name": "updateRiderContact",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/delivery/lib/account/rider_account.dart",
+          "line": 75,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "updateRiderIncident",
+      "presence": "matched-name",
+      "source": {
+        "name": "updateRiderIncident",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "updateRiderIncident",
+        "entryPoint": "updateRiderIncident",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart",
+          "line": 125,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "updateSupportRequest",
+      "presence": "source-only",
+      "source": {
+        "name": "updateSupportRequest",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_support_screen.dart",
+          "line": 157,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "uploadReviewPhotoAsset",
+      "presence": "source-only",
+      "source": {
+        "name": "uploadReviewPhotoAsset",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "verifyAssociateCode",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyAssociateCode",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyAssociateCode",
+        "entryPoint": "verifyAssociateCode",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/services/associate_application_service.dart",
+          "line": 62,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyEmailForProfile",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyEmailForProfile",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyEmailForProfile",
+        "entryPoint": "verifyEmailForProfile",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [
+        {
+          "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+          "line": 843,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyEmailOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyEmailOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyEmailOTP",
+        "entryPoint": "verifyEmailOTP",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyPhoneOTP",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyPhoneOTP",
+        "platform": "gcfv1",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyPhoneOTP",
+        "entryPoint": "verifyPhoneOTP",
+        "region": "us-central1",
+        "platform": "gcfv1",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyRazorpayPayment",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyRazorpayPayment",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyRazorpayPayment",
+        "entryPoint": "verifyRazorpayPayment",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+          "line": 225,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+          "line": 417,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/razorpay_service.dart",
+          "line": 685,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/seller/lib/screens/profile/seller_ai_integration_screen.dart",
+          "line": 177,
+          "invocation": "literal"
+        },
+        {
+          "path": "packages/agrimore_services/lib/payment/payment_service.dart",
+          "line": 104,
+          "invocation": "literal"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "verifyWalletTopup",
+      "presence": "matched-name",
+      "source": {
+        "name": "verifyWalletTopup",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "verifyWalletTopup",
+        "entryPoint": "verifyWalletTopup",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs22"
+      },
+      "metadataMismatches": [],
+      "clientCallSites": [
+        {
+          "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+          "line": 362,
+          "invocation": "literal"
+        },
+        {
+          "path": "apps/marketplace/lib/services/wallet_topup_recovery_service.dart",
+          "line": 312,
+          "invocation": "private-wrapper-local-callers-manually-traced"
+        }
+      ],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "viewSupportCaseEvidence",
+      "presence": "source-only",
+      "source": {
+        "name": "viewSupportCaseEvidence",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "httpsTrigger",
+        "eventType": null
+      },
+      "live": null,
+      "metadataMismatches": [],
+      "clientCallSites": [],
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "waiveAssociateOnboardingFee",
+      "presence": "matched-name",
+      "source": {
+        "name": "waiveAssociateOnboardingFee",
+        "platform": "gcfv2",
+        "regions": [
+          "us-central1"
+        ],
+        "regionBasis": "SDK default",
+        "trigger": "callableTrigger",
+        "eventType": null
+      },
+      "live": {
+        "id": "waiveAssociateOnboardingFee",
+        "entryPoint": "waiveAssociateOnboardingFee",
+        "region": "us-central1",
+        "platform": "gcfv2",
+        "runtime": "nodejs20"
+      },
+      "metadataMismatches": [
+        "runtime"
+      ],
+      "clientCallSites": [],
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    }
+  ],
+  "clientInvocationSites": [
+    {
+      "path": "apps/admin/lib/providers/benefit_compliance_provider.dart",
+      "line": 170,
+      "invocation": "literal",
+      "names": [
+        "setBenefitFeatureFlag"
+      ],
+      "sourceOnlyNames": [
+        "setBenefitFeatureFlag"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/providers/benefit_compliance_provider.dart",
+      "line": 200,
+      "invocation": "literal",
+      "names": [
+        "setComplianceStatus"
+      ],
+      "sourceOnlyNames": [
+        "setComplianceStatus"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/providers/order_provider.dart",
+      "line": 791,
+      "invocation": "literal",
+      "names": [
+        "adminUpdateOrderStatus"
+      ],
+      "sourceOnlyNames": [
+        "adminUpdateOrderStatus"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/providers/order_provider.dart",
+      "line": 880,
+      "invocation": "literal",
+      "names": [
+        "confirmOrderReturnReceived"
+      ],
+      "sourceOnlyNames": [
+        "confirmOrderReturnReceived"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart",
+      "line": 110,
+      "invocation": "literal",
+      "names": [
+        "updateDeliveryException"
+      ],
+      "sourceOnlyNames": [
+        "updateDeliveryException"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+      "line": 297,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "reviewRiderIdentityChange",
+        "reviewDocumentSubmission"
+      ],
+      "sourceOnlyNames": [
+        "reviewDocumentSubmission",
+        "reviewRiderIdentityChange"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+      "line": 696,
+      "invocation": "literal",
+      "names": [
+        "reviewRiderBankChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart",
+      "line": 125,
+      "invocation": "literal",
+      "names": [
+        "updateRiderIncident"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 244,
+      "invocation": "literal",
+      "names": [
+        "markRiderPayoutPaid"
+      ],
+      "sourceOnlyNames": [
+        "markRiderPayoutPaid"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 438,
+      "invocation": "literal",
+      "names": [
+        "recordRiderCashDeposit"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 574,
+      "invocation": "literal",
+      "names": [
+        "reviewRiderBankChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 722,
+      "invocation": "literal",
+      "names": [
+        "reviewRiderIdentityChange"
+      ],
+      "sourceOnlyNames": [
+        "reviewRiderIdentityChange"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 917,
+      "invocation": "literal",
+      "names": [
+        "reviewDocumentSubmission"
+      ],
+      "sourceOnlyNames": [
+        "reviewDocumentSubmission"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/delivery/rider_support_screen.dart",
+      "line": 157,
+      "invocation": "literal",
+      "names": [
+        "updateSupportRequest"
+      ],
+      "sourceOnlyNames": [
+        "updateSupportRequest"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/add_employee_screen.dart",
+      "line": 37,
+      "invocation": "literal",
+      "names": [
+        "createEmployeeByAdmin"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/associate_detail_screen.dart",
+      "line": 612,
+      "invocation": "literal",
+      "names": [
+        "reviewEmployeePayoutChange"
+      ],
+      "sourceOnlyNames": [
+        "reviewEmployeePayoutChange"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+      "line": 51,
+      "invocation": "literal",
+      "names": [
+        "retryCommissionException"
+      ],
+      "sourceOnlyNames": [
+        "retryCommissionException"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+      "line": 37,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "reviewEmployeePayoutChange"
+      ],
+      "sourceOnlyNames": [
+        "reviewEmployeePayoutChange"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+      "line": 149,
+      "invocation": "literal",
+      "names": [
+        "markEmployeePayoutPaid"
+      ],
+      "sourceOnlyNames": [
+        "markEmployeePayoutPaid"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+      "line": 232,
+      "invocation": "literal",
+      "names": [
+        "rejectEmployeePayout"
+      ],
+      "sourceOnlyNames": [
+        "rejectEmployeePayout"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+      "line": 105,
+      "invocation": "literal",
+      "names": [
+        "markEmployeePayoutPaid"
+      ],
+      "sourceOnlyNames": [
+        "markEmployeePayoutPaid"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_models.dart",
+      "line": 171,
+      "invocation": "literal",
+      "names": [
+        "financeReconciliationScan"
+      ],
+      "sourceOnlyNames": [
+        "financeReconciliationScan"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+      "line": 135,
+      "invocation": "literal",
+      "names": [
+        "financeReconciliationRecheckFinding"
+      ],
+      "sourceOnlyNames": [
+        "financeReconciliationRecheckFinding"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+      "line": 445,
+      "invocation": "literal",
+      "names": [
+        "createSupportCase"
+      ],
+      "sourceOnlyNames": [
+        "createSupportCase"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+      "line": 315,
+      "invocation": "literal",
+      "names": [
+        "sendBroadcastNotification"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+      "line": 328,
+      "invocation": "literal",
+      "names": [
+        "sendNotificationToUser"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/sellers/add_seller_screen.dart",
+      "line": 38,
+      "invocation": "literal",
+      "names": [
+        "createSellerByAdmin"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart",
+      "line": 598,
+      "invocation": "literal",
+      "names": [
+        "reviewSellerPayoutChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+      "line": 153,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "markSellerWithdrawalPaid",
+        "rejectSellerWithdrawal",
+        "reviewSellerPayoutChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+      "line": 85,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "assignSupportCase",
+        "changeSupportCaseStatus",
+        "resolveSupportCase",
+        "reopenSupportCase",
+        "linkSupportCaseRecord",
+        "unlinkSupportCaseRecord",
+        "addSupportCaseNote"
+      ],
+      "sourceOnlyNames": [
+        "addSupportCaseNote",
+        "assignSupportCase",
+        "changeSupportCaseStatus",
+        "linkSupportCaseRecord",
+        "reopenSupportCase",
+        "resolveSupportCase",
+        "unlinkSupportCaseRecord"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+      "line": 1040,
+      "invocation": "literal",
+      "names": [
+        "attachSupportCaseEvidence"
+      ],
+      "sourceOnlyNames": [
+        "attachSupportCaseEvidence"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/support/support_queue_screen.dart",
+      "line": 241,
+      "invocation": "literal",
+      "names": [
+        "createSupportCase"
+      ],
+      "sourceOnlyNames": [
+        "createSupportCase"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+      "line": 243,
+      "invocation": "literal",
+      "names": [
+        "createSupportCase"
+      ],
+      "sourceOnlyNames": [
+        "createSupportCase"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+      "line": 359,
+      "invocation": "literal",
+      "names": [
+        "createSupportCase"
+      ],
+      "sourceOnlyNames": [
+        "createSupportCase"
+      ]
+    },
+    {
+      "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+      "line": 447,
+      "invocation": "literal",
+      "names": [
+        "createSupportCaseFromSource"
+      ],
+      "sourceOnlyNames": [
+        "createSupportCaseFromSource"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/account/rider_account.dart",
+      "line": 75,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "updateRiderContact"
+      ],
+      "sourceOnlyNames": [
+        "updateRiderContact"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/account/rider_account.dart",
+      "line": 99,
+      "invocation": "literal",
+      "names": [
+        "deleteUserData"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/delivery/delivery_problems.dart",
+      "line": 84,
+      "invocation": "literal",
+      "names": [
+        "reportDeliveryException"
+      ],
+      "sourceOnlyNames": [
+        "reportDeliveryException"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/delivery/delivery_problems.dart",
+      "line": 100,
+      "invocation": "literal",
+      "names": [
+        "attachDeliveryProof"
+      ],
+      "sourceOnlyNames": [
+        "attachDeliveryProof"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/delivery/rider_steps.dart",
+      "line": 180,
+      "invocation": "literal",
+      "names": [
+        "advanceDeliveryStep"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/delivery/rider_steps.dart",
+      "line": 194,
+      "invocation": "literal",
+      "names": [
+        "releaseDeliveryOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/identity/rider_document_review.dart",
+      "line": 180,
+      "invocation": "literal",
+      "names": [
+        "submitDocumentReplacement"
+      ],
+      "sourceOnlyNames": [
+        "submitDocumentReplacement"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/identity/rider_identity.dart",
+      "line": 135,
+      "invocation": "literal",
+      "names": [
+        "requestRiderIdentityChange"
+      ],
+      "sourceOnlyNames": [
+        "requestRiderIdentityChange"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/money/rider_money.dart",
+      "line": 450,
+      "invocation": "literal",
+      "names": [
+        "riderMoneySummary"
+      ],
+      "sourceOnlyNames": [
+        "riderMoneySummary"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/money/rider_money.dart",
+      "line": 462,
+      "invocation": "literal",
+      "names": [
+        "requestRiderBankChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/providers/offer_provider.dart",
+      "line": 161,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "acceptDeliveryOffer",
+        "declineDeliveryOffer"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/registration/rider_application.dart",
+      "line": 203,
+      "invocation": "literal",
+      "names": [
+        "submitRiderApplication"
+      ],
+      "sourceOnlyNames": [
+        "submitRiderApplication"
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/safety/incident_report.dart",
+      "line": 90,
+      "invocation": "literal",
+      "names": [
+        "reportRiderIncident"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+      "line": 971,
+      "invocation": "literal",
+      "names": [
+        "confirmDelivery"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/delivery/lib/support/rider_support.dart",
+      "line": 166,
+      "invocation": "literal",
+      "names": [
+        "submitSupportRequest"
+      ],
+      "sourceOnlyNames": [
+        "submitSupportRequest"
+      ]
+    },
+    {
+      "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+      "line": 113,
+      "invocation": "literal",
+      "names": [
+        "requestEmployeePayoutChange"
+      ],
+      "sourceOnlyNames": [
+        "requestEmployeePayoutChange"
+      ]
+    },
+    {
+      "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+      "line": 167,
+      "invocation": "literal",
+      "names": [
+        "cancelEmployeePayoutChange"
+      ],
+      "sourceOnlyNames": [
+        "cancelEmployeePayoutChange"
+      ]
+    },
+    {
+      "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+      "line": 51,
+      "invocation": "literal",
+      "names": [
+        "requestEmployeePayout"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/providers/ai_connection_provider.dart",
+      "line": 80,
+      "invocation": "literal",
+      "names": [
+        "connectAiProvider"
+      ],
+      "sourceOnlyNames": [
+        "connectAiProvider"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/providers/ai_connection_provider.dart",
+      "line": 105,
+      "invocation": "literal",
+      "names": [
+        "disconnectAiProvider"
+      ],
+      "sourceOnlyNames": [
+        "disconnectAiProvider"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/providers/rfq_provider.dart",
+      "line": 36,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "createRfq",
+        "submitRfqOffer",
+        "createOrderFromRfq",
+        "respondToRfqOffer"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+      "line": 234,
+      "invocation": "literal",
+      "names": [
+        "creditSignupBonus"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+      "line": 362,
+      "invocation": "literal",
+      "names": [
+        "verifyWalletTopup"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/providers/wallet_provider.dart",
+      "line": 415,
+      "invocation": "literal",
+      "names": [
+        "redeemReferralCode"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart",
+      "line": 85,
+      "invocation": "literal",
+      "names": [
+        "redeemOnboardingWebHandoff"
+      ],
+      "sourceOnlyNames": [
+        "redeemOnboardingWebHandoff"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart",
+      "line": 104,
+      "invocation": "literal",
+      "names": [
+        "getAssociateOnboardingConfig"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+      "line": 101,
+      "invocation": "literal",
+      "names": [
+        "createAssociateOnboardingPayment"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+      "line": 177,
+      "invocation": "literal",
+      "names": [
+        "createOnboardingWebHandoff"
+      ],
+      "sourceOnlyNames": [
+        "createOnboardingWebHandoff"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+      "line": 225,
+      "invocation": "literal",
+      "names": [
+        "verifyRazorpayPayment"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart",
+      "line": 253,
+      "invocation": "literal",
+      "names": [
+        "activateAssociateOnboarding"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/user/cart/mobile_cart_screen.dart",
+      "line": 3134,
+      "invocation": "literal",
+      "names": [
+        "createOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/user/checkout/checkout_screen.dart",
+      "line": 742,
+      "invocation": "literal",
+      "names": [
+        "quoteDeliveryFees"
+      ],
+      "sourceOnlyNames": [
+        "quoteDeliveryFees"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/screens/user/checkout/payment_method_screen.dart",
+      "line": 302,
+      "invocation": "literal",
+      "names": [
+        "createOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/screens/user/rewards/rewards_screen.dart",
+      "line": 73,
+      "invocation": "literal",
+      "names": [
+        "claimScratchCard"
+      ],
+      "sourceOnlyNames": [
+        "claimScratchCard"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+      "line": 142,
+      "invocation": "literal",
+      "names": [
+        "quoteDeliveryFees"
+      ],
+      "sourceOnlyNames": [
+        "quoteDeliveryFees"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/services/associate_application_service.dart",
+      "line": 62,
+      "invocation": "literal",
+      "names": [
+        "verifyAssociateCode"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+      "line": 361,
+      "invocation": "literal",
+      "names": [
+        "recoverCheckoutPayment"
+      ],
+      "sourceOnlyNames": [
+        "recoverCheckoutPayment"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+      "line": 417,
+      "invocation": "literal",
+      "names": [
+        "verifyRazorpayPayment"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+      "line": 429,
+      "invocation": "literal",
+      "names": [
+        "createOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/checkout_recovery_service.dart",
+      "line": 459,
+      "invocation": "literal",
+      "names": [
+        "ensureCheckoutSubscriptions"
+      ],
+      "sourceOnlyNames": [
+        "ensureCheckoutSubscriptions"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/services/razorpay_service.dart",
+      "line": 145,
+      "invocation": "literal",
+      "names": [
+        "createRazorpayOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/razorpay_service.dart",
+      "line": 283,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "recoverCheckoutPayment",
+        "recoverWalletTopupPayment"
+      ],
+      "sourceOnlyNames": [
+        "recoverCheckoutPayment",
+        "recoverWalletTopupPayment"
+      ]
+    },
+    {
+      "path": "apps/marketplace/lib/services/razorpay_service.dart",
+      "line": 685,
+      "invocation": "literal",
+      "names": [
+        "verifyRazorpayPayment"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/razorpay_web.dart",
+      "line": 65,
+      "invocation": "literal",
+      "names": [
+        "createRazorpayOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/marketplace/lib/services/wallet_topup_recovery_service.dart",
+      "line": 312,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "recoverWalletTopupPayment",
+        "verifyWalletTopup"
+      ],
+      "sourceOnlyNames": [
+        "recoverWalletTopupPayment"
+      ]
+    },
+    {
+      "path": "apps/seller/lib/providers/rfq_provider.dart",
+      "line": 96,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "submitRfqOffer",
+        "respondToRfqOffer"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_ai_chat_provider.dart",
+      "line": 93,
+      "invocation": "literal",
+      "names": [
+        "sellerAiChatProxy"
+      ],
+      "sourceOnlyNames": [
+        "sellerAiChatProxy"
+      ]
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+      "line": 87,
+      "invocation": "literal",
+      "names": [
+        "createSellerAiActivationOrder"
+      ],
+      "sourceOnlyNames": [
+        "createSellerAiActivationOrder"
+      ]
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+      "line": 113,
+      "invocation": "literal",
+      "names": [
+        "connectSellerAiProvider"
+      ],
+      "sourceOnlyNames": [
+        "connectSellerAiProvider"
+      ]
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_ai_connection_provider.dart",
+      "line": 140,
+      "invocation": "literal",
+      "names": [
+        "disconnectAiProvider"
+      ],
+      "sourceOnlyNames": [
+        "disconnectAiProvider"
+      ]
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_application_provider.dart",
+      "line": 206,
+      "invocation": "literal",
+      "names": [
+        "submitSellerApplication"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/providers/seller_order_provider.dart",
+      "line": 209,
+      "invocation": "literal",
+      "names": [
+        "sellerTransitionOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/screens/home/dashboard_screen.dart",
+      "line": 142,
+      "invocation": "literal",
+      "names": [
+        "rebuildMySellerStats"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/screens/orders/widgets/order_invoice_card.dart",
+      "line": 74,
+      "invocation": "literal",
+      "names": [
+        "issueSellerInvoice"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/screens/payments/wallet.dart",
+      "line": 143,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "sellerWalletSummary",
+        "requestSellerWithdrawal",
+        "cancelSellerWithdrawal",
+        "requestSellerPayoutChange",
+        "cancelSellerPayoutChange"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/screens/profile/seller_ai_integration_screen.dart",
+      "line": 177,
+      "invocation": "literal",
+      "names": [
+        "verifyRazorpayPayment"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "apps/seller/lib/screens/reviews/reviews_screen.dart",
+      "line": 38,
+      "invocation": "literal",
+      "names": [
+        "replyToReview"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "packages/agrimore_services/lib/admin/admin_service.dart",
+      "line": 131,
+      "invocation": "literal",
+      "names": [
+        "setUserRole"
+      ],
+      "sourceOnlyNames": [
+        "setUserRole"
+      ]
+    },
+    {
+      "path": "packages/agrimore_services/lib/ai/ai_chat_service.dart",
+      "line": 118,
+      "invocation": "literal",
+      "names": [
+        "aiChatProxy"
+      ],
+      "sourceOnlyNames": [
+        "aiChatProxy"
+      ]
+    },
+    {
+      "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+      "line": 843,
+      "invocation": "private-wrapper-local-callers-manually-traced",
+      "names": [
+        "verifyEmailForProfile",
+        "completeUserProfile",
+        "changePhoneNumber",
+        "changeEmailAddress",
+        "changeDateOfBirth"
+      ],
+      "sourceOnlyNames": [
+        "changeDateOfBirth",
+        "changeEmailAddress",
+        "changePhoneNumber"
+      ]
+    },
+    {
+      "path": "packages/agrimore_services/lib/auth/auth_service.dart",
+      "line": 1271,
+      "invocation": "literal",
+      "names": [
+        "deleteUserData"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "packages/agrimore_services/lib/payment/custom_payment_service.dart",
+      "line": 52,
+      "invocation": "literal",
+      "names": [
+        "createRazorpayOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "packages/agrimore_services/lib/payment/payment_service.dart",
+      "line": 38,
+      "invocation": "literal",
+      "names": [
+        "createRazorpayOrder"
+      ],
+      "sourceOnlyNames": []
+    },
+    {
+      "path": "packages/agrimore_services/lib/payment/payment_service.dart",
+      "line": 104,
+      "invocation": "literal",
+      "names": [
+        "verifyRazorpayPayment"
+      ],
+      "sourceOnlyNames": []
+    }
+  ],
+  "indexes": {
+    "normalization": "Implicit __name__ tie-break field excluded; density excluded for signature comparison only. No assertion about index state/density compatibility or field overrides. CLI response does not carry readiness state.",
+    "liveCount": 58,
+    "workingSourceCount": 78,
+    "committedSourceCount": 75,
+    "workingMissingLive": [
+      {
+        "collectionGroup": "commission_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeUid",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "delivery_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "employee_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "orders",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderNumber",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "product_credit_holds",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "product_credit_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_cash_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_earnings",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_incidents",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "seller_withdrawals",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_events",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_evidence",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "uploadedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_notes",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "linkedRecords",
+            "arrayConfig": "CONTAINS"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "assignedTo",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "primaryActor.type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "primaryActor.id",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "verified_payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "committedMissingLive": [
+      {
+        "collectionGroup": "commission_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "employeeUid",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "delivery_exceptions",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "employee_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "orders",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "deliveryPartnerId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "orderNumber",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_cash_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_earnings",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_incidents",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "rider_support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "riderId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "seller_withdrawals",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "paidAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_events",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "at",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_evidence",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "uploadedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_case_notes",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "linkedRecords",
+            "arrayConfig": "CONTAINS"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "assignedTo",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "primaryActor.type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "primaryActor.id",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_cases",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "liveOnly": [],
+    "ownerWorkingAdditions": [
+      {
+        "collectionGroup": "product_credit_holds",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "product_credit_ledger",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "verified_payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "ownerWorkingRemovals": [],
+    "workingFileSha256": "2160797d594d1c119a8ccf28fef882b5be2102f3366e993148dc0cb4fe8e039e",
+    "committedFileSha256": "74f22f92935a0821e1846f614b174189850aaaf6d8af7c8b14d9970f285f00c8"
+  },
+  "limits": [
+    "Metadata equality does not establish deployed source equality or runtime behavior.",
+    "Client source dependency does not prove reachable enabled UI or release blocker; classify flags/platform/journey separately.",
+    "99 lexical call sites cover this inventory; private wrapper literals traced manually; alternate HTTP calls, plugins, construction/reflection/external adapters are not covered.",
+    "No live document data, Auth principals, provider calls or function invocation accessed.",
+    "No rules release, index readiness query, backup restore, device/native or managed Linux runtime proof in this audit.",
+    "No deployment, index writes, orphan deletion, flag changes or owner WIP edits."
+  ],
+  "verification": {
+    "standardGateCommit": "ef8377c7450dce38846497f5c2cc48b2b55952e1",
+    "runtime": "v22.23.3",
+    "terminalExit": 0,
+    "failed": 0,
+    "analyzers": {
+      "marketplace": {
+        "errors": 0,
+        "warnings": 127,
+        "infos": 278
+      },
+      "admin": {
+        "errors": 0,
+        "warnings": 74,
+        "infos": 499
+      },
+      "seller": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0
+      },
+      "delivery": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0
+      },
+      "employee": {
+        "errors": 0,
+        "warnings": 2,
+        "infos": 0
+      }
+    },
+    "inventoryCountsUnchanged": {
+      "sourceFiles": 832,
+      "collectionAccesses": 1170,
+      "filterOrderCursorSites": 896,
+      "callableSites": 99
+    },
+    "ownerWorkingIndexHashPreserved": true,
+    "log": "/tmp/agrimore-endpoint-parity-postcommit-gate.log"
+  }
+}

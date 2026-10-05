@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "foundation": "C14: Loading, empty, error and restricted states",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "Compact blue-teal catalogue operations with cool-neutral loading rows, restrained copper context and clearly different rejected versus suspended account treatments.",
+  "panels": [
+    {
+      "label": "Loading",
+      "specimen": "Compact catalogue skeleton rows with neutral square thumbnails and two text bars. Heading \"Loading catalogue\". Helper \"Keep existing rows during refresh\". Small note \"One loading announcement; reduced-motion static\". No product counts or stock numbers."
+    },
+    {
+      "label": "Empty",
+      "specimen": "Catalogue box outline. Title \"No products yet\". Body \"Create your first catalogue item.\" Primary \"Add product\". Separate thin inset labelled Filtered catalogue: \"No matching products\" with text action \"Clear filters\". Note \"Keep search and sort\". These are independent illustrative cases."
+    },
+    {
+      "label": "Error",
+      "specimen": "Compact error block title \"Catalogue unavailable\". Body \"We couldn\u2019t load your products. Try again.\" Filled blue-teal button \"Retry\". Copper helper \"Retry loading; keep catalogue controls\". No raw server error, fake stock or publish action."
+    },
+    {
+      "label": "Restricted",
+      "specimen": "Two separately labelled small cases. Rejected: title \"Application not approved\", helper \"Reopen the application as a draft\", button \"Fix and resubmit\". Divider. Suspended: title \"Seller account suspended\", helper \"Contact support to resolve access\", actions \"Contact support\" and \"Sign out\". No retry or self-reactivate control for suspension. No automatic approval or immediate-resubmit success."
+    }
+  ],
+  "state_contract": [
+    "Evaluate authentication/authorization and requested scope before interpreting data as empty; preserve security boundaries.",
+    "First load with no data gets labelled skeleton/progress, not fake records, prices, amounts, percentages or wait-time estimates.",
+    "Refresh retains safe available content with a visible progress/error indicator. Cached or failed-refresh records must be labelled last-known.",
+    "True empty requires a successful applicable read; filtered no-match, bounded loaded-prefix no-match and failed reads are distinct.",
+    "Permission errors are not ordinary recoverable network errors. Offer supported sign-in/support/navigation rather than blind retry or self-unlock.",
+    "Retry is scoped to the failed recoverable read, preserves controls, ignores duplicate taps while pending and never replays uncertain mutations.",
+    "Restricted actions depend on actual reason/status and server authority. Reopen/edit/resubmit only where supported; submission is not approval.",
+    "Unavailable balances, stock and counts stay unavailable/unknown; errors never imply zero, deletion, settlement or success.",
+    "Safe localized copy says what is unavailable and a meaningful next step; no raw exceptions, internal document paths or sensitive record details.",
+    "Reuse Seller/Delivery/SA/shared state families; separate app theme adapters and semantics rather than introducing duplicate components.",
+    "Loading uses one bounded announcement; icons have text explanations. Maintain focus and 48px targets, static skeletons for reduced motion. These are target requirements, not certification.",
+    "Four board panels are isolated illustrative scenarios, not simultaneous app states or real-account screenshots. All C14 boards remain provisional."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-loading-empty-error-restricted-states-light.png",
+      "sha256": "c066bac5e7b410fcfde162cbdce6a82fa082c5a81958e1f5b519f587686ca162",
+      "bytes": 1259784,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b3c141f8-7bd7-45a0-8f17-6f47f885bd5b.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "65144ac2e7f524d9adf3c1e756358e7cf7e5c960cf357e6c7ab66833c6472423",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b3c141f8-7bd7-45a0-8f17-6f47f885bd5b.png",
+          "source_output_sha256": "c066bac5e7b410fcfde162cbdce6a82fa082c5a81958e1f5b519f587686ca162"
+        }
+      ],
+      "review": "Visually reviewed for app identity, labelled loading, true empty versus filtered no-match, safe scoped error recovery, reason-specific supported restriction actions, no fake amounts/records, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-loading-empty-error-restricted-states-dark.png",
+      "sha256": "d0eb3efafcaaeff0286cef42158073d2edf51915d21571f6e7bfc3002cbf46ce",
+      "bytes": 1405781,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2088937a-89a5-4318-bf1f-04134ca393eb.png",
+      "failed_attempts_without_output": [
+        {
+          "tool": "built-in image_gen",
+          "reason": "Network error before output",
+          "prompt_unchanged": true
+        }
+      ],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "c8f1fc50e9549f37400b982c868191c4dcba68454d1af19fd439ffeba6ddb683",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b3c141f8-7bd7-45a0-8f17-6f47f885bd5b.png",
+              "sha256": "c066bac5e7b410fcfde162cbdce6a82fa082c5a81958e1f5b519f587686ca162",
+              "reference_kind": "Generated C14 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2088937a-89a5-4318-bf1f-04134ca393eb.png",
+          "source_output_sha256": "d0eb3efafcaaeff0286cef42158073d2edf51915d21571f6e7bfc3002cbf46ce"
+        }
+      ],
+      "review": "Visually reviewed for app identity, labelled loading, true empty versus filtered no-match, safe scoped error recovery, reason-specific supported restriction actions, no fake amounts/records, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "c62f41deb70768ea276502b5989f4c72ab1e54536fd982b174045796c3454803"
+}

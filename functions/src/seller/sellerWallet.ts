@@ -53,14 +53,27 @@ export const walletRef = (db: Db, sellerId: string) => db.collection("seller_wal
 
 export interface WalletSettings { minWithdrawalPaise: number; holdDays: number }
 
-/** settings/seller_wallet: { minWithdrawal (rupees), holdDays } — both optional. */
-export async function loadWalletSettings(db: Db): Promise<WalletSettings> {
-  const d = (await db.collection("settings").doc("seller_wallet").get()).data() ?? {};
+function badSellerMoneyState(): never {
+  throw new HttpsError("failed-precondition", "The seller money record needs review", { reason: "bad_money_state" });
+}
+
+/** Safe paise must retain its value through the existing rupee display. */
+function checkedSellerPaise(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0 || toPaise(fromPaise(value)) !== value) badSellerMoneyState();
+  return value;
+}
+
+function walletSettingsFromData(d: FirebaseFirestore.DocumentData): WalletSettings {
   const min = typeof d.minWithdrawal === "number" && Number.isFinite(d.minWithdrawal) && d.minWithdrawal >= 0
     ? toPaise(d.minWithdrawal) : DEFAULT_MIN_WITHDRAWAL_PAISE;
   const hold = typeof d.holdDays === "number" && Number.isInteger(d.holdDays) && d.holdDays >= 0 && d.holdDays <= 60
     ? d.holdDays : DEFAULT_HOLD_DAYS;
-  return { minWithdrawalPaise: min, holdDays: hold };
+  return { minWithdrawalPaise: checkedSellerPaise(min), holdDays: hold };
+}
+
+/** settings/seller_wallet: { minWithdrawal (rupees), holdDays } — both optional. */
+export async function loadWalletSettings(db: Db): Promise<WalletSettings> {
+  return walletSettingsFromData((await db.collection("settings").doc("seller_wallet").get()).data() ?? {});
 }
 
 const millis = (v: unknown): number | null =>
@@ -68,8 +81,10 @@ const millis = (v: unknown): number | null =>
     : v && typeof (v as { toMillis?: unknown }).toMillis === "function" ? (v as { toMillis: () => number }).toMillis() : null;
 
 const netPaise = (d: FirebaseFirestore.DocumentData) => {
-  const n = typeof d.netAmount === "number" ? d.netAmount : typeof d.amount === "number" ? d.amount : 0;
-  return Number.isFinite(n) && n > 0 ? toPaise(n) : 0;
+  // Only an absent net field can use the legacy alias; corruption is not zero.
+  const n = Object.prototype.hasOwnProperty.call(d, "netAmount") ? d.netAmount : d.amount;
+  if (typeof n !== "number" || !Number.isFinite(n) || n < 0) badSellerMoneyState();
+  return checkedSellerPaise(toPaise(n));
 };
 
 /** Whether a payout row can go into a withdrawal now. */
@@ -166,31 +181,55 @@ export interface WalletSummary {
   hasDestination: boolean;
 }
 
-export async function walletSummaryCore(db: Db, sellerId: string, nowMs: number): Promise<WalletSummary> {
-  const settings = await loadWalletSettings(db);
-  const cutoff = nowMs - settings.holdDays * 86400000;
-  const [pending, wallet, details] = await Promise.all([
-    db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending").get(),
-    walletRef(db, sellerId).get(),
-    db.collection("seller_payout_details").doc(sellerId).get(),
-  ]);
-  let available = 0, count = 0, held = 0;
-  for (const p of pending.docs) {
-    const d = p.data();
-    if (d.withdrawalId) continue;
-    if (isWithdrawable(d, cutoff)) { available += netPaise(d); count += 1; } else held += netPaise(d);
+const PENDING_PAYOUT_PAGE_SIZE = 100;
+
+function pendingPayoutQuery(db: Db, sellerId: string): FirebaseFirestore.Query {
+  return db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending")
+    .select("sellerId", "status", "withdrawalId", "createdAt", "netAmount", "amount", "orderNumber", "orderId");
+}
+
+/** Same snapshot and implicit document-ID order across every page. */
+async function* pendingPayoutPages(tx: FirebaseFirestore.Transaction, query: FirebaseFirestore.Query) {
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  for (;;) {
+    const pageQuery = last ? query.startAfter(last).limit(PENDING_PAYOUT_PAGE_SIZE) : query.limit(PENDING_PAYOUT_PAGE_SIZE);
+    const page = await tx.get(pageQuery);
+    yield page;
+    if (page.size < PENDING_PAYOUT_PAGE_SIZE) return;
+    last = page.docs[page.docs.length - 1];
   }
-  const w = wallet.data() ?? {};
-  return {
-    availablePaise: available,
-    availableCount: count,
-    heldPaise: held,
-    minWithdrawalPaise: settings.minWithdrawalPaise,
-    holdDays: settings.holdDays,
-    openWithdrawalId: typeof w.openWithdrawal === "string" ? w.openWithdrawal : null,
-    payoutChangePendingId: typeof w.payoutChangePending === "string" ? w.payoutChangePending : null,
-    hasDestination: payoutDestination(details.data()) !== null,
-  };
+}
+
+export async function walletSummaryCore(db: Db, sellerId: string, nowMs: number): Promise<WalletSummary> {
+  return db.runTransaction(async (tx): Promise<WalletSummary> => {
+    const [wallet, details, settingsDoc] = await Promise.all([
+      tx.get(walletRef(db, sellerId)),
+      tx.get(db.collection("seller_payout_details").doc(sellerId)),
+      tx.get(db.collection("settings").doc("seller_wallet")),
+    ]);
+    const settings = walletSettingsFromData(settingsDoc.data() ?? {});
+    const cutoff = nowMs - settings.holdDays * 86400000;
+    let available = 0, count = 0, held = 0;
+    for await (const page of pendingPayoutPages(tx, pendingPayoutQuery(db, sellerId))) {
+      for (const p of page.docs) {
+        const d = p.data();
+        if (d.withdrawalId) continue;
+        if (isWithdrawable(d, cutoff)) { available = checkedSellerPaise(available + netPaise(d)); count += 1; }
+        else held = checkedSellerPaise(held + netPaise(d));
+      }
+    }
+    const w = wallet.data() ?? {};
+    return {
+      availablePaise: available,
+      availableCount: count,
+      heldPaise: held,
+      minWithdrawalPaise: settings.minWithdrawalPaise,
+      holdDays: settings.holdDays,
+      openWithdrawalId: typeof w.openWithdrawal === "string" ? w.openWithdrawal : null,
+      payoutChangePendingId: typeof w.payoutChangePending === "string" ? w.payoutChangePending : null,
+      hasDestination: payoutDestination(details.data()) !== null,
+    };
+  }, { readOnly: true });
 }
 
 // ── withdrawals ──
@@ -206,22 +245,24 @@ export type WithdrawVerdict =
  */
 export async function requestWithdrawalCore(db: Db, sellerId: string, requestId: unknown, nowMs: number): Promise<WithdrawVerdict> {
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(requestId)) return { kind: "refused", reason: "bad_request_id" };
-  const settings = await loadWalletSettings(db);
-  const cutoff = nowMs - settings.holdDays * 86400000;
   const id = `${sellerId}_${requestId}`;
   const wRef = db.collection("seller_withdrawals").doc(id);
   const accRef = walletRef(db, sellerId);
-  const pendingQ = db.collection("seller_payouts").where("sellerId", "==", sellerId).where("status", "==", "pending");
+  const pendingQ = pendingPayoutQuery(db, sellerId);
   return db.runTransaction(async (tx): Promise<WithdrawVerdict> => {
-    const [existing, seller, acc, details, pending] = await Promise.all([
-      tx.get(wRef), tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
-      tx.get(db.collection("seller_payout_details").doc(sellerId)), tx.get(pendingQ),
-    ]);
+    // A historical request is its own replay anchor. Later seller, wallet,
+    // destination or pending-payout changes must not add reads to that retry.
+    const existing = await tx.get(wRef);
     if (existing.exists) {
       const e = existing.data()!;
       if (e.sellerId !== sellerId) return { kind: "refused", reason: "bad_request_id" };
       return { kind: "already", id, amountPaise: Number(e.amountPaise ?? 0), count: Number(e.payoutCount ?? 0) };
     }
+    const [seller, acc, details, settingsDoc] = await Promise.all([
+      tx.get(db.collection("sellers").doc(sellerId)), tx.get(accRef),
+      tx.get(db.collection("seller_payout_details").doc(sellerId)),
+      tx.get(db.collection("settings").doc("seller_wallet")),
+    ]);
     if (!seller.exists) return { kind: "refused", reason: "not_a_seller" };
     const a = acc.data() ?? {};
     if (typeof a.payoutChangePending === "string" && a.payoutChangePending) return { kind: "refused", reason: "payout_change_pending" };
@@ -229,12 +270,23 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
     const destination = payoutDestination(details.data());
     if (!destination) return { kind: "refused", reason: "no_destination" };
     const destinationFull = payoutDestinationFull(details.data());
-
-    const rows = pending.docs
-      .filter((p) => isWithdrawable(p.data(), cutoff))
-      .sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0))
-      .slice(0, MAX_PAYOUTS_PER_WITHDRAWAL);
-    const amountPaise = rows.reduce((sum, p) => sum + netPaise(p.data()), 0);
+    // Configuration and payout selection belong to the same transaction snapshot.
+    // Completed request replays above never depend on a new settings read.
+    const settings = walletSettingsFromData(settingsDoc.data() ?? {});
+    const cutoff = nowMs - settings.holdDays * 86400000;
+    const rows: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    for await (const page of pendingPayoutPages(tx, pendingQ)) {
+      for (const p of page.docs) {
+        const d = p.data();
+        if (!d.withdrawalId) netPaise(d);
+        if (isWithdrawable(d, cutoff)) rows.push(p);
+      }
+      // Stable sorting preserves the legacy ID tie order. Keep only the oldest
+      // candidates, but still traverse later pages to validate all pending money.
+      rows.sort((x, y) => (millis(x.data().createdAt) ?? 0) - (millis(y.data().createdAt) ?? 0));
+      rows.splice(MAX_PAYOUTS_PER_WITHDRAWAL);
+    }
+    const amountPaise = rows.reduce((sum, p) => checkedSellerPaise(sum + netPaise(p.data())), 0);
     if (amountPaise <= 0) return { kind: "refused", reason: "nothing_to_withdraw" };
     if (amountPaise < settings.minWithdrawalPaise) return { kind: "refused", reason: "below_minimum" };
 
@@ -255,6 +307,44 @@ export type CloseVerdict =
   | { kind: "paid" | "rejected" | "cancelled" | "already"; sellerId: string; amountPaise: number; paidTo?: Record<string, unknown> }
   | { kind: "refused"; reason: "not_found" | "not_requested" | "not_yours" | "payout_change_pending" | "no_destination"
       | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" | "method_mismatch" | "legacy_destination_unresolved" };
+
+/** Firestore document IDs, not paths or coercible values. */
+function validMemberId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= 1500 && !value.includes("/") &&
+    value !== "." && value !== ".." && !/^__.*__$/.test(value) &&
+    Buffer.from(value, "utf8").toString("utf8") === value;
+}
+
+/** Validate the declared set before starting any linked document reads. */
+function withdrawalMemberIds(d: FirebaseFirestore.DocumentData): string[] | null {
+  const ids: unknown = d.payoutIds;
+  if (!validMemberId(d.sellerId) || !Array.isArray(ids) || ids.length === 0 ||
+      ids.length > MAX_PAYOUTS_PER_WITHDRAWAL || !ids.every(validMemberId) ||
+      new Set(ids).size !== ids.length ||
+      !Number.isSafeInteger(d.amountPaise) || d.amountPaise <= 0 ||
+      (Object.prototype.hasOwnProperty.call(d, "payoutCount") && d.payoutCount !== ids.length)) return null;
+  return ids;
+}
+
+/** Preserve per-row legacy rounding; malformed explicit net never uses the alias. */
+function validWithdrawalMembers(
+  d: FirebaseFirestore.DocumentData, withdrawalId: string,
+  payouts: FirebaseFirestore.DocumentSnapshot[]
+): boolean {
+  let sum = 0;
+  for (const p of payouts) {
+    const pd = p.data();
+    if (!pd || pd.sellerId !== d.sellerId || pd.withdrawalId !== withdrawalId || pd.status !== "requested") return false;
+    const amount = Object.prototype.hasOwnProperty.call(pd, "netAmount") ? pd.netAmount : pd.amount;
+    if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) return false;
+    const paise = toPaise(amount);
+    if (!Number.isSafeInteger(paise) || paise <= 0) return false;
+    sum += paise;
+    if (!Number.isSafeInteger(sum)) return false;
+  }
+  return sum === d.amountPaise;
+}
 
 /**
  * ADMR-84: whether `full` is a genuinely complete, internally consistent destinationFull
@@ -303,17 +393,15 @@ export async function markWithdrawalPaidCore(
     const amountPaise = Number(d.amountPaise ?? 0);
     if (d.status === "paid" && d.paymentReference === ref) return { kind: "already", sellerId, amountPaise, paidTo: d.paidTo ?? {} };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
-    const ids: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
+    const ids = withdrawalMemberIds(d);
+    if (ids === null) return { kind: "refused", reason: "payout_mismatch" };
     const [acc, ...payouts] = await Promise.all([
       tx.get(walletRef(db, sellerId)),
       ...ids.map((pid) => tx.get(db.collection("seller_payouts").doc(pid))),
     ]);
     const a = acc.data() ?? {};
     if (typeof a.payoutChangePending === "string" && a.payoutChangePending) return { kind: "refused", reason: "payout_change_pending" };
-    for (const p of payouts) {
-      const pd = p.data();
-      if (!pd || pd.withdrawalId !== withdrawalId || pd.status !== "requested") return { kind: "refused", reason: "payout_mismatch" };
-    }
+    if (!validWithdrawalMembers(d, withdrawalId, payouts)) return { kind: "refused", reason: "payout_mismatch" };
     const dest = d.destination as Record<string, unknown> | undefined;
     if (!dest) return { kind: "refused", reason: "no_destination" };
     if (dest.method !== method) return { kind: "refused", reason: "method_mismatch" };
@@ -344,16 +432,15 @@ export async function closeWithdrawalCore(
     const target = byAdmin ? "rejected" : "cancelled";
     if (d.status === target) return { kind: "already", sellerId, amountPaise: Number(d.amountPaise ?? 0) };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
-    const ids: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
+    const ids = withdrawalMemberIds(d);
+    if (ids === null) return { kind: "refused", reason: "payout_mismatch" };
     const [acc, ...payouts] = await Promise.all([
       tx.get(walletRef(db, sellerId)), ...ids.map((pid) => tx.get(db.collection("seller_payouts").doc(pid))),
     ]);
+    if (!validWithdrawalMembers(d, withdrawalId, payouts)) return { kind: "refused", reason: "payout_mismatch" };
     const at = Timestamp.fromMillis(nowMs);
     for (const p of payouts) {
-      const pd = p.data();
-      if (pd && pd.withdrawalId === withdrawalId && pd.status === "requested") {
-        tx.update(p.ref, { status: "pending", withdrawalId: FieldValue.delete(), updatedAt: at });
-      }
+      tx.update(p.ref, { status: "pending", withdrawalId: FieldValue.delete(), updatedAt: at });
     }
     tx.update(wRef, byAdmin
       ? { status: "rejected", rejectedAt: at, reviewedBy: actor.adminUid, rejectionReason: reason, updatedAt: at }

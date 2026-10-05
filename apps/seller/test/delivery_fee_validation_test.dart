@@ -131,4 +131,29 @@ void main() {
       );
     });
   });
+
+  group('validateDistanceFee', () {
+    test('accepts zero base and a positive paise-aligned rate', () {
+      expect(validateDistanceFee(baseRupees: 0, rateRupeesPerKm: 4.75), isNull);
+    });
+
+    test('rejects negative or above-cap base fees', () {
+      expect(validateDistanceFee(baseRupees: -0.01, rateRupeesPerKm: 1), FeeError.distanceBase);
+      expect(validateDistanceFee(baseRupees: 1000.01, rateRupeesPerKm: 1), FeeError.distanceBase);
+    });
+
+    test('rejects non-positive or above-cap rates', () {
+      expect(validateDistanceFee(baseRupees: 1, rateRupeesPerKm: 0), FeeError.distanceRate);
+      expect(validateDistanceFee(baseRupees: 1, rateRupeesPerKm: 1000.01), FeeError.distanceRate);
+    });
+
+    test('rejects precision finer than one paise', () {
+      expect(validateDistanceFee(baseRupees: 0.001, rateRupeesPerKm: 1), FeeError.precision);
+    });
+
+    test('rejects non-finite numeric values', () {
+      expect(validateDistanceFee(baseRupees: double.nan, rateRupeesPerKm: 1), FeeError.distanceBase);
+      expect(validateDistanceFee(baseRupees: 0, rateRupeesPerKm: double.infinity), FeeError.distanceRate);
+    });
+  });
 }

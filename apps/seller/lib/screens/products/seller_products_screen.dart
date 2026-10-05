@@ -2,6 +2,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
@@ -10,6 +11,7 @@ import '../../providers/seller_product_provider.dart';
 import '../home/add_product_screen.dart';
 import '../posts/create_post_screen.dart';
 import 'widgets/product_list_controls.dart';
+import 'stock_count_validation.dart';
 
 /// Stock badge: "25 in stock" · "Only 3 left" · "Out of stock" — text, icon
 /// and tone (board 12).
@@ -96,17 +98,30 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
   Future<void> _editStock(ProductModel p) async {
     final l10n = AppLocalizations.of(context);
     final uid = _uid;
+    if (uid == null) return;
     final provider = context.read<SellerProductProvider>();
+    int? initialStock;
+    try {
+      final rawProduct = await FirebaseFirestore.instance.collection('products').doc(p.id).get();
+      if (!mounted || _uid != uid) return;
+      initialStock = configuredStockCount(rawProduct.data()?['stock']);
+    } catch (_) {
+      if (mounted && _uid == uid) SellerToast.show(context, l10n.productStockSaveFailed, tone: SellerToastTone.danger);
+      return;
+    }
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => _StockSheet(
         product: p,
-        onSave: (value) => uid == null ? Future.value(false) : provider.updateStock(p.id, value, uid),
+        initialStock: initialStock,
+        onSave: (value) => _uid == uid
+            ? provider.updateStock(p.id, value, uid)
+            : Future.value(false),
       ),
     );
-    if (saved == true && mounted) SellerToast.show(context, l10n.productStockSaved, tone: SellerToastTone.success);
+    if (saved == true && mounted && _uid == uid) SellerToast.show(context, l10n.productStockSaved, tone: SellerToastTone.success);
   }
 
   Future<void> _delete(ProductModel p) async {
@@ -374,8 +389,9 @@ class _ProductCard extends StatelessWidget {
 /// "Update stock" sheet (board 18-03): product summary, units field, Save.
 /// Saving happens here, so a failure keeps the sheet and what was typed.
 class _StockSheet extends StatefulWidget {
-  const _StockSheet({required this.product, required this.onSave});
+  const _StockSheet({required this.product, required this.initialStock, required this.onSave});
   final ProductModel product;
+  final int? initialStock;
   final Future<bool> Function(int value) onSave;
 
   @override
@@ -383,7 +399,7 @@ class _StockSheet extends StatefulWidget {
 }
 
 class _StockSheetState extends State<_StockSheet> {
-  late final _value = TextEditingController(text: '${widget.product.stock}');
+  late final _value = TextEditingController(text: widget.initialStock?.toString() ?? '');
   bool _invalid = false;
   bool _saving = false;
   bool _failed = false;
@@ -395,8 +411,8 @@ class _StockSheetState extends State<_StockSheet> {
   }
 
   Future<void> _save() async {
-    final n = int.tryParse(_value.text.trim());
-    if (n == null || n < 0) {
+    final n = configuredStockCount(int.tryParse(_value.text.trim()));
+    if (n == null) {
       setState(() => _invalid = true);
       return;
     }
@@ -434,11 +450,17 @@ class _StockSheetState extends State<_StockSheet> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(p.name, style: text.titleSmall),
                 Text(SellerFormat.money(p.salePrice), style: text.bodyMedium!.tabular),
-                Text(l10n.productCurrentStock(SellerFormat.count(p.stock)), style: text.bodyMedium),
+                Text(widget.initialStock == null
+                    ? l10n.productStockUnknown
+                    : l10n.productCurrentStock(SellerFormat.count(widget.initialStock!)), style: text.bodyMedium),
               ]),
             ),
           ]),
         ),
+        if (widget.initialStock == null) ...[
+          const SizedBox(height: SellerSpace.s12),
+          SellerBanner(tone: SellerTone.info, message: l10n.productStockBackfillHelp),
+        ],
         const SizedBox(height: SellerSpace.s16),
         SellerTextField(
           fieldKey: const ValueKey('stockValue'),

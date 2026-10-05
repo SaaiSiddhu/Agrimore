@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "foundation": "C02 Typography and number hierarchy",
+  "version": "v1",
+  "generated_on": "2026-10-02",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "generation_tool": "built-in image_gen",
+  "reading_priority": "Offer/task timing → pickup/drop distance and address → cash to collect → item count → reference metadata.",
+  "font_family_reference": "Inter",
+  "role_specification": [
+    {
+      "role": "Countdown",
+      "size_logical_px": 40,
+      "line_height_logical_px": 48,
+      "weight": 700,
+      "specimen": "00:24"
+    },
+    {
+      "role": "Title",
+      "size_logical_px": 24,
+      "line_height_logical_px": 32,
+      "weight": 700,
+      "specimen": "Next pickup"
+    },
+    {
+      "role": "Task",
+      "size_logical_px": 20,
+      "line_height_logical_px": 28,
+      "weight": 600,
+      "specimen": "Collect from seller"
+    },
+    {
+      "role": "Body",
+      "size_logical_px": 17,
+      "line_height_logical_px": 26,
+      "weight": 400,
+      "specimen": "Check the pack count at pickup."
+    },
+    {
+      "role": "Label",
+      "size_logical_px": 14,
+      "line_height_logical_px": 20,
+      "weight": 600,
+      "specimen": "Cash to collect"
+    },
+    {
+      "role": "Caption",
+      "size_logical_px": 12,
+      "line_height_logical_px": 18,
+      "weight": 400,
+      "specimen": "Order reference"
+    },
+    {
+      "role": "Cash",
+      "size_logical_px": 32,
+      "line_height_logical_px": 40,
+      "weight": 700,
+      "specimen": "₹960.00"
+    },
+    {
+      "role": "Distance",
+      "size_logical_px": 28,
+      "line_height_logical_px": 36,
+      "weight": 700,
+      "specimen": "2.4 km"
+    }
+  ],
+  "c01_status": "APPROVED_LOCKED",
+  "c01_version": "v2",
+  "c01_lock_file": "../01-color-roles-theme-identity/lock.json",
+  "c01_board_foundations": {
+    "font_family_reference": "Inter",
+    "font_weights": [
+      700,
+      600,
+      400
+    ],
+    "type_scale_px": [
+      32,
+      24,
+      20,
+      17,
+      14,
+      12
+    ],
+    "spacing_px": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radius_px": [
+      8,
+      12,
+      18
+    ],
+    "border_width_px": {
+      "default": 1,
+      "strong": 1,
+      "focus": 2
+    },
+    "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+  },
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "ec5856328166be6fdc9334da2a33bcb209d87be570da2aaf25f693cbb5ca2900",
+  "implementation_status": "Visual references only; no runtime theme or source migration.",
+  "verification_boundary": "Palette/status specification equality and file integrity are checked; visual review is recorded. Pixel-level raster color/font equivalence is not asserted.",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-typography-number-hierarchy-light.png",
+      "sha256": "39a92e38539679d481d6b995c7296209def7be051e0a793be1696109f01fd6ee",
+      "bytes": 1144240,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-1cf74200-0a3d-43e3-935c-b69811dbec63.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+      "c01_reference_sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "generation_prompt_sha256": "9d9a61cfbe0c898f7cac1224e1afa3f0cb12a4c33da5a622bfddbf520eba14c3",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+          "location": "repository",
+          "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383"
+        }
+      ],
+      "generation_history": [],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-typography-number-hierarchy-dark.png",
+      "sha256": "380906f17bdbf8f78bb76567b3c4d46f857e848f7b3cae255fb0d4ef50ee512e",
+      "bytes": 1341208,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-3638bd4a-2bc5-48f5-af27-a36dedf07519.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+      "c01_reference_sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "generation_prompt_sha256": "94fb97e4d495904f695f6b853e5b9418b400dab7cf6deefc29d55c91f50f3a24",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+          "location": "repository",
+          "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4"
+        },
+        {
+          "input_image": 2,
+          "file": "agrimore-delivery-typography-number-hierarchy-light.png",
+          "location": "repository",
+          "sha256": "39a92e38539679d481d6b995c7296209def7be051e0a793be1696109f01fd6ee"
+        }
+      ],
+      "generation_history": [],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    }
+  ]
+}

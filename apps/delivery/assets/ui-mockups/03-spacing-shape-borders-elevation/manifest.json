@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "foundation": "C03: Spacing, shape, borders and elevation",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white, burgundy and burnt orange",
+  "runtime_implementation": "Not changed; these are documentary design references.",
+  "color_authority": "C01 v2 APPROVED_LOCKED",
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "17499e6329bc157a90ae3e234b2a9487d4cc48abdfaa26427de550f60838ed81",
+  "shadow_proposals": {
+    "classification": "TARGET_IMPLEMENTATION",
+    "tuple_format": [
+      "offset_x_px",
+      "offset_y_px",
+      "blur_px",
+      "spread_px",
+      "tint_hex",
+      "opacity"
+    ],
+    "light": {
+      "soft": [
+        0,
+        1,
+        3,
+        0,
+        "#1C1C1C",
+        0.08
+      ],
+      "raised": [
+        0,
+        4,
+        12,
+        0,
+        "#1C1C1C",
+        0.12
+      ]
+    },
+    "dark": "Prefer tonal surface/raised colors and borders; default shadows may be omitted. Optional neutral shadow is subordinate, requiring rendering review."
+  },
+  "source_evidence": [
+    "apps/delivery/lib/design_system/tokens/delivery_tokens.dart",
+    "apps/delivery/lib/design_system/components/delivery_card.dart",
+    "apps/delivery/lib/screens/home/home_operations_panel.dart",
+    "apps/delivery/lib/screens/offers/incoming_offer_screen.dart"
+  ],
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-spacing-shape-borders-elevation-light.png",
+      "sha256": "68b9e06930238db7a4a63ca419d7b42a9f2e85dba0af98e1cd520e128661f6d3",
+      "bytes": 1233039,
+      "width": 1586,
+      "height": 992,
+      "generation_tool": "built-in image_gen",
+      "generation_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6bdcf2e1-b9dd-44a4-9ebe-9eb17c3ec63a.png",
+      "generation_steps": [
+        {
+          "id": "light-1",
+          "kind": "initial",
+          "prompt_sha256": "4d4889a709387e7c1f42831c79d9e1c6404a4326d06bfcf53bdf56fb7117490f",
+          "prompt_ends_with_newline": true,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-af6d1725-1915-42d1-89c0-56ee6101d1d1.png",
+          "output_sha256": "e2745cc626a6baf7653904dabdb0977ce14c739d1421a645390baebd8299cc9a"
+        },
+        {
+          "id": "light-2",
+          "kind": "targeted_refinement",
+          "prompt_sha256": "4d0737d6689f9d1e809d93220d7a5d5c49e55a1ecf3b19edf503149ac62061f5",
+          "prompt_ends_with_newline": false,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-af6d1725-1915-42d1-89c0-56ee6101d1d1.png",
+              "sha256": "e2745cc626a6baf7653904dabdb0977ce14c739d1421a645390baebd8299cc9a"
+            },
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6bdcf2e1-b9dd-44a4-9ebe-9eb17c3ec63a.png",
+          "output_sha256": "68b9e06930238db7a4a63ca419d7b42a9f2e85dba0af98e1cd520e128661f6d3"
+        }
+      ],
+      "approved_c01_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383"
+      },
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "domain_spacing": [
+        [
+          "Phone page inset",
+          16
+        ],
+        [
+          "Wide page inset",
+          24
+        ],
+        [
+          "Task card padding",
+          16
+        ],
+        [
+          "Task gap",
+          16
+        ],
+        [
+          "Action separation",
+          24
+        ],
+        [
+          "Primary action min height",
+          56
+        ]
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "depth_roles": [
+        "History row",
+        "Task card",
+        "Route sheet"
+      ]
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-spacing-shape-borders-elevation-dark.png",
+      "sha256": "085a42e5f2253440e80605fdc19e9b2bd3fa4d52c9ec1e0db70670eb44337ebb",
+      "bytes": 1177636,
+      "width": 1586,
+      "height": 992,
+      "generation_tool": "built-in image_gen",
+      "generation_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3acb7807-e89d-4fb5-b941-f5087ffa771e.png",
+      "generation_steps": [
+        {
+          "id": "dark-1",
+          "kind": "initial",
+          "prompt_sha256": "f21599da2f9fc56eea624cad724d93e06c204192a2597afcfc208752af806093",
+          "prompt_ends_with_newline": false,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4"
+            },
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/03-spacing-shape-borders-elevation/agrimore-delivery-spacing-shape-borders-elevation-light.png",
+              "sha256": "68b9e06930238db7a4a63ca419d7b42a9f2e85dba0af98e1cd520e128661f6d3"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3acb7807-e89d-4fb5-b941-f5087ffa771e.png",
+          "output_sha256": "085a42e5f2253440e80605fdc19e9b2bd3fa4d52c9ec1e0db70670eb44337ebb"
+        }
+      ],
+      "approved_c01_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4"
+      },
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "domain_spacing": [
+        [
+          "Phone page inset",
+          16
+        ],
+        [
+          "Wide page inset",
+          24
+        ],
+        [
+          "Task card padding",
+          16
+        ],
+        [
+          "Task gap",
+          16
+        ],
+        [
+          "Action separation",
+          24
+        ],
+        [
+          "Primary action min height",
+          56
+        ]
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "depth_roles": [
+        "History row",
+        "Task card",
+        "Route sheet"
+      ]
+    }
+  ],
+  "review": {
+    "method": "Visual review of all ten approved C01 references and all ten selected C03 outputs; targeted image_gen refinement of conflicting Delivery guide and Marketplace/Admin action colors.",
+    "numeric_labels": "Reviewed core spacing, domain spacing rows, radius roles and border widths for each light/dark pair.",
+    "limits": "AI raster references are illustrative. Pixel-exact hex/geometry, rendered runtime responsiveness, accessibility and interaction behavior are not certified."
+  }
+}

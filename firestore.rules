@@ -2,6 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Private review upload state is server-only; no client read/write grants.
+    match /review_photo_drafts/{draftId} { allow read, write: if false; }
+    match /review_photo_upload_limits/{ownerId} { allow read, write: if false; }
+    match /review_photo_rpc_limits/{limitId} { allow read, write: if false; }
+    // Scheduled credit expiry checkpoints are server-owned, including for admins.
+    match /product_credit_expiry_cursors/{cursorId} { allow read, write: if false; }
+    // Monthly accrual checkpoints are private server state, including for admins.
+    match /benefit_accrual_cursors/{period} { allow read, write: if false; }
+
     
     // ============================================
     // HELPER FUNCTIONS
@@ -379,6 +388,36 @@ service cloud.firestore {
         request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
     }
 
+    // Vote metadata is actor-only and separate from review author content.
+    // Absent legacy fields mean empty; malformed votes need trusted repair.
+    function reviewVotesValid(data) {
+      let yes = data.get('helpfulUsers', []);
+      let no = data.get('unhelpfulUsers', []);
+      let yesCount = data.get('helpfulCount', 0);
+      let noCount = data.get('unhelpfulCount', 0);
+      return yes is list && no is list && yesCount is int && noCount is int &&
+        yesCount == yes.size() && noCount == no.size() &&
+        yes.toSet().size() == yes.size() && no.toSet().size() == no.size() &&
+        yes.toSet().intersection(no.toSet()).size() == 0;
+    }
+
+    function reviewVotesInitiallyEmpty() {
+      return reviewVotesValid(request.resource.data) &&
+        request.resource.data.get('helpfulCount', 0) == 0 &&
+        request.resource.data.get('unhelpfulCount', 0) == 0;
+    }
+
+    function reviewSelfVoteOnly() {
+      let actor = [request.auth.uid].toSet();
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['helpfulUsers', 'unhelpfulUsers', 'helpfulCount', 'unhelpfulCount']) &&
+        reviewVotesValid(resource.data) && reviewVotesValid(request.resource.data) &&
+        resource.data.get('helpfulUsers', []).toSet().difference(actor) ==
+          request.resource.data.get('helpfulUsers', []).toSet().difference(actor) &&
+        resource.data.get('unhelpfulUsers', []).toSet().difference(actor) ==
+          request.resource.data.get('unhelpfulUsers', []).toSet().difference(actor);
+    }
+
     match /products/{productId} {
       // Anyone can read products (public catalog)
       allow read: if true;
@@ -409,21 +448,31 @@ service cloud.firestore {
         // (sellerId, productName) cannot be forged; isVerifiedPurchase is
         // overwritten with the truth by onProductReviewWrite.
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-          reviewRatingInRange() &&
-          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
+          reviewRatingInRange() && reviewVotesInitiallyEmpty() &&
+          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy',
+            'photoDraftId', 'photoActivationState']);
         
         // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
         // this checked only the EXISTING document's userId, not whether the
         // update kept it the same — a user editing their own review could
         // rewrite `userId` to someone else's uid, misattributing the review.
         // SELLER-ACCOUNT-1a: nor touch the seller's reply or server stamps.
-        allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == resource.data.userId &&
-          reviewRatingInRange() &&
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
+        allow update: if isAuthenticated() && (
+          (resource.data.userId == request.auth.uid &&
+           resource.data.get('photoActivationState', 'complete') == 'complete' &&
+           request.resource.data.userId == resource.data.userId &&
+           reviewRatingInRange() &&
+           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+             'sellerReply', 'sellerId', 'productName', 'supersededBy',
+             'photoDraftId', 'photoActivationState',
+             'helpfulUsers', 'unhelpfulUsers', 'helpfulCount', 'unhelpfulCount'
+           ])) || reviewSelfVoteOnly());
         
-        // Users can delete their own reviews, admins can delete any
-        allow delete: if isAuthenticated() && 
+        // Managed photos require trusted activation recovery before content edits or deletion.
+        // Votes remain actor-only while pending. Server markers are never client-writable.
+        // Once complete, users can delete their own reviews and admins can delete any.
+        allow delete: if isAuthenticated() &&
+          resource.data.get('photoActivationState', 'complete') == 'complete' &&
           (resource.data.userId == request.auth.uid || isAdmin());
       }
       
@@ -504,6 +553,23 @@ service cloud.firestore {
                  'commissionReversed',
                  // DLV-E1: server-written exception marker and proof path.
                  'openDeliveryException', 'lastDeliveryException', 'deliveryProofPath', 'deliveryProofAttachedAt', 'deliveryProofAttachedBy']);
+    }
+
+    // FOUNDATION: a customer rating is one immutable review plus its summary.
+    // getAfter binds both sides to the same atomic transaction; a legacy
+    // rated-without-review record requires reconciliation rather than overwrite.
+    function ownerOrderRatingChangeIsValid(orderId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return !changed.hasAny(['rating', 'isRated']) ||
+        (resource.data.orderStatus == 'delivered' &&
+         resource.data.get('isRated', false) == false &&
+         changed.hasOnly(['rating', 'isRated']) &&
+         request.resource.data.isRated == true &&
+         request.resource.data.rating is int &&
+         request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+         getAfter(/databases/$(database)/documents/orders/$(orderId)/reviews/$(request.auth.uid)).data.userId == request.auth.uid &&
+         getAfter(/databases/$(database)/documents/orders/$(orderId)/reviews/$(request.auth.uid)).data.rating == request.resource.data.rating &&
+         getAfter(/databases/$(database)/documents/orders/$(orderId)/reviews/$(request.auth.uid)).data.createdAt == request.time);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -607,6 +673,7 @@ service cloud.firestore {
       // productCreditReversed.
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
+        'rating', 'isRated',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
         'orderMode', 'commissionPaid', 'commissionAmount', 'commissionReversed', 'deliveryVerificationCode',
         'deliveryPartnerId',
@@ -637,6 +704,7 @@ service cloud.firestore {
       // orderFulfilmentCannotChangeProtectedFields() above.
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
+        'rating', 'isRated',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
         'orderMode', 'commissionPaid', 'commissionAmount', 'commissionReversed', 'deliveryVerificationCode',
         'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
@@ -733,7 +801,8 @@ service cloud.firestore {
       allow update: if isAuthenticated() &&
         ((resource.data.userId == request.auth.uid &&
           ownerCannotChangeOrderFinancials() &&
-          ownerOrderStatusChangeIsValid()) ||
+          ownerOrderStatusChangeIsValid() &&
+          ownerOrderRatingChangeIsValid(orderId)) ||
          (isSeller() && resource.data.sellerId == request.auth.uid &&
           orderFulfilmentCannotChangeProtectedFields() &&
           sellerCannotChangeOrderLifecycle()) ||
@@ -753,6 +822,28 @@ service cloud.firestore {
       // Only admin can delete orders
       allow delete: if isAdmin();
       
+      // One delivered customer's immutable review, keyed by their UID.
+      match /reviews/{reviewId} {
+        allow read: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid || isAdmin());
+        allow create: if isAuthenticated() && reviewId == request.auth.uid &&
+          get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid &&
+          get(/databases/$(database)/documents/orders/$(orderId)).data.orderStatus == 'delivered' &&
+          get(/databases/$(database)/documents/orders/$(orderId)).data.get('isRated', false) == false &&
+          request.resource.data.keys().hasAll(['userId', 'rating', 'tags', 'note', 'createdAt']) &&
+          request.resource.data.keys().hasOnly(['userId', 'rating', 'tags', 'note', 'createdAt']) &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.rating is int &&
+          request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+          request.resource.data.tags is list && request.resource.data.tags.size() <= 6 &&
+          request.resource.data.tags.hasOnly(['Fast Delivery', 'Fresh Items', 'Good Packaging', 'Great Value', 'Polite Driver', 'On Time']) &&
+          request.resource.data.note is string && request.resource.data.note.size() <= 2000 &&
+          request.resource.data.createdAt == request.time &&
+          getAfter(/databases/$(database)/documents/orders/$(orderId)).data.isRated == true &&
+          getAfter(/databases/$(database)/documents/orders/$(orderId)).data.rating == request.resource.data.rating;
+        allow update, delete: if false;
+      }
+
       // Order timeline subcollection
       match /timeline/{eventId} {
         allow read: if isAuthenticated() && 
@@ -1562,8 +1653,11 @@ service cloud.firestore {
       // User can create addresses for themselves
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
 
-      // User can update/delete their own addresses
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // An address stays with its creator; ordinary/default edits keep userId.
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+        ('userId' in request.resource.data) &&
+        request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
@@ -2379,6 +2473,11 @@ service cloud.firestore {
     // an oversight. functions/src/customer/createOrder.ts (Admin SDK,
     // inside its own order-creation transaction) is the only reader/writer.
     match /order_rate_limits/{uid} {
+      allow read, write: if false;
+    }
+
+    // Server-only scheduled payment reconciliation progress, never client authority.
+    match /payment_reconciliation_cursors/{cursorId} {
       allow read, write: if false;
     }
 

@@ -1,0 +1,666 @@
+{
+  "classification": "CURRENT_IMPLEMENTATION / VERIFIED_REPOSITORY_FACT; semantic slice only",
+  "capturedAtUtc": "2026-10-04T18:25:36.716042+00:00",
+  "sourceAtClaimCommit": "d7d0b187e768404d560656b22017d83b3eb8a639",
+  "sourceWorkingHashes": {
+    "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart": "7efe0467cddd7ae61bb19631605d183db6f7f3fbe9295afa22f7a0b15ada0677",
+    "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart": "cb045ce8bac2e2f088b1516a4affef1ad073908bd3a8754da0a29833ef4abab7",
+    "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart": "e78d6785244a5eead00648d8b918b8adf61b4f5b437f743ab2aeffe2186e2cab",
+    "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart": "efbbac5bc3157839793f39a98dd780eb54fd2eded6940ec12b470d741a772743",
+    "apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart": "3f01163d3bb449a19912308df650d83a861d5fe3612637627f05c61c5e827758",
+    "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart": "e0d119857d91f3b8720bd9d0d7df1d6c90743cd003cbf7b5e4ed7bd09d3f8ee4",
+    "apps/delivery/lib/money/rider_money.dart": "128335243dae17f1926fbcfe7dd98bdb5beb5db37efbb346276862be47e951ef",
+    "apps/employee/lib/screens/wallet/payout_account_screen.dart": "50bb956d7e151ad6d4332608cc15baf6f1e4b38fb8b5ed3eaa0125c59c2683ed",
+    "apps/employee/lib/screens/wallet/payout_details_screen.dart": "8dcb6dcbe96236601178ef7d5fbd4803c03b8e1ef09f3f1c04b7d61cc7b2a4ef",
+    "apps/employee/lib/screens/wallet/payout_history_screen.dart": "d027dac01dfc6216960acb51442dd00f5b79a3434581f2c5854f6072dc417510",
+    "apps/employee/lib/screens/wallet/wallet_screen.dart": "a36236693fde2268930fd7899f2a71c937cf335398a65d116b37c344fd8dce0d",
+    "apps/seller/lib/screens/payments/payments_screen.dart": "5c5ce6e5771cee11dd750dba4d1b0f9fa6098fd4319e8229b724966865695d26",
+    "apps/seller/lib/screens/payments/wallet.dart": "fb17fd5988230af1f1402c9e4ef1e0ff2a6a8aee6a8922c51b183e46382248a2",
+    "firestore.indexes.json": "5fd4ebd128f62dc43582d95569361390ac4d07a12a95323fb2caecd3d46fe09e",
+    "firestore.rules": "424d0fac3df1f0b775671d0c7371e15b7c29a2dc95940d5bf0e8d7a0d12f86a4",
+    "functions/src/customer/requestEmployeePayout.ts": "8dcaca4f95a565ab9e45e26b0415ddc61cfeba28e365cb8bc243d1bc81719b84",
+    "functions/src/customer/reviewEmployeePayout.ts": "4f9c75e1c32307905a498f89f37fa073b5870a5ad46adc9f09da85405a439212",
+    "functions/src/delivery/riderMoney.ts": "8712e6cb8a53d07edd163354a5b7a13cfcd95d9357d903fd19379608f6689e05",
+    "functions/src/seller/sellerWallet.ts": "e21dbbe85876da32bb060dcac0cdcc319f5a6039ef2c81a1853327035513acc7"
+  },
+  "queryRows": [
+    {
+      "name": "Rider unsettled earnings",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 293,
+      "anchor": ".collection('rider_earnings')",
+      "query": "riderId == captured rider; statementId == null; snapshots; sort in memory",
+      "bound": "UNBOUNDED",
+      "notes": "All unsettled rows, not just a page; immutable object owner is not complete Auth/session lifecycle proof.",
+      "indexFields": []
+    },
+    {
+      "name": "Rider account",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 313,
+      "anchor": ".collection('rider_accounts')",
+      "query": "doc(captured riderId); snapshots; ignore uncached absent result",
+      "bound": "POINT",
+      "notes": "Authoritative paise model; missing uncached document is not reported as confirmed zero cash.",
+      "indexFields": []
+    },
+    {
+      "name": "Rider payout history",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 328,
+      "anchor": ".collection('rider_payouts')",
+      "query": "riderId == captured rider; snapshots; sort createdAt in memory",
+      "bound": "UNBOUNDED",
+      "notes": "This method loads every statement; no server order/limit or history cursor.",
+      "indexFields": []
+    },
+    {
+      "name": "Latest rider bank request",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 343,
+      "anchor": ".collection('rider_bank_change_requests')",
+      "query": "riderId == captured rider; snapshots; sort all createdAt then first",
+      "bound": "UNBOUNDED",
+      "notes": "Latest-result rendering does not bound the database query.",
+      "indexFields": []
+    },
+    {
+      "name": "Statement delivery page",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 435,
+      "anchor": ".where('statementId', isEqualTo: statementId)",
+      "query": "riderId == captured rider; statementId == selected statement; createdAt DESC; limit(pageSize); startAfterDocument(after)",
+      "bound": "CURSOR_PAGE_50_DEFAULT",
+      "notes": "pageSize is caller-supplied; the method has no explicit maximum clamp. Default50; carry opaque snapshot cursor.",
+      "indexFields": [
+        "riderId:ASCENDING",
+        "statementId:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "rider_earnings"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Rider earning detail",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 405,
+      "anchor": ".doc(orderId).get()",
+      "query": "rider_earnings/{orderId}; one get",
+      "bound": "POINT",
+      "notes": "Stored riderId is checked by the repository method; permission-denied/not-found become null.",
+      "indexFields": []
+    },
+    {
+      "name": "Rider payout detail",
+      "role": "rider",
+      "sourcePath": "apps/delivery/lib/money/rider_money.dart",
+      "line": 419,
+      "anchor": ".doc(id).get()",
+      "query": "rider_payouts/{id}; one get",
+      "bound": "POINT",
+      "notes": "Stored riderId checked; one record is not historical enumeration.",
+      "indexFields": []
+    },
+    {
+      "name": "Seller withdrawals preview",
+      "role": "seller",
+      "sourcePath": "apps/seller/lib/screens/payments/wallet.dart",
+      "line": 157,
+      "anchor": ".collection('seller_withdrawals')",
+      "query": "sellerId == captured uid; createdAt DESC; limit20; snapshots",
+      "bound": "FIXED_PREVIEW_20",
+      "notes": "No cursor/load-more in this source; do not label complete withdrawal history.",
+      "indexFields": [
+        "sellerId:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "business_posts",
+        "follows",
+        "orders",
+        "products",
+        "reviews",
+        "seller_payout_change_requests",
+        "seller_payouts",
+        "seller_withdrawals"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Seller pending payout change",
+      "role": "seller",
+      "sourcePath": "apps/seller/lib/screens/payments/wallet.dart",
+      "line": 166,
+      "anchor": ".collection('seller_payout_change_requests')",
+      "query": "sellerId == captured uid; status == pending; limit1; snapshots",
+      "bound": "FIXED_1",
+      "notes": "No ordering; server single-pending invariant is required. Not a complete pending-request audit.",
+      "indexFields": []
+    },
+    {
+      "name": "Seller payout list",
+      "role": "seller",
+      "sourcePath": "apps/seller/lib/screens/payments/payments_screen.dart",
+      "line": 130,
+      "anchor": ".collection('seller_payouts')",
+      "query": "sellerId == current user; createdAt DESC; limit200; snapshots",
+      "bound": "FIXED_PREVIEW_200",
+      "notes": "Statement rendering/totals are computed from this limited list, not all-time authoritative amounts.",
+      "indexFields": [
+        "sellerId:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "business_posts",
+        "follows",
+        "orders",
+        "products",
+        "reviews",
+        "seller_payout_change_requests",
+        "seller_payouts",
+        "seller_withdrawals"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Employee wallet",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/wallet_screen.dart",
+      "line": 95,
+      "anchor": ".collection('wallets')",
+      "query": "doc(current uid); snapshots",
+      "bound": "POINT",
+      "notes": "Money stays in shared wallets, not the employee payout-change marker.",
+      "indexFields": []
+    },
+    {
+      "name": "Employee ledger prefix",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/wallet_screen.dart",
+      "line": 284,
+      "anchor": ".collection('wallet_transactions')",
+      "query": "userId == uid; createdAt DESC; limit(_pageSize); snapshots",
+      "bound": "GROWING_PREFIX_20_STEP",
+      "notes": "Load-more adds20 to one listener limit; not a snapshot cursor or fixed total cap. Status filters are applied client-side.",
+      "indexFields": [
+        "userId:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "notifications",
+        "orders",
+        "reviews",
+        "wallet_transactions"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Employee payout prefix",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/payout_history_screen.dart",
+      "line": 82,
+      "anchor": ".collection('employee_payouts')",
+      "query": "employeeId == uid; createdAt DESC; limit(_pageSize); snapshots",
+      "bound": "GROWING_PREFIX_20_STEP",
+      "notes": "Load-more adds20 and rereads the prefix; status filtering is client-side.",
+      "indexFields": [
+        "employeeId:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "employee_payouts"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Employee payout detail",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/payout_details_screen.dart",
+      "line": 36,
+      "anchor": ".collection('employee_payouts')",
+      "query": "doc(payoutId); one snapshot listener",
+      "bound": "POINT",
+      "notes": "Verify route identity/session ownership separately from owner-based rules.",
+      "indexFields": []
+    },
+    {
+      "name": "Employee payout account",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+      "line": 216,
+      "anchor": ".collection('employees')",
+      "query": "doc(current uid); snapshots",
+      "bound": "POINT",
+      "notes": "Source employee update payout-field protection differs from active rules; callable compatibility gate remains.",
+      "indexFields": []
+    },
+    {
+      "name": "Employee payout-change marker",
+      "role": "employee",
+      "sourcePath": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+      "line": 253,
+      "anchor": ".collection('employee_wallets')",
+      "query": "doc(current uid); snapshots",
+      "bound": "POINT",
+      "notes": "Private marker only, not balance; scoped source rule is absent in active snapshot.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin employee payouts",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+      "line": 195,
+      "anchor": ".collection('employee_payouts')",
+      "query": "createdAt DESC; snapshots; status filter in memory",
+      "bound": "UNBOUNDED",
+      "notes": "All employees/all payout history is loaded; no query limit/cursor. Local client-paid rule is removed while live compatibility declaration remains.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin commission exceptions",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+      "line": 91,
+      "anchor": ".collection('commission_exceptions')",
+      "query": "createdAt DESC; limit200; snapshots",
+      "bound": "FIXED_PREVIEW_200",
+      "notes": "A preview only; complete finance exception audit needs paging/filters.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin employee payout changes",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+      "line": 114,
+      "anchor": ".collection('employee_payout_change_requests')",
+      "query": "status == pending; limit200; snapshots",
+      "bound": "FIXED_200",
+      "notes": "No explicit order; source-only scoped read declaration/callables need rollout.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin seller payout rows",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart",
+      "line": 97,
+      "anchor": ".collection('seller_payouts')",
+      "query": "status == selected status; createdAt DESC; limit200; snapshots",
+      "bound": "FIXED_PREVIEW_200",
+      "notes": "Legacy admin-paid mutation exists; separate withdrawal/callable workflow must be reviewed.",
+      "indexFields": [
+        "status:ASCENDING",
+        "createdAt:DESCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "deliveryRequests",
+        "delivery_exceptions",
+        "delivery_partners",
+        "products",
+        "rider_incidents",
+        "sellerRequests",
+        "seller_payout_change_requests",
+        "seller_payouts",
+        "seller_withdrawals",
+        "sellers",
+        "vendors"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Admin seller withdrawals",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+      "line": 327,
+      "anchor": ".collection('seller_withdrawals').where",
+      "query": "status == selected status; limit300; snapshots",
+      "bound": "FIXED_300",
+      "notes": "No explicit server order/cursor; do not imply all requested withdrawals are visible.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin seller payout changes",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+      "line": 416,
+      "anchor": ".collection('seller_payout_change_requests').where",
+      "query": "status == pending; limit200; snapshots",
+      "bound": "FIXED_200",
+      "notes": "No explicit server order/cursor; complete backlog visibility remains a requirement.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin rider payout rows",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 289,
+      "anchor": ".collection('rider_payouts')",
+      "query": "status == selected status; limit300; snapshots",
+      "bound": "FIXED_300",
+      "notes": "Client sorts the limited subset; not a guaranteed most-recent300 or full pending backlog.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin rider cash list",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 478,
+      "anchor": ".collection('rider_accounts')",
+      "query": "cashHeld > 0; cashHeld DESC; limit300; snapshots",
+      "bound": "FIXED_300",
+      "notes": "Query uses rupee display field; rendering prefers authoritative paise. Paise-only/stale-display coverage needs a projection audit.",
+      "indexFields": []
+    },
+    {
+      "name": "Admin rider bank changes",
+      "role": "admin",
+      "sourcePath": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "line": 604,
+      "anchor": ".collection('rider_bank_change_requests')",
+      "query": "status == pending; limit200; snapshots",
+      "bound": "FIXED_200",
+      "notes": "No explicit server order/cursor; source/active read block token-equal, full Auth lifecycle not certified.",
+      "indexFields": []
+    },
+    {
+      "name": "Weekly statement candidate earnings",
+      "role": "server",
+      "sourcePath": "functions/src/delivery/riderMoney.ts",
+      "line": 296,
+      "anchor": "const unsettled =",
+      "query": "riderId == rider; statementId == null; createdAt < cutoff Timestamp; createdAt ASC; limit401; transaction read",
+      "bound": "FIXED_401",
+      "notes": "New own ASC composite; existing-anchor retries return before this query. Existing millis eligibility filter/sort retained.",
+      "indexFields": [
+        "riderId:ASCENDING",
+        "statementId:ASCENDING",
+        "createdAt:ASCENDING"
+      ],
+      "matchingPreparedCompositeCollections": [
+        "rider_earnings"
+      ],
+      "liveReadiness": "UNKNOWN_HTTP500; no deployed READY or planner claim"
+    },
+    {
+      "name": "Weekly rider account enumeration",
+      "role": "server",
+      "sourcePath": "functions/src/delivery/riderMoney.ts",
+      "line": 360,
+      "anchor": "const accounts =",
+      "query": "rider_accounts; all documents; then per-rider parts",
+      "bound": "UNBOUNDED",
+      "notes": "Global scheduler account enumeration remains unbounded; max50 parts/rider bounds writes/parts, not project-wide reads.",
+      "indexFields": []
+    },
+    {
+      "name": "Rider pending payouts during bank change",
+      "role": "server",
+      "sourcePath": "functions/src/delivery/riderMoney.ts",
+      "line": 402,
+      "anchor": "const pendingPayouts =",
+      "query": "riderId == rider; status == pending; transaction query",
+      "bound": "UNBOUNDED",
+      "notes": "Every returned payout can be updated in one transaction; large backlog write/read budget remains OPEN.",
+      "indexFields": []
+    },
+    {
+      "name": "Rider held payouts during review",
+      "role": "server",
+      "sourcePath": "functions/src/delivery/riderMoney.ts",
+      "line": 431,
+      "anchor": "const held =",
+      "query": "riderId == rider; status == on_hold; transaction query",
+      "bound": "UNBOUNDED",
+      "notes": "Every matching eligible hold can be released in one transaction; do not cap and silently release a subset.",
+      "indexFields": []
+    },
+    {
+      "name": "Seller wallet summary pending rows",
+      "role": "server",
+      "sourcePath": "functions/src/seller/sellerWallet.ts",
+      "line": 173,
+      "anchor": "db.collection(\"seller_payouts\").where",
+      "query": "sellerId == seller; status == pending; get; filter maturity/withdrawal state in memory",
+      "bound": "UNBOUNDED",
+      "notes": "Summary combines pending rows, seller_wallets marker, payout destination and settings. Preview limits are not authoritative balances.",
+      "indexFields": []
+    },
+    {
+      "name": "Seller withdrawal pending rows",
+      "role": "server",
+      "sourcePath": "functions/src/seller/sellerWallet.ts",
+      "line": 214,
+      "anchor": "const pendingQ =",
+      "query": "sellerId == seller; status == pending; transaction query; filter maturity then select400",
+      "bound": "UNBOUNDED",
+      "notes": "400 selected payout writes do not bound the query. Existing request replay reads query/destination/account before returning; separate follow-up.",
+      "indexFields": []
+    },
+    {
+      "name": "Employee payout transaction",
+      "role": "server",
+      "sourcePath": "functions/src/customer/requestEmployeePayout.ts",
+      "line": 65,
+      "anchor": "const [walletSnap, existingPayout, employeeSnap]",
+      "query": "wallets/{uid}; employee_payouts/{uid_requestId}; employees/{uid}; transaction point reads",
+      "bound": "POINT_SET_3",
+      "notes": "Authenticated approved employee; owner/amount-matching anchor; destination captured with balance in transaction. No collection enumeration.",
+      "indexFields": []
+    },
+    {
+      "name": "Employee payout review transaction",
+      "role": "server",
+      "sourcePath": "functions/src/customer/reviewEmployeePayout.ts",
+      "line": 63,
+      "anchor": "const payoutRef =",
+      "query": "employee_payouts/{payoutId}; rejection also wallets/{employeeId}; point reads",
+      "bound": "POINT_SET",
+      "notes": "Admin callable authority and once-only reversal are separate from local client read permissions; named handlers source-only in dated listing.",
+      "indexFields": []
+    }
+  ],
+  "queryCount": 33,
+  "endpoints": [
+    {
+      "name": "buildRiderStatements",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "cancelEmployeePayoutChange",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "cancelSellerWithdrawal",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "markEmployeePayoutPaid",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "markRiderPayoutPaid",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "markSellerWithdrawalPaid",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "recordRiderCashDeposit",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "rejectEmployeePayout",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "rejectSellerWithdrawal",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayout",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestEmployeePayoutChange",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "requestRiderBankChange",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "requestSellerWithdrawal",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "reviewEmployeePayoutChange",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "reviewRiderBankChange",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    },
+    {
+      "name": "riderMoneySummary",
+      "presence": "source-only",
+      "deployedCodeEquality": "NOT_APPLICABLE"
+    },
+    {
+      "name": "sellerWalletSummary",
+      "presence": "matched-name",
+      "deployedCodeEquality": "UNKNOWN_LIVE_STATE"
+    }
+  ],
+  "endpointEvidence": "Dated F0_FUNCTION_ENDPOINT_PARITY_2026_10_04.json; name presence does not certify deployed code equality. No fresh Functions listing in this scope.",
+  "indexEvidence": {
+    "priorCommittedCount": 75,
+    "preparedSameCommitCount": 76,
+    "workingCount": 79,
+    "newOwnShape": {
+      "collectionGroup": "rider_earnings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "riderId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "statementId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    "ownerWorkingAdditionsPreserved": [
+      {
+        "collectionGroup": "product_credit_holds",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ],
+        "queryScope": "COLLECTION"
+      },
+      {
+        "collectionGroup": "product_credit_ledger",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "order": "ASCENDING"
+          }
+        ],
+        "queryScope": "COLLECTION"
+      },
+      {
+        "collectionGroup": "verified_payments",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "order": "DESCENDING"
+          }
+        ],
+        "queryScope": "COLLECTION"
+      }
+    ],
+    "liveState": "UNKNOWN_HTTP500 in latest metadata refresh",
+    "note": "Only own prepared committed-base expansion will be staged; three owner additions remain working-only. Historical old index counts/hashes retain their dates."
+  },
+  "activeRuleEvidence": "F0_ACTIVE_RULES_RECOVERY_2026_10_04.json: rider/seller payout blocks token-equal, employee payout and employee field guards differ; employee marker/change scoped declarations source-only. Not formal grant equivalence.",
+  "verification": {
+    "originalTwelveCaseResult": "3passed9failed",
+    "fixedTwelveCaseResult": "12passed0failed",
+    "limitMutation": "10passed2failed/source restored and rebuilt",
+    "anchorMutation": "6passed6failed/source restored and rebuilt",
+    "finalRetainedCohort": {
+      "passed": 95,
+      "failed": 0,
+      "terminalExit": 0,
+      "suites": [
+        14,
+        10,
+        23,
+        48
+      ],
+      "log": "/tmp/agrimore-statement-bounds-exact-final.log",
+      "scope": "Actual compiled helpers/Admin SDK demo transactions; two scheduler-core notice controls; legacy HTTP notice suite excluded."
+    },
+    "standardPostcommitGate": {
+      "sourceCommit": "313db577c1d8b7c60b116709a7dcfaa472159b53",
+      "terminalExit": 0,
+      "failedChecks": 0,
+      "node": "22.23.3",
+      "npm": "10.9.9",
+      "log": "/tmp/agrimore-statement-query-postcommit-gate.log",
+      "fiveAppErrors": 0,
+      "deliveryDiagnostics": 0
+    }
+  },
+  "openRequirements": [
+    "Global rider account enumeration paging and scheduler runtime budget",
+    "Atomic bounded rider bank-change hold/release over large payout sets",
+    "Seller pending summary/withdrawal read bounds and monetary validation",
+    "All-role money history/backlog cursor coverage and owner session teardown",
+    "Rupee-display versus authoritative paise projection audit",
+    "Named callable/client compatibility and live rules/index readiness",
+    "Actual provider/bank/COD/device journeys, restore/RPO/RTO and full F0-F9 acceptance"
+  ]
+}

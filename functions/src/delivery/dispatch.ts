@@ -34,6 +34,7 @@ import { dropPoint, orderPickupPoint, sellerPickupPoint } from "./syncDeliveryTa
 import { isTerminal, taskStatusFromOrder } from "./states";
 import { riderPay, tripKm } from "./riderPay";
 import { loadRiderPayRates, ridersAtCashLimit } from "./riderRates";
+import { readCodAmountPaise } from "./riderCashBalance";
 
 export const WAVE_RADII_KM = [5, 8, 12] as const;
 export const WAVE_SIZE = 3;
@@ -275,17 +276,30 @@ export async function runNextWave(
     if (opts.expectWave !== undefined && (d.wave ?? 0) !== opts.expectWave) return null;
     if (!opts.force && (millis(d.nextActionAt) ?? 0) > nowMs) return null;
     if (hasPartner(order) || !isReadyForPickup(order)) return { stop: true as const, order };
+    const codP = isCod(order.paymentMethod) ? readCodAmountPaise(order.total) : 0;
+    if (codP === null) {
+      tx.update(ref, {
+        needsAdmin: true,
+        ...(!d.needsAdmin ? { needsAdminSince: Timestamp.fromMillis(nowMs) } : {}),
+        cashReviewReason: "invalid_cod_total",
+        nextActionAt: Timestamp.fromMillis(nowMs + RETRY_INTERVAL_MS),
+        leaseUntil: Timestamp.fromMillis(0),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { review: true as const };
+    }
     tx.update(ref, { leaseUntil: Timestamp.fromMillis(nowMs + WAVE_LEASE_MS) });
-    return { stop: false as const, d, order };
+    return { stop: false as const, d, order, codP };
   });
   if (!claim) return { wave: null, offered: [] as string[] };
+  if ("review" in claim) return { wave: null, offered: [] as string[], needsAdmin: true };
   if (claim.stop) {
     await closeDispatch(db, orderId, hasPartner(claim.order) ? claim.order.deliveryPartnerId : null, nowMs,
       hasPartner(claim.order) ? "assigned_elsewhere" : "order_not_ready");
     return { wave: null, offered: [] as string[] };
   }
 
-  const { d, order } = claim;
+  const { d, order, codP } = claim;
   const pickup = await resolvePickup(db, order);
   const partners = await db.collection("delivery_partners")
     .where("status", "==", "approved").where("isOnline", "==", true).get();
@@ -298,8 +312,14 @@ export async function runNextWave(
   // DLV-4A (D-DLV-COD): a rider holding cash at or over the limit gets no
   // COD offers until admin confirms a deposit; prepaid offers still come.
   const rates = await loadRiderPayRates(db);
-  const codOrder = isCod(order.paymentMethod) && (num(order.total) ?? 0) > 0;
-  const overCashLimit = codOrder ? await ridersAtCashLimit(db, rates.codCashLimit) : new Set<string>();
+  const codOrder = codP > 0;
+  const candidates = codOrder ? rankCandidates(partnerList, {
+    pickup, orderAddress: order.deliveryAddress || {}, exclude: new Set([...declined, ...open]), busy,
+    radiusKm: WAVE_RADII_KM[WAVE_RADII_KM.length - 1], limit: partnerList.length, nowMs,
+  }) : [];
+  const overCashLimit = codOrder
+    ? await ridersAtCashLimit(db, rates.codCashLimit, candidates.map((candidate) => candidate.id))
+    : new Set<string>();
 
   let wave = typeof d.wave === "number" ? d.wave : 0;
   let chosen: Candidate[] = [];
@@ -324,7 +344,7 @@ export async function runNextWave(
   const items = Array.isArray(order.items) ? order.items : [];
   const itemCount = items.reduce((n: number, i: { quantity?: unknown }) =>
     n + (typeof i?.quantity === "number" ? i.quantity : 1), 0);
-  const cod = isCod(order.paymentMethod) ? (num(order.total) ?? 0) : 0;
+  const cod = codP / 100;
   const sellerSnap = typeof order.sellerId === "string" && order.sellerId
     ? await db.collection("sellers").doc(order.sellerId).get() : null;
   const seller = sellerSnap?.data() ?? {};
@@ -365,6 +385,7 @@ export async function runNextWave(
     wave,
     radiusKm,
     ...(chosen.length ? { offeredTo: FieldValue.arrayUnion(...chosen.map((c) => c.id)) } : {}),
+    cashReviewReason: FieldValue.delete(),
     lastWaveAt: Timestamp.fromMillis(nowMs),
     nextActionAt: Timestamp.fromMillis(next),
     leaseUntil: Timestamp.fromMillis(0),

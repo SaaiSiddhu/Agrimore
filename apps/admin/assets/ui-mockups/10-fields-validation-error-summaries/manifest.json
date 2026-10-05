@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "foundation": "C10: Fields, validation and error summaries",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "version": "v1",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "field_panels": [
+    {
+      "label": "Editor inputs",
+      "specimen": "Fields Product name, Category dropdown, Sale price with \u20b9 prefix. Compact tabs Basic info, Images, Delivery. Visible labels and required markers. No sidebar."
+    },
+    {
+      "label": "Helpful inline errors",
+      "specimen": "Product name empty: Enter a product name. Category unselected: Choose a category. Focus Product name; cyan only section guidance, errors use locked error colors."
+    },
+    {
+      "label": "Cross-section summary",
+      "specimen": "Title Check product details. Exactly two linked items Basic info / Product name \u2014 Enter a product name; Basic info / Category \u2014 Choose a category. Additional small routing note Image errors open Images tab (not an active third error)."
+    },
+    {
+      "label": "First invalid focus",
+      "specimen": "Save product \u2192 Validate \u2192 Open Basic info \u2192 Focus Product name. Reveal the correct tab before focus. Include dropdowns and image controls. Preserve unsaved edits."
+    }
+  ],
+  "domain_style": "Structured professional-blue editor, compact cyan section cues and tab-aware error routing.",
+  "validation_contract": {
+    "persistent_label": true,
+    "error_timing": "After interaction/failed submit; server errors mapped separately",
+    "summary": "Field-specific linked errors matching inline copy",
+    "first_invalid": "Validate, reveal target section, await layout, scroll and focus logical control",
+    "focus_identity": "Stable field IDs proposed; preserve existing components",
+    "preserve_entries": true,
+    "interaction_target_min_px": 48,
+    "status": "Local validity is not authoritative acceptance or confirmed result"
+  },
+  "implementation_status": "Static assets/docs only; no runtime fields, routes, backend, pubspec or shared exports changed by this task.",
+  "limits": "Approximate raster proposals, not screenshots, pixel-exact measurements or accessibility certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-fields-validation-error-summaries-light.png",
+      "sha256": "f3a1215488c075410f8b7eac209ccda961bd7c5ed12e4e96444703a44b29c12a",
+      "bytes": 1527868,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6d92b2f2-63a6-4310-845d-8e540236345f.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "4f4e840777af2e4ce0f905b6b8d746cea81db562e0a353fe719edfb616ffed04",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-41001421-746d-474f-8b78-613f4977a64c.png",
+          "source_output_sha256": "748263876f5fe9bfc9683079a5b4cf20a6a9b0dfbb035dbbcb17753d50842ee4"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "6e1e4c7adfaebe71dfd0960dd81f1de67650c45fbbea8645556e96c37a8e516f",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-41001421-746d-474f-8b78-613f4977a64c.png",
+              "sha256": "748263876f5fe9bfc9683079a5b4cf20a6a9b0dfbb035dbbcb17753d50842ee4",
+              "reference_kind": "Generated image outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6d92b2f2-63a6-4310-845d-8e540236345f.png",
+          "source_output_sha256": "f3a1215488c075410f8b7eac209ccda961bd7c5ed12e4e96444703a44b29c12a"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, summary/inline correspondence, logical focus annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-fields-validation-error-summaries-dark.png",
+      "sha256": "d0768221e6e0b703f0e0fea7c403cf7a6c346d23c56176576b406a957c549877",
+      "bytes": 1515064,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-0957221c-f5ff-4ef1-8c79-f0215c786709.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "1f4b7b08c2c17cea1a579a2707e64c91680d86327d6d1a62c726757e42e1775e",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6d92b2f2-63a6-4310-845d-8e540236345f.png",
+              "sha256": "f3a1215488c075410f8b7eac209ccda961bd7c5ed12e4e96444703a44b29c12a",
+              "reference_kind": "Generated image outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-0957221c-f5ff-4ef1-8c79-f0215c786709.png",
+          "source_output_sha256": "d0768221e6e0b703f0e0fea7c403cf7a6c346d23c56176576b406a957c549877"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, summary/inline correspondence, logical focus annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    }
+  ],
+  "prompts_file_sha256": "55c5864c92e3c50d5205ae64def469f1ceef5053970635862a497a48111189a7"
+}

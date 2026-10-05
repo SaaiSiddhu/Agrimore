@@ -32,13 +32,22 @@
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { holdsRider, RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
+import { readRiderCashPaise } from "./riderCashBalance";
+import { payoutBalancePaise } from "../employee/employeePayoutMoney";
 
 type Db = FirebaseFirestore.Firestore;
 
-export type RiderDeletionRefusal = { reason: "rider_active_order" | "rider_cash_held" | "rider_pay_owed"; message: string };
+export type RiderDeletionRefusal = { reason: "rider_active_order" | "rider_cash_held" | "rider_pay_owed" | "rider_money_review"; message: string };
 
 const OWED_STATUSES = new Set(["pending", "on_hold"]);
-const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+function earnedPaise(a: FirebaseFirestore.DocumentData): number | null {
+  if (Object.prototype.hasOwnProperty.call(a, "earningsUnsettledPaise")) {
+    const value = a.earningsUnsettledPaise;
+    return typeof value === "number" && Number.isSafeInteger(value) ? value : null;
+  }
+  return Object.prototype.hasOwnProperty.call(a, "earningsUnsettled") ? payoutBalancePaise(a.earningsUnsettled) : 0;
+}
+const moneyReview = (): RiderDeletionRefusal => ({ reason: "rider_money_review", message: "The rider money record needs review before deleting your account." });
 
 /** Null when a rider (or a non-rider) may delete; otherwise why not. */
 export async function riderDeletionRefusal(db: Db, uid: string): Promise<RiderDeletionRefusal | null> {
@@ -52,13 +61,20 @@ export async function riderDeletionRefusal(db: Db, uid: string): Promise<RiderDe
     return { reason: "rider_active_order",
       message: "You still have an order assigned. Deliver it or ask Agrimore to reassign it before deleting your account." };
   }
-  const a = account.data() ?? {};
-  if (num(a.cashHeld) > 0.005) {
+  const a = account.data() ?? {}, cashP = readRiderCashPaise(a), earnedP = earnedPaise(a);
+  if (cashP === null || earnedP === null || earnedP < 0) return moneyReview();
+  if (cashP > 0) {
     return { reason: "rider_cash_held",
-      message: `You still hold Rs ${num(a.cashHeld).toFixed(2)} of customers' cash. Deposit it with Agrimore before deleting your account.` };
+      message: `You still hold Rs ${(cashP / 100).toFixed(2)} of customers' cash. Deposit it with Agrimore before deleting your account.` };
   }
-  const owedStatement = statements.docs.some((d) => OWED_STATUSES.has(String(d.data().status ?? "")));
-  if (num(a.earningsUnsettled) > 0.005 || owedStatement) {
+  let owedStatement = false;
+  for (const row of statements.docs) {
+    const value = row.data().status;
+    const status = typeof value === "string" ? value.toLowerCase() : "";
+    if (!["pending", "on_hold", "paid", "nothing_to_pay"].includes(status)) return moneyReview();
+    owedStatement ||= OWED_STATUSES.has(status);
+  }
+  if (earnedP > 0 || owedStatement) {
     return { reason: "rider_pay_owed",
       message: "Agrimore still owes you delivery pay. Wait until your statement is paid before deleting your account." };
   }

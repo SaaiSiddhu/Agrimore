@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "foundation": "C01: Color roles and theme identity",
+  "board_scope": [
+    "colors",
+    "typography",
+    "spacing",
+    "radius",
+    "borders",
+    "shadows"
+  ],
+  "version": "v2",
+  "status": "APPROVED_LOCKED",
+  "canonical_design_reference": true,
+  "classification": "OWNER_DECISION",
+  "approved_on": "2026-10-02",
+  "approval_evidence": "Brooo perfect, fantastic,.. now lock all of these",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "implementation_status": "Design references filed; runtime theme migration is outside this asset task.",
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "6cb1db8a872a85bbbbd591ebd61f80fa3eda5df36a8b8e7e0518972fe8508b50",
+  "revision_policy": "Keep this approved pair intact; record an owner-approved successor in a new versioned location.",
+  "board_foundations": {
+    "font_family_reference": "Inter",
+    "font_weights": [
+      600,
+      500,
+      400
+    ],
+    "type_scale_px": [
+      32,
+      24,
+      18,
+      16,
+      14,
+      12
+    ],
+    "spacing_px": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radius_px": [
+      8,
+      12,
+      16
+    ],
+    "border_width_px": {
+      "default": 1,
+      "strong": 1,
+      "focus": 2
+    },
+    "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+  },
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-design-tokens-light.png",
+      "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+      "bytes": 1091944,
+      "width": 1586,
+      "height": 992,
+      "source_board": "01-admin-light.png",
+      "source_artifact": "images/01-color-roles/v2/01-admin-light.png",
+      "generation_tool": "built-in image_gen",
+      "generation_mode": "edit",
+      "generation_prompt_sha256": "b39eedb1297552a5b1708c8b65021abc8f13d32f0ba3559708c3372f6b469ad1",
+      "generation_prompt_ends_with_newline": false,
+      "historical_edit_reference": {
+        "file": "01-admin-light.png",
+        "sha256": "ff8422829629e07102cc9d4a6bd189c8ac360c4afd95e8e813c0810fa57d1761",
+        "role": "Superseded v1 input used during the original edit; not the approved design."
+      },
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-design-tokens-dark.png",
+      "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+      "bytes": 1225290,
+      "width": 1586,
+      "height": 992,
+      "source_board": "02-admin-dark.png",
+      "source_artifact": "images/01-color-roles/v2/02-admin-dark.png",
+      "generation_tool": "built-in image_gen",
+      "generation_mode": "edit",
+      "generation_prompt_sha256": "64d88a0e159ee5186009e999d201f6075805a38cad06cc2b2414fd2e7703f827",
+      "generation_prompt_ends_with_newline": false,
+      "historical_edit_reference": {
+        "file": "02-admin-dark.png",
+        "sha256": "2a5fbf904be54795532b5079eda51e240aca78f7791fd2a6c609b8ea9e4b2640",
+        "role": "Superseded v1 input used during the original edit; not the approved design."
+      },
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ]
+    }
+  ]
+}

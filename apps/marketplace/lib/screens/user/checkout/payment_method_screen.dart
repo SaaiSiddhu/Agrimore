@@ -28,6 +28,9 @@ class PaymentMethodScreen extends StatefulWidget {
   final AddressModel selectedAddress;
   final double total;
   final double deliveryCharge;
+  final double legacyDeliveryCharge;
+  final String? deliveryQuoteId;
+  final Object? deliveryQuoteExpiresAtMs;
   final double tax;
   final CheckoutRecoveryService? checkoutRecovery;
 
@@ -36,6 +39,9 @@ class PaymentMethodScreen extends StatefulWidget {
     required this.selectedAddress,
     required this.total,
     this.deliveryCharge = 0.0,
+    this.legacyDeliveryCharge = 0.0,
+    this.deliveryQuoteId,
+    this.deliveryQuoteExpiresAtMs,
     this.tax = 0.0,
     this.checkoutRecovery,
   }) : super(key: key);
@@ -333,6 +339,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       if (razorpaySignature != null) 'razorpaySignature': razorpaySignature,
       if (couponCode != null) 'couponCode': couponCode,
       'deliveryCharge': widget.deliveryCharge,
+      'legacyDeliveryCharge': widget.legacyDeliveryCharge,
+      if (widget.deliveryQuoteId != null) 'deliveryQuoteId': widget.deliveryQuoteId,
       'tax': widget.tax,
       if (deliverySlotLabel != null) 'deliverySlot': deliverySlotLabel,
       if (_notesController.text.trim().isNotEmpty)
@@ -492,7 +500,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         'deliveryAddress': widget.selectedAddress.toOrderMap(),
         'paymentMethod': _selectedPaymentMethod,
         if (coupon.appliedCoupon?.code != null) 'couponCode': coupon.appliedCoupon!.code,
-        'deliveryCharge': widget.deliveryCharge, 'tax': widget.tax,
+        'deliveryCharge': widget.deliveryCharge,
+        'legacyDeliveryCharge': widget.legacyDeliveryCharge,
+        if (widget.deliveryQuoteId != null) 'deliveryQuoteId': widget.deliveryQuoteId,
+        if (widget.deliveryQuoteId != null) 'deliveryQuoteExpiresAtMs': widget.deliveryQuoteExpiresAtMs,
+        'tax': widget.tax,
         if (_selectedSlot != null) 'deliverySlot': '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})',
         if (_notesController.text.trim().isNotEmpty) 'notes': _notesController.text.trim(),
         'orderType': effectiveType,

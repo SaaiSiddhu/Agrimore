@@ -6,15 +6,14 @@ import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 import '../../../../providers/address_provider.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../app/routes.dart';
 
 /// Enhanced compact address selection bottom sheet
 class AddressBottomSheet extends StatefulWidget {
-  const AddressBottomSheet({Key? key}) : super(key: key);
+  const AddressBottomSheet({super.key});
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
@@ -30,6 +29,17 @@ class AddressBottomSheet extends StatefulWidget {
 }
 
 class _AddressBottomSheetState extends State<AddressBottomSheet> {
+  late AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  bool _isSavingAddress = false;
+  bool get _ownsSheet =>
+      mounted &&
+      _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+  bool _sameAddresses(AddressProvider provider) =>
+      _ownsSheet && identical(context.read<AddressProvider>(), provider);
   bool _isLoadingCurrentLocation = false;
   String? _currentLocationError;
   String? _currentLocationText;
@@ -37,14 +47,19 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
+    _openingProvider.addListener(_clearExpiredSession);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (_ownsSheet) {
         Provider.of<AddressProvider>(context, listen: false).loadAddresses();
       }
     });
   }
 
   Future<void> _useCurrentLocation() async {
+    if (!_ownsSheet || _isLoadingCurrentLocation || _isSavingAddress) return;
     HapticFeedback.lightImpact();
     setState(() {
       _isLoadingCurrentLocation = true;
@@ -54,6 +69,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!_ownsSheet) return;
       if (!serviceEnabled) {
         setState(() {
           _currentLocationError = 'Enable location services';
@@ -63,11 +79,14 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
       }
 
       var permission = await Geolocator.checkPermission();
+      if (!_ownsSheet) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!_ownsSheet) return;
       }
 
-      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
         setState(() {
           _currentLocationError = 'Location permission denied';
           _isLoadingCurrentLocation = false;
@@ -80,20 +99,22 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         pos = await Geolocator.getLastKnownPosition();
       } catch (_) {}
 
-      if (pos == null) {
-        pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.low,
-          timeLimit: const Duration(seconds: 10),
-        );
-      }
+      if (!_ownsSheet) return;
+      pos ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low, timeLimit: Duration(seconds: 10)),
+      );
 
+      if (!_ownsSheet) return;
       List<Placemark> placemarks = [];
       try {
-        placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+        placemarks =
+            await placemarkFromCoordinates(pos.latitude, pos.longitude);
       } catch (_) {
         // Geocoding might fail on web or without internet
       }
-      
+
+      if (!_ownsSheet) return;
       String locationText = 'Current Location';
       String city = '';
       String state = '';
@@ -107,7 +128,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
           place.locality,
           place.administrativeArea,
         ].where((e) => e != null && e.isNotEmpty).join(', ');
-        
+
         addressLine1 = [
           place.street,
           place.subLocality,
@@ -119,23 +140,36 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         // Fallback to HTTP Geocoding
         try {
           const apiKey = MapsConfig.apiKey;
-          final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
-          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
-          
+          final url =
+              'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
+          final response = await http
+              .get(Uri.parse(url))
+              .timeout(const Duration(seconds: 10));
+
+          if (!_ownsSheet) return;
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
-            if (data['status'] == 'OK' && data['results'] != null && (data['results'] as List).isNotEmpty) {
-              final components = data['results'][0]['address_components'] as List;
-              
+            if (data['status'] == 'OK' &&
+                data['results'] != null &&
+                (data['results'] as List).isNotEmpty) {
+              final components =
+                  data['results'][0]['address_components'] as List;
+
               for (final c in components) {
                 final types = (c['types'] as List).cast<String>();
-                if (types.contains('locality')) city = c['long_name'];
-                else if (types.contains('administrative_area_level_1')) state = c['long_name'];
-                else if (types.contains('postal_code')) pincode = c['long_name'];
-                else if (types.contains('sublocality_level_1')) addressLine1 = c['long_name'];
+                if (types.contains('locality')) {
+                  city = c['long_name'];
+                } else if (types.contains('administrative_area_level_1')) {
+                  state = c['long_name'];
+                } else if (types.contains('postal_code')) {
+                  pincode = c['long_name'];
+                } else if (types.contains('sublocality_level_1')) {
+                  addressLine1 = c['long_name'];
+                }
               }
-              
-              final formattedAddress = data['results'][0]['formatted_address'] as String;
+
+              final formattedAddress =
+                  data['results'][0]['formatted_address'] as String;
               if (formattedAddress.isNotEmpty) {
                 final parts = formattedAddress.split(',');
                 locationText = parts.take(2).join(',').trim();
@@ -145,83 +179,136 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
           }
         } catch (_) {}
       }
-      
-      if (mounted) {
+
+      if (!mounted) return;
+      if (_ownsSheet) {
         // ✅ Stay on the same page — show detected location
         setState(() {
           _currentLocationText = locationText;
-          _isLoadingCurrentLocation = false;
         });
 
         // Check if a saved address is near this location
-        final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+        final addressProvider =
+            Provider.of<AddressProvider>(context, listen: false);
         final savedAddresses = addressProvider.addresses;
-        
+
         AddressModel? nearbyAddress;
         for (final addr in savedAddresses) {
           if (addr.latitude != null && addr.longitude != null) {
             final distance = Geolocator.distanceBetween(
-              pos.latitude, pos.longitude,
-              addr.latitude!, addr.longitude!,
+              pos.latitude,
+              pos.longitude,
+              addr.latitude!,
+              addr.longitude!,
             );
-            if (distance < 500) { // Within 500 meters
+            if (distance < 500) {
+              // Within 500 meters
               nearbyAddress = addr;
               break;
             }
           }
         }
 
+        final bool saved;
         if (nearbyAddress != null) {
-          // ✅ Found a nearby saved address — set it as default
-          debugPrint('📍 Found nearby saved address: ${nearbyAddress.addressLine1}');
-          addressProvider.setDefaultAddress(nearbyAddress.id);
-          if (mounted) Navigator.pop(context);
+          saved = await addressProvider.setDefaultAddress(nearbyAddress.id);
         } else {
-          // ✅ No saved address nearby — auto-add this as a new address
-          debugPrint('📍 No nearby address found, creating new one from GPS');
-          final userId = AuthService().currentUserId;
-          if (userId != null) {
-            final newAddress = AddressModel(
-              id: '',
-              userId: userId,
-              name: 'Current Location',
-              phone: '',
-              addressLine1: addressLine1.isNotEmpty ? addressLine1 : locationText,
-              addressLine2: '',
-              city: city,
-              state: state,
-              zipcode: pincode,
-              country: 'India',
-              latitude: pos.latitude,
-              longitude: pos.longitude,
-              isDefault: true,
-              addressType: 'other',
-            );
-            await addressProvider.addAddress(newAddress);
-          }
-          if (mounted) Navigator.pop(context);
+          final newAddress = AddressModel(
+            id: '',
+            userId: _openingOwner!,
+            name: 'Current Location',
+            phone: '',
+            addressLine1: addressLine1.isNotEmpty ? addressLine1 : locationText,
+            addressLine2: '',
+            city: city,
+            state: state,
+            zipcode: pincode,
+            country: 'India',
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            isDefault: true,
+            addressType: 'other',
+          );
+          saved = (await addressProvider.addAddress(newAddress))?.isNotEmpty ==
+              true;
         }
+        if (!mounted || !_sameAddresses(addressProvider)) return;
+        if (!saved) {
+          setState(() => _currentLocationError =
+              'Could not save your delivery address. Please try again.');
+          return;
+        }
+        Navigator.pop(context);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _currentLocationError = 'Failed to get GPS location';
-          _isLoadingCurrentLocation = false;
-        });
+    } catch (_) {
+      if (_ownsSheet) {
+        setState(() => _currentLocationError =
+            'Could not use your location. Please try again.');
       }
+    } finally {
+      if (_ownsSheet) setState(() => _isLoadingCurrentLocation = false);
     }
   }
 
+  void _clearExpiredSession() {
+    if (!mounted || _ownsSheet) return;
+    _isLoadingCurrentLocation = false;
+    _isSavingAddress = false;
+    _currentLocationText = null;
+    _currentLocationError = null;
+  }
 
+  Future<void> _chooseAddress(
+      AddressProvider provider, AddressModel address) async {
+    if (!_sameAddresses(provider) ||
+        address.userId != _openingOwner ||
+        _isLoadingCurrentLocation ||
+        _isSavingAddress) {
+      return;
+    }
+    setState(() => _isSavingAddress = true);
+    try {
+      final saved =
+          address.isDefault || await provider.setDefaultAddress(address.id);
+      if (!mounted || !_sameAddresses(provider)) return;
+      if (!saved) {
+        setState(() => _currentLocationError =
+            'Could not save your delivery address. Please try again.');
+        return;
+      }
+      Navigator.pop(context);
+    } catch (_) {
+      if (_sameAddresses(provider)) {
+        setState(() => _currentLocationError =
+            'Could not save your delivery address. Please try again.');
+      }
+    } finally {
+      if (_ownsSheet) setState(() => _isSavingAddress = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _openingProvider.removeListener(_clearExpiredSession);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    if (!_ownsSheet) {
+      return const SafeArea(
+          child: Center(
+              child: Text(
+                  'Your session changed. Reopen your addresses to continue.')));
+    }
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final bgColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -239,7 +326,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Compact Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
@@ -262,15 +349,15 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                       color: isDark ? Colors.grey[800] : Colors.grey[100],
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 18, color: isDark ? Colors.grey[400] : Colors.black54),
+                    child: Icon(Icons.close,
+                        size: 18,
+                        color: isDark ? Colors.grey[400] : Colors.black54),
                   ),
                 ),
               ],
             ),
           ),
-          
 
-          
           // Content
           Flexible(
             child: SingleChildScrollView(
@@ -284,14 +371,16 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                     iconColor: Colors.blueAccent,
                     title: 'Use current location',
                     subtitle: _currentLocationError ?? _currentLocationText,
-                    subtitleColor: _currentLocationError != null ? Colors.red : accentColor,
+                    subtitleColor: _currentLocationError != null
+                        ? Colors.red
+                        : accentColor,
                     isLoading: _isLoadingCurrentLocation,
                     onTap: _useCurrentLocation,
                     isDark: isDark,
                   ),
-                  
+
                   const SizedBox(height: 6),
-                  
+
                   // Add New Address → Profile → Saved Addresses page
                   _buildCompactTile(
                     icon: Icons.add_location_alt_rounded,
@@ -299,43 +388,40 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                     title: 'Add new address',
                     subtitle: 'Go to Profile → Delivery Address',
                     onTap: () {
+                      if (!_ownsSheet ||
+                          _isLoadingCurrentLocation ||
+                          _isSavingAddress) {
+                        return;
+                      }
                       Navigator.pop(context);
                       Navigator.pushNamed(context, AppRoutes.savedAddresses);
                     },
                     isDark: isDark,
                   ),
-                  
 
-                  
                   // Saved Addresses
                   Consumer<AddressProvider>(
                     builder: (context, addressProvider, _) {
                       final addresses = addressProvider.addresses;
                       if (addresses.isEmpty) return const SizedBox.shrink();
-                      
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
                           _buildSectionHeader('Saved Addresses', isDark),
                           ...addresses.map((addr) => _buildAddressItem(
-                            address: addr,
-                            isDark: isDark,
-                            accentColor: accentColor,
-                            onTap: () {
-                              Navigator.pop(context);
-                              if (!addr.isDefault) {
-                                addressProvider.setDefaultAddress(addr.id);
-                              }
-                            },
-                          )),
+                                address: addr,
+                                isDark: isDark,
+                                accentColor: accentColor,
+                                onTap: () =>
+                                    _chooseAddress(addressProvider, addr),
+                              )),
                         ],
                       );
                     },
                   ),
-                  
 
-                  
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
                 ],
               ),
@@ -381,7 +467,8 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF303030) : Colors.grey[50],
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
+            border: Border.all(
+                color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
           child: Row(
             children: [
@@ -395,7 +482,9 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                 child: isLoading
                     ? Padding(
                         padding: const EdgeInsets.all(6),
-                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(iconColor)),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(iconColor)),
                       )
                     : Icon(icon, color: iconColor, size: 18),
               ),
@@ -404,13 +493,25 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
+                    Text(title,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87)),
                     if (subtitle != null)
-                      Text(subtitle, style: TextStyle(fontSize: 11, color: subtitleColor ?? (isDark ? Colors.grey[400] : Colors.grey[600]))),
+                      Text(subtitle,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: subtitleColor ??
+                                  (isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600]))),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+              Icon(Icons.chevron_right,
+                  size: 18,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400]),
             ],
           ),
         ),
@@ -426,11 +527,19 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
   }) {
     IconData typeIcon;
     Color typeColor;
-    
+
     switch (address.addressType?.toLowerCase()) {
-      case 'home': typeIcon = Icons.home_rounded; typeColor = Colors.blue; break;
-      case 'work': typeIcon = Icons.work_rounded; typeColor = Colors.orange; break;
-      default: typeIcon = Icons.location_on_rounded; typeColor = Colors.grey;
+      case 'home':
+        typeIcon = Icons.home_rounded;
+        typeColor = Colors.blue;
+        break;
+      case 'work':
+        typeIcon = Icons.work_rounded;
+        typeColor = Colors.orange;
+        break;
+      default:
+        typeIcon = Icons.location_on_rounded;
+        typeColor = Colors.grey;
     }
 
     return GestureDetector(
@@ -439,10 +548,14 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: address.isDefault ? accentColor.withValues(alpha: 0.08) : (isDark ? const Color(0xFF303030) : Colors.white),
+          color: address.isDefault
+              ? accentColor.withValues(alpha: 0.08)
+              : (isDark ? const Color(0xFF303030) : Colors.white),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: address.isDefault ? accentColor.withValues(alpha: 0.3) : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+            color: address.isDefault
+                ? accentColor.withValues(alpha: 0.3)
+                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
         ),
         child: Row(
@@ -450,7 +563,9 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
             Container(
               width: 30,
               height: 30,
-              decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6)),
               child: Icon(typeIcon, color: typeColor, size: 16),
             ),
             const SizedBox(width: 10),
@@ -462,14 +577,24 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                     children: [
                       Text(
                         address.addressType ?? 'Other',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87),
                       ),
                       if (address.isDefault) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
-                          child: Text('DEFAULT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: accentColor)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(3)),
+                          child: Text('DEFAULT',
+                              style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                  color: accentColor)),
                         ),
                       ],
                     ],
@@ -477,14 +602,17 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                   const SizedBox(height: 2),
                   Text(
                     '${address.addressLine1}, ${address.city}, ${address.state} ${address.zipcode}',
-                    style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            if (address.isDefault) Icon(Icons.check_circle, color: accentColor, size: 18),
+            if (address.isDefault)
+              Icon(Icons.check_circle, color: accentColor, size: 18),
           ],
         ),
       ),

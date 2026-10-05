@@ -11,7 +11,7 @@ process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
 process.env.FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199";
 process.env.STORAGE_EMULATOR_HOST = "http://127.0.0.1:9199";
-process.env.GCLOUD_PROJECT = "agrimore-66a4e";
+if (!/^demo-/.test(process.env.GCLOUD_PROJECT || "")) throw Error("Demo project required");
 
 for (const k of ["FIRESTORE_EMULATOR_HOST", "FIREBASE_AUTH_EMULATOR_HOST", "FIREBASE_STORAGE_EMULATOR_HOST"]) {
   if (!String(process.env[k] || "").startsWith("127.0.0.1")) {
@@ -21,8 +21,8 @@ for (const k of ["FIRESTORE_EMULATOR_HOST", "FIREBASE_AUTH_EMULATOR_HOST", "FIRE
 }
 
 const admin = require("firebase-admin");
-if (!admin.apps.length) admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.firebasestorage.app" });
-const test = require("firebase-functions-test")({ projectId: "agrimore-66a4e" });
+if (!admin.apps.length) admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT, storageBucket: process.env.GCLOUD_PROJECT + ".appspot.com" });
+const test = require("firebase-functions-test")({ projectId: process.env.GCLOUD_PROJECT });
 const { deleteUserData } = require("../lib/customer/deleteUserData");
 const wrapped = test.wrap(deleteUserData);
 
@@ -35,8 +35,10 @@ async function main() {
     console.log(`${name}: ${results[name]}`);
   };
   const expect = (cond, msg) => { if (!cond) throw new Error(msg); };
+  const sessionTimes = new Map();
   const call = async (uid) => {
-    try { return { ok: true, r: await wrapped({}, { auth: { uid, token: {} } }) }; }
+    if (!sessionTimes.has(uid)) sessionTimes.set(uid, Math.floor(Date.now() / 1000));
+    try { return { ok: true, r: await wrapped({}, { auth: { uid, token: { auth_time: sessionTimes.get(uid) } } }) }; }
     catch (e) { return { ok: false, code: e.code, message: e.message }; }
   };
   const exists = async (path) => (await db.doc(path).get()).exists;

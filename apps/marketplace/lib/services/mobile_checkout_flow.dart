@@ -23,6 +23,7 @@ class MobileCheckoutFlow {
     CheckoutRecoveryService? journal,
     RazorpayService? payments,
     String? Function()? currentUserId,
+    int Function()? nowMs,
     required void Function() onChanged,
     required void Function(String message) onError,
     required Future<void> Function(
@@ -33,6 +34,7 @@ class MobileCheckoutFlow {
         _payments = payments ?? RazorpayService(),
         _currentUserId =
             currentUserId ?? (() => FirebaseAuth.instance.currentUser?.uid),
+        _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
         _onChanged = onChanged,
         _onError = onError,
         _onConfirmed = onConfirmed {
@@ -59,6 +61,7 @@ class MobileCheckoutFlow {
   final CheckoutRecoveryService _journal;
   final RazorpayService _payments;
   final String? Function() _currentUserId;
+  final int Function() _nowMs;
   final void Function() _onChanged;
   final void Function(String) _onError;
   final Future<void> Function(PendingCheckoutRequest, List<CheckoutReceipt>)
@@ -142,6 +145,32 @@ class MobileCheckoutFlow {
     }
   }
 
+  // Advisory device deadlines only: createOrder still validates server time,
+  // hold state and cart fingerprints. Never renew or change a frozen payable.
+  bool _deadlineAllowsPayment(Object? expiry) {
+    return expiry is num &&
+        expiry.isFinite &&
+        expiry > 0 &&
+        expiry <= 9007199254740991 &&
+        expiry == expiry.truncateToDouble() &&
+        _nowMs() < expiry;
+  }
+
+  bool _pricingAllowsPayment(Map<String, dynamic> intent) {
+    if (intent['deliveryQuoteId'] != null &&
+        !_deadlineAllowsPayment(intent['deliveryQuoteExpiresAtMs'])) {
+      return false;
+    }
+    final holdId = intent['productCreditHoldId'];
+    if (holdId != null &&
+        (holdId is! String ||
+            !RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(holdId) ||
+            !_deadlineAllowsPayment(intent['productCreditHoldExpiresAtMs']))) {
+      return false;
+    }
+    return true;
+  }
+
   Future<void> start({
     required Map<String, dynamic> intent,
     required double amount,
@@ -159,6 +188,9 @@ class MobileCheckoutFlow {
       _checkLive(ownerId);
       if (_pending != null) {
         throw StateError('Finish the saved checkout first.');
+      }
+      if (frozen['paymentMethod'] != 'cod' && !_pricingAllowsPayment(frozen)) {
+        throw StateError('Checkout pricing needs review.');
       }
       _pending = await _journal.prepare(frozen);
       _checkLive(ownerId);
@@ -182,6 +214,7 @@ class MobileCheckoutFlow {
         canOpenCheckout: () =>
             !_disposed &&
             _currentUserId() == ownerId &&
+            _pricingAllowsPayment(request.intent) &&
             (context == null || context.mounted),
         onOrderCreated: (order) async {
           _checkLive(ownerId);
@@ -214,6 +247,7 @@ class MobileCheckoutFlow {
           userEmail: customer.email,
           userPhone: customer.phone,
           description: 'Agrimore order payment',
+          canReopenCheckout: () => _pricingAllowsPayment(request.intent),
         );
         _checkLive(ownerId);
         if (result == GoodsCheckoutResumeOutcome.reopened) return;

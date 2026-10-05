@@ -57,4 +57,14 @@ void main() {
       expect(riderMoneyRefusal('failed-precondition', r), isNot(contains('Could not complete')), reason: r);
     }
   });
+  test('inconsistent bank review asks for reconciliation instead of retry', () {
+    expect(riderMoneyRefusal('failed-precondition', 'bank_review_state'),
+        'This bank change does not match the rider\'s current payout records. Check the request and account before reviewing it.');
+  });
+
+  test('inconsistent payout ownership asks for reconciliation before payment', () {
+    expect(riderMoneyRefusal('failed-precondition', 'payout_review_state'),
+        "This statement does not match the rider's current payout records. Check the statement and account before marking it paid.");
+  });
+
 }

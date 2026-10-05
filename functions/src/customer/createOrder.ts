@@ -43,6 +43,7 @@ import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH, assert
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { validateDeliveryQuote } from "./deliveryQuoteValidation";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
@@ -65,6 +66,8 @@ interface CreateOrderData {
   razorpaySignature?: string;
   couponCode?: string;
   deliveryCharge?: number;
+  legacyDeliveryCharge?: number;
+  deliveryQuoteId?: string;
   tax?: number;
   deliverySlot?: string;
   notes?: string;
@@ -260,6 +263,8 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     deliveryAddress: data?.deliveryAddress || null,
     couponCode: typeof data?.couponCode === "string" ? data.couponCode.trim().toUpperCase() : data?.couponCode ?? null,
     deliveryCharge: data?.deliveryCharge ?? 0, tax: data?.tax ?? 0,
+    legacyDeliveryCharge: data?.legacyDeliveryCharge ?? null,
+    deliveryQuoteId: data?.deliveryQuoteId ?? null,
     deliverySlot: typeof data?.deliverySlot === "string" ? data.deliverySlot : null,
     notes: typeof data?.notes === "string" && data.notes.trim() ? data.notes.trim() : null,
     orderType: typeof data?.orderType === "string" && data.orderType ? data.orderType : "One Time",
@@ -462,17 +467,22 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       assertSellerAcceptingOrders(snap.data(), nowMs);
     }
 
-    let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
-    if (cartSellerIds.size === 1) {
-      const [onlySellerId] = Array.from(cartSellerIds);
-      if (onlySellerId !== "_unassigned") {
-        const sellerSnap = sellerSnaps.find((s) => s.id === onlySellerId);
-        const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
-        if (schedule) {
-          sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
-        }
-      }
+    const sellerFeeSchedules = new Map<string, DeliveryFeeSchedule>();
+    for (const sellerId of realSellerIds) {
+      const sellerSnap = sellerSnaps.find((s) => s.id === sellerId);
+      const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
+      if (schedule) sellerFeeSchedules.set(sellerId, schedule);
     }
+    const distanceSellerIds = [...sellerFeeSchedules.entries()]
+      .filter(([, schedule]) => schedule.type === "distance")
+      .map(([sellerId]) => sellerId).sort();
+
+    const { ref: deliveryQuoteRef, snap: deliveryQuoteSnap, sellerDistanceMeters } = await validateDeliveryQuote({
+      db, tx, uid, deliveryQuoteId: data?.deliveryQuoteId, deliveryAddress: data?.deliveryAddress,
+      items: normalizedItems, orderMode, deliveryCharge: data?.deliveryCharge,
+      legacyDeliveryCharge: data?.legacyDeliveryCharge, sellerFeeSchedules, sellerSnapshots: sellerSnaps,
+      expectedSellerIds: [...cartSellerIds],
+    });
 
     const normalizedCouponCode =
       data?.couponCode && data.couponCode.trim() ? data.couponCode.trim().toUpperCase() : null;
@@ -595,10 +605,16 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       // ceilings. Passed as a plain boolean (not the snapshot itself) so
       // computeOrderPricing stays read-free.
       couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
-      deliveryCharge: data?.deliveryCharge,
+      deliveryCharge: distanceSellerIds.length > 0 || data?.deliveryQuoteId
+        ? data?.legacyDeliveryCharge
+        : data?.deliveryCharge,
       tax: data?.tax,
       sellerFeeSchedules,
+      sellerDistanceMeters,
     });
+    if (data?.deliveryQuoteId && Math.round(pricing.deliveryCharge * 100) !== Math.round((data?.deliveryCharge ?? 0) * 100)) {
+      throw new HttpsError("failed-precondition", "Delivery amount changed. Please refresh checkout before payment.");
+    }
 
     // ============================================
     // Phase D: settle the Product Credit hold, if one was supplied. This
@@ -656,6 +672,15 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         throw new HttpsError(
           "failed-precondition",
           "Your cart has changed since this Product Credit hold was quoted — please re-quote"
+        );
+      }
+      const holdDeliveryQuoteId = typeof hold.deliveryQuoteId === "string" ? hold.deliveryQuoteId : null;
+      const orderDeliveryQuoteId = typeof data?.deliveryQuoteId === "string" ? data.deliveryQuoteId : null;
+      if ((distanceSellerIds.length > 0 && holdDeliveryQuoteId !== orderDeliveryQuoteId) ||
+          (holdDeliveryQuoteId !== null && holdDeliveryQuoteId !== orderDeliveryQuoteId)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The Product Credit hold is bound to different delivery pricing — please re-quote"
         );
       }
 
@@ -845,6 +870,13 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       for (let i = 0; i < sellerCount; i++) creditShares.push(0);
     }
 
+    if (deliveryQuoteRef && deliveryQuoteSnap && data?.deliveryQuoteId) {
+      tx.update(deliveryQuoteRef, {
+        consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+        consumedByOrderRequestId: checkoutRequestId ?? null,
+      });
+    }
+
     let index = 0;
     for (const sellerResult of pricing.perSeller) {
       const sellerCreditShare = creditShares[index];
@@ -862,6 +894,9 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         subtotal: sellerResult.subtotal,
         discount: sellerResult.discount,
         deliveryCharge: sellerResult.deliveryCharge,
+        ...(data?.deliveryQuoteId
+          ? { deliveryQuoteId: data.deliveryQuoteId }
+          : {}),
         tax: sellerResult.tax,
         total: sellerResult.total,
         paymentMethod,

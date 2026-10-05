@@ -1,5 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+int? _explicitStockCount(Object? raw) {
+  if (raw is! num || !raw.isFinite || raw < 0 || raw > 9007199254740991) return null;
+  final value = raw.toDouble();
+  return value == value.roundToDouble() ? value.toInt() : null;
+}
+
 // ============================================
 // NEW: Product Variant Class
 // ============================================
@@ -10,6 +16,10 @@ class ProductVariant {
   final double salePrice;
   final double? originalPrice;
   final int stock;
+  /// False when the raw Firestore SKU has missing or invalid stock. The
+  /// numeric [stock] remains a display-compatible fallback for old screens;
+  /// backfill/edit flows must consult this flag and never treat it as real.
+  final bool stockConfigured;
   final List<String> images;
   final Map<String, String>
       options; // e.g., {"Color": "Blue", "Storage": "128GB"}
@@ -21,6 +31,7 @@ class ProductVariant {
     required this.salePrice,
     this.originalPrice,
     required this.stock,
+    this.stockConfigured = true,
     this.images = const [],
     required this.options,
   });
@@ -41,7 +52,7 @@ class ProductVariant {
       'sku': sku,
       'salePrice': salePrice,
       'originalPrice': originalPrice,
-      'stock': stock,
+      if (stockConfigured) 'stock': stock,
       'images': images,
       'options': options,
     };
@@ -58,13 +69,15 @@ class ProductVariant {
         (map['salePrice'] ?? map['price'] ?? map['discountedPrice']);
     final rawOriginalPrice =
         (map['originalPrice'] ?? map['mrp'] ?? map['compareAtPrice']);
+    final parsedStock = _explicitStockCount(map['stock']);
     return ProductVariant(
       id: map['id'] ?? '',
       name: rawName.toString(),
       sku: map['sku'],
       salePrice: (rawSalePrice as num?)?.toDouble() ?? 0.0,
       originalPrice: (rawOriginalPrice as num?)?.toDouble(),
-      stock: (map['stock'] as num?)?.toInt() ?? 0,
+      stock: parsedStock ?? 0,
+      stockConfigured: parsedStock != null,
       images: List<String>.from(map['images'] ?? []),
       options: Map<String, String>.from(map['options'] ?? {}),
     );
@@ -409,7 +422,7 @@ class ProductModel {
       categoryId: parseCategoryId(map),
       categoryName: parseCategoryNameField(map),
       images: images,
-      stock: (map['stock'] as num?)?.toInt() ?? 999,
+      stock: _explicitStockCount(map['stock']) ?? 999,
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
       isFeatured: map['isFeatured'] ?? false,
