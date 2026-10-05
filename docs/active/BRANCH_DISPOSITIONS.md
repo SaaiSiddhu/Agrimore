@@ -1108,3 +1108,16 @@ Execution mode: SINGLE AGENT; no subagents, delegation, background agents or wor
 
 
 2026-10-05 F5/F7 bank marker consistency CLAIMED. Basecf54e418; six exactpaths /tmp/agrimore-bank-marker-files.txt, contract /tmp/agrimore-bank-marker-contract.md. Source paid rule requires absent/null bankChangePending; current callable/statement/request checks onlynonemptystring. Reproduce malformed persisted demo markers first, align failclosed non-null marker across those three cores, preserve legacy absence/null and completed anchors, existing refusal/copy/money/auth/rules. No repair/schema/index/UI/dependency change; controls/gate/ownerbytes required; singleagent/fullF0-F9OPEN/no livewrite/provider/device/deploy/push/merge/controlchange.
+
+
+### 2026-10-05 — F5/F7 bank marker consistency: locally verified
+
+CURRENT_IMPLEMENTATION / VERIFIED_REPOSITORY_FACT. A shared private predicate treats every non-null bankChangePending value as blocking. New requests return existing already_pending without overwriting malformed markers; paid-record transitions return existing bank_change_pending without writes; new positive statements stay on_hold with exact money. Legacy absent/null markers remain clear; valid pending IDs remain blocked. Completed payment/statement anchors retain historical effect-free replies before inspecting later malformed state. No marker repair or schema/rule/index/UI/dependency change.
+
+Compiled cores/real Admin SDK/synthetic persisted demo baseline **11pass24fail, terminal1**, clean shutdown (/tmp/agrimore-bank-marker-baseline.log). Eight malformed marker types (empty string,zero,number,false,true,array,object,array containing ID) each exposed original request/payment/statement behavior. Fixed35 plus retained157 backend controls: **192 functional passed, terminal0**, clean shutdown (/tmp/agrimore-bank-marker-restored-final.log). Valid-ID/absent/null/completed-anchor controls included. No mocked core, real user, fund transfer/provider or native session.
+
+Security PASS_WITH_FINDINGS: semantics match existing legacy client rule for an existing account; Admin SDK bypasses rules, so no authorization parity proof claimed. Synthetic persisted state does not prove live prevalence/public endpoint creation. Missing-account/owner linkage/destination/money validation beyond markers remains review work. Malformed state remains blocked for owner reconciliation. Bulk deadlines/bytes/outbox/mobile/provider/all-role closing/session coverage remains OPEN.
+
+Inventory832files/1174collections/912lexical query sites/99callables refreshed/checked; owner tracked hashes/index76committed79working preserved; six claimed paths only; standard postcommit gate pending. Disk exhaustion prevented first document append; attempted staging then contained only three own source/test/inventory paths, checked before continuing, no commit falsely recorded. Owner release after compatible live/app/rules/planner/load review: `firebase deploy --only functions:requestRiderBankChange,functions:markRiderPayoutPaid,functions:buildRiderStatements` (not executed).
+
+SINGLE AGENT; no subagents/delegation/background agents/workflow orchestration. FullF0–F9 acceptance OPEN/goalACTIVE/redemption gated. No live docs/cloud mutation/provider/device/sign/deploy/push/merge/acceptance-control change.

@@ -50,6 +50,11 @@ type Db = FirebaseFirestore.Firestore;
 
 export const riderAccountRef = (db: Db, riderId: string) => db.collection("rider_accounts").doc(riderId);
 
+/** Only absent/null markers are clear, matching the legacy paid-transition rule. */
+function hasBankChangeMarker(account: FirebaseFirestore.DocumentData): boolean {
+  return account.bankChangePending != null;
+}
+
 function millis(v: unknown): number | null {
   if (v instanceof Timestamp) return v.toMillis();
   if (v && typeof (v as { toMillis?: unknown }).toMillis === "function") return (v as { toMillis: () => number }).toMillis();
@@ -320,7 +325,7 @@ export async function buildStatementCore(db: Db, riderId: string, nowMs: number,
     let status = "nothing_to_pay";
     let holdReason: string | null = null;
     if (payoutP > 0) {
-      if (typeof a.bankChangePending === "string" && a.bankChangePending) { status = "on_hold"; holdReason = "bank_change_pending"; }
+      if (hasBankChangeMarker(a)) { status = "on_hold"; holdReason = "bank_change_pending"; }
       else if (!hasPayoutDestination(partner.data())) { status = "on_hold"; holdReason = "no_bank_details"; }
       else status = "pending";
     }
@@ -431,7 +436,7 @@ export async function requestBankChangeCore(db: Db, riderId: string, data: unkno
   return db.runTransaction(async (tx): Promise<BankRequestVerdict> => {
     const [partner, acc] = await Promise.all([tx.get(partnerRef), tx.get(accRef)]);
     if (!partner.exists) return { kind: "refused", reason: "not_a_rider" };
-    if (typeof acc.data()?.bankChangePending === "string" && acc.data()!.bankChangePending) return { kind: "refused", reason: "already_pending" };
+    if (hasBankChangeMarker(acc.data() ?? {})) return { kind: "refused", reason: "already_pending" };
     const pendingRefs: FirebaseFirestore.DocumentReference[] = [];
     for await (const page of bankPayoutPages(tx, pendingPayouts)) {
       for (const p of page.docs) pendingRefs.push(p.ref);
@@ -539,7 +544,7 @@ export async function markPayoutPaidCore(
     if (p.status !== "pending") return { kind: "refused", reason: "payout_not_pending" };
     const riderId = String(p.riderId);
     const [acc, partner] = await Promise.all([tx.get(riderAccountRef(db, riderId)), tx.get(db.collection("delivery_partners").doc(riderId))]);
-    if (typeof acc.data()?.bankChangePending === "string" && acc.data()!.bankChangePending) {
+    if (hasBankChangeMarker(acc.data() ?? {})) {
       return { kind: "refused", reason: "bank_change_pending" };
     }
     const d = partner.data() ?? {};
