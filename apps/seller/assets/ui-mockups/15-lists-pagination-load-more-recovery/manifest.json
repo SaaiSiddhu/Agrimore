@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "foundation": "C15: Lists, pagination and load-more recovery",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "Compact blue-teal catalogue rows, copper operational guidance and cool-neutral selection surfaces; current full-fetch behavior is distinguished from a proposed bounded catalogue.",
+  "panels": [
+    {
+      "label": "Stable records",
+      "specimen": "Compact catalogue list labelled \"Sample catalogue\". Rows \"Sample seeds\" and \"Sample soil care\", neutral thumbnail blocks and square selection boxes; first row checked. Helper \"Selection stays with the product\". Copper annotation \"Keep row identity through reorder\". No selection count, stock or prices."
+    },
+    {
+      "label": "Refresh",
+      "specimen": "Existing compact sample rows stay visible under a small \"Refreshing catalogue\" strip. Spinner plus text, no completion percent. Helper \"Keep search, filter and sort\". Separate thin failed-refresh example \"Refresh unavailable\" with OUTLINED \"Retry refresh\". No mutation buttons."
+    },
+    {
+      "label": "Load more",
+      "specimen": "Make the panel explicitly labelled \"Proposed pagination\" at the top of the specimen. OUTLINED blue-teal action \"Load more products\", and a separate disabled outlined pending variant \"Loading more products\" with spinner. Copper annotation outside the UI specimen \"Current catalogue uses one full fetch\". Helper \"Existing rows stay in place\". Never imply this cursor backend is implemented."
+    },
+    {
+      "label": "Recovery and end",
+      "specimen": "Explicit small \"Proposed pagination states\" caption. Separate page-failure block \"More products couldn\u2019t be loaded\", helper \"Keep loaded rows and selection\", OUTLINED \"Retry loading more\". Separate end example \"End of this catalogue view\" with note \"Only after the chosen query is exhausted\". No fabricated counts, stock or product visibility changes."
+    }
+  ],
+  "list_contract": [
+    "Choose the actual list model per domain: snapshot replacement, expanding live prefix, cursor continuation or bounded one-shot fetch. Do not label a proposal as current.",
+    "Canonical query identity includes actor/tenant, scope, filters, ordering and bounds. A changed identity invalidates old requests and resets incompatible cursor/end/error state.",
+    "Stable record IDs drive widget identity, dedup/upsert, focus and selection; index position never becomes record identity.",
+    "Same-query append leaves prior records and scroll anchor visible. Reconcile changed/deleted records only with reliable current evidence; off-page absence is not deletion.",
+    "First load, retained-data refresh, next-page pending, next-page error and exhausted footer are separate states; next-page error never replaces a valid loaded list.",
+    "Load-more and retry allow one request per applicable scope; stale results are ignored, failure keeps the last successful cursor/limit and never triggers mutation replay.",
+    "Loaded-scope filters/search may produce no visible matches while raw continuation remains possible. Keep a scoped continuation path when evidence supports more.",
+    "hasMore derives from raw query evidence, not visible filtered row count. A full page/prefix means more may exist unless a lookahead or exhausted response proves otherwise.",
+    "Empty visible pages can advance a raw cursor; use progress detection and bounded continuation. Never loop indefinitely or prematurely report end.",
+    "End markers name the exact traversed query. Bounded category reads, partial financial scans, failed reads and cache are not complete global history.",
+    "Permission/auth/session failures use C14 sign-in/support restrictions; retry is for recoverable reads, not authorization bypass.",
+    "Initial/refresh/page loading and completion need concise semantics, static reduced-motion fallback and labelled 48px footer actions. Exact implementation remains future verification.",
+    "Keep independent owned order, payout, transaction, history, catalogue and admin-section scopes separate. Unknown values stay unavailable; no made-up totals, IDs, rates or financial outcomes.",
+    "All boards use isolated synthetic/sample list specimens and C01 metadata. C15 is PROVISIONAL_DIRECTION / TARGET_IMPLEMENTATION; no runtime or approval claim."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-lists-pagination-load-more-recovery-light.png",
+      "sha256": "ed08e434988d979c3b4db3909204e052c829dc0fdd385f27ce49a65a4c5a6446",
+      "bytes": 1277916,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-423e0beb-deb1-4a78-9f0d-4f6f2b6db478.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "0c9a474a71df016da89ee6e2e0d410e6c07513db7e3af28d4e2067438617a9ce",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-423e0beb-deb1-4a78-9f0d-4f6f2b6db478.png",
+          "source_output_sha256": "ed08e434988d979c3b4db3909204e052c829dc0fdd385f27ce49a65a4c5a6446"
+        }
+      ],
+      "review": "Visually reviewed for app identity, stable sample rows, retained-data refresh, outlined continuation/pending controls, scoped page retry/end, honest proposed versus current pagination, no fabricated metrics/PII, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-lists-pagination-load-more-recovery-dark.png",
+      "sha256": "c000c0cae567d821f419bc6bb6161a11e8683ac424a1a8f20ea02149f4770133",
+      "bytes": 1456996,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2ff6e977-811a-4dd4-acb6-1d997de9cd5b.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "a785a32b7bac7533e79716d17c8bee6eff584beeaffa5b354a357a9ae76172ea",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-423e0beb-deb1-4a78-9f0d-4f6f2b6db478.png",
+              "sha256": "ed08e434988d979c3b4db3909204e052c829dc0fdd385f27ce49a65a4c5a6446",
+              "reference_kind": "Generated C15 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-2ff6e977-811a-4dd4-acb6-1d997de9cd5b.png",
+          "source_output_sha256": "c000c0cae567d821f419bc6bb6161a11e8683ac424a1a8f20ea02149f4770133"
+        }
+      ],
+      "review": "Visually reviewed for app identity, stable sample rows, retained-data refresh, outlined continuation/pending controls, scoped page retry/end, honest proposed versus current pagination, no fabricated metrics/PII, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "ec9cc98499ad71f7f009148b4640f7244ecb34d0ab53b9af34b13068e001cb06"
+}

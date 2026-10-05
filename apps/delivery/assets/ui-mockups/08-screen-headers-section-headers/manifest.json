@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "foundation": "C08: Screen headers and section headers",
+  "version": "v1",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "asset_kind": "Static Storybook-style PNG references",
+  "source_audit_head": "8a06f3ce1459beec163a279e0061d134e288b386",
+  "source_coverage": {
+    "files": 816,
+    "lines": 271543
+  },
+  "header_panels": [
+    {
+      "label": "01 \u00b7 Duty & task chrome",
+      "specimen": "Home chrome specimen: neutral outlined duty pill 'Offline' with toggle off. Three restrained circle actions, visibly labeled beneath 'Emergency', 'Help', 'Inbox'; Emergency glyph burnt orange. Below chrome, page title 'Home'. Task specimen below: Back arrow, title 'Active delivery', subtitle 'Current assignment'. Main controls black/white, no online green celebration."
+    },
+    {
+      "label": "02 \u00b7 Delivery sections",
+      "specimen": "Clear stacked section headers 'Delivery address' with small location outline glyph and quiet action 'View map'; subtitle 'Destination details'. Second quiet heading 'Delivery progress' with no action. Burgundy is a restrained secondary accent."
+    },
+    {
+      "label": "03 \u00b7 Truthful duty status",
+      "specimen": "Two separate specimen chips 'Offline' neutral/info with power icon; 'Changing availability...' neutral/info with spinner. Caption 'Confirm state before updating label'. No success check, ETA, customer name, order number or proof-of-delivery claim."
+    },
+    {
+      "label": "04 \u00b7 Field readability",
+      "specimen": "Large-text title across two lines 'Delivery address / and customer instructions'; subtitle 'Read before arrival'; outlined 'More options' moved to a separate lower row. Footer note 'Keep Emergency reachable \u00b7 allow text to grow'."
+    }
+  ],
+  "domain_style": "Field-first monochrome, strong legible titles, compact neutral duty chrome, tiny burgundy dividers and burnt-orange emergency emphasis.",
+  "header_contract": {
+    "one_accessible_page_heading": true,
+    "section_headings_quieter": true,
+    "title_subtitle_gap_px": 4,
+    "section_gap_px": 24,
+    "page_inset_px": 16,
+    "wide_page_inset_px": 24,
+    "interaction_target_min_px": 48,
+    "text_reflow": "Grow title region and move actions below before hiding required meaning",
+    "status": "Synthetic illustration; bind real state to authorized records during implementation",
+    "delivery_visual_action_circle_px": 40,
+    "delivery_hit_region_note": "48px invisible hit region proposed while preserving owner-requested 40px visual circles; no runtime decision changed."
+  },
+  "implementation_status": "No runtime component, app registration, route or dependency changed.",
+  "limits": "Raster references are approximate, not measured runtime screenshots, accessibility certification or proof of deployed state. C08 remains an unapproved proposal.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-screen-headers-section-headers-light.png",
+      "sha256": "2c664a571bdc38c03254ecbeaf5f1781de59ca97fbb289b1d8ef73601717d831",
+      "bytes": 1286660,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b7490763-c4df-445d-a088-6f0973d4a287.png",
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "cab4618508a2db853c9d1e644c77e7ae3b0e92ccdd1bf9d563ddb2202243d640",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b7490763-c4df-445d-a088-6f0973d4a287.png",
+          "source_output_sha256": "2c664a571bdc38c03254ecbeaf5f1781de59ca97fbb289b1d8ef73601717d831"
+        }
+      ],
+      "review": "Selected image inspected for app identity, matching paired content, readable hierarchy, domain-specific context/status, action meaning and dark surfaces. Raster geometry/colors are approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-screen-headers-section-headers-dark.png",
+      "sha256": "b16f3025119cffb4291656ee1124c69ea627441a3d53b3e396530e5faf6371ae",
+      "bytes": 1451107,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b2b0a499-97ae-4b09-a1cc-0c3fab833274.png",
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "9c856e96e7f7545342f4e76fe466c781a0a4ea519f925901a85f6f3ae28e05db",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b7490763-c4df-445d-a088-6f0973d4a287.png",
+              "sha256": "2c664a571bdc38c03254ecbeaf5f1781de59ca97fbb289b1d8ef73601717d831",
+              "reference_kind": "Generated reference retained outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b2b0a499-97ae-4b09-a1cc-0c3fab833274.png",
+          "source_output_sha256": "b16f3025119cffb4291656ee1124c69ea627441a3d53b3e396530e5faf6371ae"
+        }
+      ],
+      "review": "Selected image inspected for app identity, matching paired content, readable hierarchy, domain-specific context/status, action meaning and dark surfaces. Raster geometry/colors are approximate."
+    }
+  ],
+  "prompts_file_sha256": "918b88bec0fd255883628e008153db206f6111cdbe8b36000aafbd2c98847b23"
+}

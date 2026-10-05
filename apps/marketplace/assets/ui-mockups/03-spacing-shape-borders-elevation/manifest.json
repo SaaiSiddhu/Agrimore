@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "foundation": "C03: Spacing, shape, borders and elevation",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "marketplace",
+  "app_directory": "marketplace",
+  "display_name": "Agrimore Marketplace",
+  "identity": "Professional green, warm gold and natural stone",
+  "runtime_implementation": "Not changed; these are documentary design references.",
+  "color_authority": "C01 v2 APPROVED_LOCKED",
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "7ef4378d58e7c81d281aa9f92f60dba7bda9bc53c1cb7d756b063bbe3532c5b1",
+  "shadow_proposals": {
+    "classification": "TARGET_IMPLEMENTATION",
+    "tuple_format": [
+      "offset_x_px",
+      "offset_y_px",
+      "blur_px",
+      "spread_px",
+      "tint_hex",
+      "opacity"
+    ],
+    "light": {
+      "soft": [
+        0,
+        2,
+        8,
+        0,
+        "#000000",
+        0.08
+      ],
+      "raised": [
+        0,
+        8,
+        24,
+        0,
+        "#000000",
+        0.1
+      ]
+    },
+    "dark": "Prefer tonal surface/raised colors and borders; default shadows may be omitted. Optional neutral shadow is subordinate, requiring rendering review."
+  },
+  "source_evidence": [
+    "apps/marketplace/lib/widgets/product/unified_product_card.dart",
+    "apps/marketplace/lib/screens/user/cart/widgets/cart_item_card.dart",
+    "apps/marketplace/lib/screens/user/home/widgets/address_bottom_sheet.dart",
+    "packages/agrimore_ui/lib/themes/app_theme.dart"
+  ],
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-marketplace-spacing-shape-borders-elevation-light.png",
+      "sha256": "bf2140f8dcaa2aa4a9d668ca3ba2ca29c6024a5d138ff87b861ccdbe482d6a4c",
+      "bytes": 1053550,
+      "width": 1586,
+      "height": 992,
+      "generation_tool": "built-in image_gen",
+      "generation_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1d8f7dfd-bee4-40be-b9bf-418bac7662ff.png",
+      "generation_steps": [
+        {
+          "id": "light-1",
+          "kind": "initial",
+          "prompt_sha256": "a907c53c8fe14b99408f48febd7f5748794189fea6771c233de32fcd51d7f13d",
+          "prompt_ends_with_newline": true,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+              "sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1d8f7dfd-bee4-40be-b9bf-418bac7662ff.png",
+          "output_sha256": "bf2140f8dcaa2aa4a9d668ca3ba2ca29c6024a5d138ff87b861ccdbe482d6a4c"
+        }
+      ],
+      "approved_c01_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+        "sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda"
+      },
+      "palette": {
+        "primary": "#087A4B",
+        "onPrimary": "#FFFFFF",
+        "support": "#9A6826",
+        "supportLabel": "Warm gold",
+        "canvas": "#F7F9F6",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCF9",
+        "text": "#1A2C21",
+        "muted": "#5D7062",
+        "border": "#DAE4DB",
+        "strongBorder": "#91A594",
+        "selected": "#E5F3E9",
+        "focus": "#087A4B"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E7F2EC",
+          "text": "#286B4D"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "domain_spacing": [
+        [
+          "Phone page inset",
+          16
+        ],
+        [
+          "Wide page inset",
+          24
+        ],
+        [
+          "Product card padding",
+          16
+        ],
+        [
+          "Product grid gap",
+          12
+        ],
+        [
+          "Section gap",
+          24
+        ],
+        [
+          "Minimum control height",
+          48
+        ]
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 16,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "depth_roles": [
+        "Cart row",
+        "Product card",
+        "Address sheet"
+      ]
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-marketplace-spacing-shape-borders-elevation-dark.png",
+      "sha256": "d455d08b6a77f5ef818490b17c9449947bfddcc516609698ffe543dd97d1955f",
+      "bytes": 1300858,
+      "width": 1586,
+      "height": 992,
+      "generation_tool": "built-in image_gen",
+      "generation_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6af8995b-14d8-4cfc-a427-7b7ed8ffee58.png",
+      "generation_steps": [
+        {
+          "id": "dark-1",
+          "kind": "initial",
+          "prompt_sha256": "1f45b633e527be71a8c4e5920e2ff2999b53830209d114c93eb8e3a3456bb09f",
+          "prompt_ends_with_newline": false,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+              "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca"
+            },
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/03-spacing-shape-borders-elevation/agrimore-marketplace-spacing-shape-borders-elevation-light.png",
+              "sha256": "bf2140f8dcaa2aa4a9d668ca3ba2ca29c6024a5d138ff87b861ccdbe482d6a4c"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cd65b665-4bec-4a56-a9a4-d61a0f642c0b.png",
+          "output_sha256": "65e68068baded1fa49150a08021d5a14eaa7d3e04ea442704cae3a8a1fbcb76b"
+        },
+        {
+          "id": "dark-2",
+          "kind": "targeted_refinement",
+          "prompt_sha256": "cf34e8c2e0e9c5ba13d3d8cab4ae3dee115fd5988207d161dfba880bc4cce992",
+          "prompt_ends_with_newline": false,
+          "input_images": [
+            {
+              "path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cd65b665-4bec-4a56-a9a4-d61a0f642c0b.png",
+              "sha256": "65e68068baded1fa49150a08021d5a14eaa7d3e04ea442704cae3a8a1fbcb76b"
+            },
+            {
+              "path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+              "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca"
+            }
+          ],
+          "output_source": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6af8995b-14d8-4cfc-a427-7b7ed8ffee58.png",
+          "output_sha256": "d455d08b6a77f5ef818490b17c9449947bfddcc516609698ffe543dd97d1955f"
+        }
+      ],
+      "approved_c01_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+        "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca"
+      },
+      "palette": {
+        "primary": "#67D2A1",
+        "onPrimary": "#0B291D",
+        "support": "#DDB97A",
+        "supportLabel": "Warm gold",
+        "canvas": "#090C0A",
+        "surface": "#141A16",
+        "raised": "#1E2721",
+        "text": "#F2F7F3",
+        "muted": "#B9C9BD",
+        "border": "#344338",
+        "strongBorder": "#798F7E",
+        "selected": "#163325",
+        "focus": "#67D2A1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#173126",
+          "text": "#A1D8B9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "domain_spacing": [
+        [
+          "Phone page inset",
+          16
+        ],
+        [
+          "Wide page inset",
+          24
+        ],
+        [
+          "Product card padding",
+          16
+        ],
+        [
+          "Product grid gap",
+          12
+        ],
+        [
+          "Section gap",
+          24
+        ],
+        [
+          "Minimum control height",
+          48
+        ]
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 16,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "depth_roles": [
+        "Cart row",
+        "Product card",
+        "Address sheet"
+      ]
+    }
+  ],
+  "review": {
+    "method": "Visual review of all ten approved C01 references and all ten selected C03 outputs; targeted image_gen refinement of conflicting Delivery guide and Marketplace/Admin action colors.",
+    "numeric_labels": "Reviewed core spacing, domain spacing rows, radius roles and border widths for each light/dark pair.",
+    "limits": "AI raster references are illustrative. Pixel-exact hex/geometry, rendered runtime responsiveness, accessibility and interaction behavior are not certified."
+  }
+}

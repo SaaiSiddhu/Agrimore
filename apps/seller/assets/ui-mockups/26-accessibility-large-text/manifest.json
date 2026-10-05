@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "foundation": "C26: Accessibility and large text",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "f829ea26e6d226b99eca023d8d2b6504941d37ea",
+  "source_coverage": {
+    "files": 819,
+    "lines": 272406
+  },
+  "domain_style": "Blue-teal editable merchant controls, copper focus/reflow guidance and cool-neutral readable form surfaces.",
+  "panels": [
+    {
+      "label": "Editor contrast and labels",
+      "specimen": "Panel \"Merchant controls\": title \"Product details\", field label \"Description\" above empty neutral field specimen; primary filled \"Review changes\", secondary outlined \"Back\". Copper note \"Labels remain visible before and after input\". No actual product, Save success, KYC/business data or publication claim."
+    },
+    {
+      "label": "Adaptive editor actions",
+      "specimen": "Panel \"Scalable editor\": Standard text specimen has \"Review product details\" and side-by-side actions \"Back\" / \"Review changes\"; Large text specimen same title bigger/wrapped with actions STACKED full width in clear intentional order. Copper note \"Grow controls; preserve a deliberate reading order\". No numeric scale claim, clipped label or resized-down text."
+    },
+    {
+      "label": "Single-border focus",
+      "specimen": "Panel \"Keyboard focus\": outline field \"Product name\" with one stronger own border; separate outlined \"Review changes\". Small \"Focus example\" and \"Comfortable action height\". Copper note \"Strengthen the existing border; keep geometry stable\". No outer focus ring/halo/double border."
+    },
+    {
+      "label": "Announcements and summaries",
+      "specimen": "Panel \"Accessible updates\": neutral text-plus-hourglass \"Loading product details\" and independent error icon+text \"Could not load products. Try again.\" with secondary \"Try again\". Caption \"Example states\"; external reading label example \"Review changes, button\". Copper note \"Useful announcements; no repeated decorative noise\". No spoken-AT-pass/compliance/payment/stock or published outcome."
+    }
+  ],
+  "accessibility_contract": [
+    "Use approved text/surface/primary/onPrimary pairs, including inverse dark-mode button content. Supporting accents are not the sole carrier of status meaning.",
+    "Contrast is evaluated against actual rendered neighboring colors and states. Calculated locked sRGB token pairs are source data, not proof of runtime/raster contrast or WCAG conformance.",
+    "Keep essential labels/content available at large text: wrap, grow, stack and scroll. Do not reduce requested system font scaling to fit fixed height or rely only on hidden ellipsis.",
+    "Use TextScaler at actual font sizes; scale(1) threshold heuristics do not fully represent nonlinear scaling. No global production font-size slider is invented.",
+    "Preserve deliberate semantic and visual order through responsive changes. Heading, record/context and actions have useful names/roles/states; hide only decorative duplicate icons.",
+    "Keyboard focus is visible on the existing control border, without extra ring/halo/gap. Traversal, activation, modal focus/return and unobscured focused content need runtime checks.",
+    "Touch hit bounds remain comfortable independently of icon size. Native/web guideline units differ; minimum widget height does not certify target bounds.",
+    "Screen-reader announcements describe meaningful changes once without needless focus movement; decorative spinner rebuilds are not repeated alerts.",
+    "Essential financial quantities/signs and private-field purpose require correct accessible wording without inventing values or exposing masked raw data.",
+    "High contrast, bold text, reduced motion, display scaling and real OS large text are separate preferences; preserve meaningful progress states even without animation.",
+    "All specimens are labelled examples/target designs. No live record, actual announcement, AT testing result, accessible compliance badge or financial/identity/order outcome asserted.",
+    "Later implementation should reuse current helpers, measure the semantics/rendering tree and test actual TalkBack/VoiceOver/keyboard paths across all relevant screens."
+  ],
+  "locked_token_srgb_contrast_reference": [
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "body",
+      "foreground": "#142A34",
+      "background": "#FFFFFF",
+      "ratio": 14.888158927608663
+    },
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "muted",
+      "foreground": "#56717E",
+      "background": "#FFFFFF",
+      "ratio": 5.173676296701967
+    },
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "primary-content",
+      "foreground": "#FFFFFF",
+      "background": "#0B6A80",
+      "ratio": 6.199178398623065
+    },
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "focus-on-surface",
+      "foreground": "#0B6A80",
+      "background": "#FFFFFF",
+      "ratio": 6.199178398623065
+    },
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "strong-border",
+      "foreground": "#879EAA",
+      "background": "#FFFFFF",
+      "ratio": 2.799485200540836
+    },
+    {
+      "app": "seller",
+      "theme": "light",
+      "role": "default-border",
+      "foreground": "#D5E3E8",
+      "background": "#FFFFFF",
+      "ratio": 1.3139700152383509
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "body",
+      "foreground": "#F1F7FA",
+      "background": "#11191E",
+      "ratio": 16.439004840378207
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "muted",
+      "foreground": "#B5C9D1",
+      "background": "#11191E",
+      "ratio": 10.358621911430946
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "primary-content",
+      "foreground": "#0B2831",
+      "background": "#70D0DF",
+      "ratio": 8.646114585729446
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "focus-on-surface",
+      "foreground": "#70D0DF",
+      "background": "#11191E",
+      "ratio": 9.966573783945377
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "strong-border",
+      "foreground": "#7895A2",
+      "background": "#11191E",
+      "ratio": 5.601835946883697
+    },
+    {
+      "app": "seller",
+      "theme": "dark",
+      "role": "default-border",
+      "foreground": "#33464F",
+      "background": "#11191E",
+      "ratio": 1.8023582724310685
+    }
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-accessibility-large-text-light.png",
+      "sha256": "b94e0cb529d4356d2529274f3fdb50dc0f776b569e5c98146509b33c7109048b",
+      "bytes": 1475313,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-089c4bc8-9cfc-45e6-a481-d279663bb897.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "b5384b133de50df80331327de66714721d13110996614df58bf32617e6df8aea",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-089c4bc8-9cfc-45e6-a481-d279663bb897.png",
+          "source_output_sha256": "b94e0cb529d4356d2529274f3fdb50dc0f776b569e5c98146509b33c7109048b"
+        }
+      ],
+      "review": "Visually reviewed for locked identity and inverse content, app-specific large/wrapping text, labelled actions/notices, one own-border focus, reading-order examples, no actual records/PII/server outcomes, no fabricated WCAG/AT/contrast pass and no sidebar. Raster values approximate; no runtime accessibility certification."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-accessibility-large-text-dark.png",
+      "sha256": "22644d98e47481ff263e6be13075b457d084d5c52b8ce8842dafcd51dda053c4",
+      "bytes": 1466977,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3cac32c7-60b1-4b01-a2c7-f7baee3dd6f3.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "bb5f785cb836aec444884eca5160aa7b6f64f9b9a88664bec182338221dbc91d",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-089c4bc8-9cfc-45e6-a481-d279663bb897.png",
+              "sha256": "b94e0cb529d4356d2529274f3fdb50dc0f776b569e5c98146509b33c7109048b",
+              "reference_kind": "Generated C26 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3cac32c7-60b1-4b01-a2c7-f7baee3dd6f3.png",
+          "source_output_sha256": "22644d98e47481ff263e6be13075b457d084d5c52b8ce8842dafcd51dda053c4"
+        }
+      ],
+      "review": "Visually reviewed for locked identity and inverse content, app-specific large/wrapping text, labelled actions/notices, one own-border focus, reading-order examples, no actual records/PII/server outcomes, no fabricated WCAG/AT/contrast pass and no sidebar. Raster values approximate; no runtime accessibility certification."
+    }
+  ],
+  "prompts_file_sha256": "d21ff20749cba0ee847fa68b2f88ab2ddef655a3b4c0872a411f4154a74c4f51"
+}

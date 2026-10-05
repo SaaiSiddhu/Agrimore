@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "foundation": "C10: Fields, validation and error summaries",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "version": "v1",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "marketplace",
+  "app_directory": "marketplace",
+  "display_name": "Agrimore Marketplace",
+  "identity": "Professional green with warm gold and natural stone support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "field_panels": [
+    {
+      "label": "Address inputs",
+      "specimen": "Fields: Recipient name, Mobile number, PIN code, Landmark (optional). Use empty input hints; helper Mobile number: Use 10 digits. PIN code: Use 6 digits. No personal data."
+    },
+    {
+      "label": "Helpful inline errors",
+      "specimen": "Mobile number field empty, error Enter a 10-digit mobile number. PIN code field empty, error Enter a 6-digit PIN code. Show focus on Mobile number with visible outline."
+    },
+    {
+      "label": "Error summary",
+      "specimen": "Title Check your address. Exactly two linked items: Mobile number \u2014 Enter a 10-digit mobile number; PIN code \u2014 Enter a 6-digit PIN code. Preserve other entries."
+    },
+    {
+      "label": "First invalid focus",
+      "specimen": "Save address \u2192 Validate \u2192 Reveal Mobile number \u2192 Focus. Failed submit keeps values. Fix one error at a time. Location eligibility is a separate check."
+    }
+  ],
+  "domain_style": "Welcoming address form, clear regional dependencies and generous helper text.",
+  "validation_contract": {
+    "persistent_label": true,
+    "error_timing": "After interaction/failed submit; server errors mapped separately",
+    "summary": "Field-specific linked errors matching inline copy",
+    "first_invalid": "Validate, reveal target section, await layout, scroll and focus logical control",
+    "focus_identity": "Stable field IDs proposed; preserve existing components",
+    "preserve_entries": true,
+    "interaction_target_min_px": 48,
+    "status": "Local validity is not authoritative acceptance or confirmed result"
+  },
+  "implementation_status": "Static assets/docs only; no runtime fields, routes, backend, pubspec or shared exports changed by this task.",
+  "limits": "Approximate raster proposals, not screenshots, pixel-exact measurements or accessibility certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-marketplace-fields-validation-error-summaries-light.png",
+      "sha256": "a159cf49c21ee60d0587077572c9a7cc5c5d8d1284b4ef3182b259cbf80c272b",
+      "bytes": 1351662,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#087A4B",
+        "onPrimary": "#FFFFFF",
+        "support": "#9A6826",
+        "supportLabel": "Warm gold",
+        "canvas": "#F7F9F6",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCF9",
+        "text": "#1A2C21",
+        "muted": "#5D7062",
+        "border": "#DAE4DB",
+        "strongBorder": "#91A594",
+        "selected": "#E5F3E9",
+        "focus": "#087A4B"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E7F2EC",
+          "text": "#286B4D"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 16,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          36,
+          26,
+          20,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          16,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+        "sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6fcd01ce-bd42-4b21-a05a-894743b751ad.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "b29e24e9e7e4a63d76f6f04ec56df12aaab9f12c2941d213e63bcdd11207df41",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+              "sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda",
+              "repository_path": "apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6fcd01ce-bd42-4b21-a05a-894743b751ad.png",
+          "source_output_sha256": "a159cf49c21ee60d0587077572c9a7cc5c5d8d1284b4ef3182b259cbf80c272b"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, summary/inline correspondence, logical focus annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-marketplace-fields-validation-error-summaries-dark.png",
+      "sha256": "6f6fa46c55ecc33efff5e4878b68e916185284e1911d3eece81fe670817cb023",
+      "bytes": 1504084,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#67D2A1",
+        "onPrimary": "#0B291D",
+        "support": "#DDB97A",
+        "supportLabel": "Warm gold",
+        "canvas": "#090C0A",
+        "surface": "#141A16",
+        "raised": "#1E2721",
+        "text": "#F2F7F3",
+        "muted": "#B9C9BD",
+        "border": "#344338",
+        "strongBorder": "#798F7E",
+        "selected": "#163325",
+        "focus": "#67D2A1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#173126",
+          "text": "#A1D8B9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 16,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          36,
+          26,
+          20,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          16,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+        "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-48b09d47-3a1b-4722-947a-7f581b568f10.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "3c7cf45f9eb3e6aff9c868b287729aa4c1f1152748f2368465a8ffaf9a49de00",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+              "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca",
+              "repository_path": "apps/marketplace/assets/ui-mockups/01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6fcd01ce-bd42-4b21-a05a-894743b751ad.png",
+              "sha256": "a159cf49c21ee60d0587077572c9a7cc5c5d8d1284b4ef3182b259cbf80c272b",
+              "reference_kind": "Generated image outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-48b09d47-3a1b-4722-947a-7f581b568f10.png",
+          "source_output_sha256": "6f6fa46c55ecc33efff5e4878b68e916185284e1911d3eece81fe670817cb023"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, summary/inline correspondence, logical focus annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    }
+  ],
+  "prompts_file_sha256": "4082991c1ebe0d2023a270b3d78361a82e26a3ecb9f248757f8df95a4b975c59"
+}

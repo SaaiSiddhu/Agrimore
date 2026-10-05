@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "foundation": "C02 Typography and number hierarchy",
+  "version": "v1",
+  "generated_on": "2026-10-02",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "app": "marketplace",
+  "app_directory": "marketplace",
+  "display_name": "Agrimore Marketplace",
+  "generation_tool": "built-in image_gen",
+  "reading_priority": "Product name → selling price → pack specification → purchase quantity → payable total.",
+  "font_family_reference": "Inter",
+  "role_specification": [
+    {
+      "role": "Display",
+      "size_logical_px": 36,
+      "line_height_logical_px": 44,
+      "weight": 700,
+      "specimen": "Fresh from the farm"
+    },
+    {
+      "role": "Title",
+      "size_logical_px": 26,
+      "line_height_logical_px": 34,
+      "weight": 600,
+      "specimen": "Shop fresh produce"
+    },
+    {
+      "role": "Product",
+      "size_logical_px": 20,
+      "line_height_logical_px": 28,
+      "weight": 600,
+      "specimen": "Fresh tomatoes"
+    },
+    {
+      "role": "Body",
+      "size_logical_px": 16,
+      "line_height_logical_px": 24,
+      "weight": 400,
+      "specimen": "Choose a pack for your household."
+    },
+    {
+      "role": "Label",
+      "size_logical_px": 14,
+      "line_height_logical_px": 20,
+      "weight": 600,
+      "specimen": "Pack size"
+    },
+    {
+      "role": "Caption",
+      "size_logical_px": 12,
+      "line_height_logical_px": 18,
+      "weight": 400,
+      "specimen": "Price includes applicable taxes"
+    },
+    {
+      "role": "Price",
+      "size_logical_px": 32,
+      "line_height_logical_px": 40,
+      "weight": 700,
+      "specimen": "₹48.00"
+    },
+    {
+      "role": "Quantity",
+      "size_logical_px": 16,
+      "line_height_logical_px": 24,
+      "weight": 600,
+      "specimen": "2 packs"
+    }
+  ],
+  "c01_status": "APPROVED_LOCKED",
+  "c01_version": "v2",
+  "c01_lock_file": "../01-color-roles-theme-identity/lock.json",
+  "c01_board_foundations": {
+    "font_family_reference": "Inter",
+    "font_weights": [
+      700,
+      600,
+      400
+    ],
+    "type_scale_px": [
+      36,
+      26,
+      20,
+      16,
+      14,
+      12
+    ],
+    "spacing_px": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radius_px": [
+      12,
+      16,
+      24
+    ],
+    "border_width_px": {
+      "default": 1,
+      "strong": 1,
+      "focus": 2
+    },
+    "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+  },
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "653e839ce4121d9048728788f96e545bdd03b882ffe6b18b4ccef9ac2c5b14fd",
+  "implementation_status": "Visual references only; no runtime theme or source migration.",
+  "verification_boundary": "Palette/status specification equality and file integrity are checked; visual review is recorded. Pixel-level raster color/font equivalence is not asserted.",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-marketplace-typography-number-hierarchy-light.png",
+      "sha256": "4a3cb78d1926423272ff4d779bad861ce84b23db7b93ace0cb58a658f7c0f5f9",
+      "bytes": 1214039,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-243b0153-be0c-490a-9ba7-7d7615365747.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+      "c01_reference_sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda",
+      "palette": {
+        "primary": "#087A4B",
+        "onPrimary": "#FFFFFF",
+        "support": "#9A6826",
+        "supportLabel": "Warm gold",
+        "canvas": "#F7F9F6",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCF9",
+        "text": "#1A2C21",
+        "muted": "#5D7062",
+        "border": "#DAE4DB",
+        "strongBorder": "#91A594",
+        "selected": "#E5F3E9",
+        "focus": "#087A4B"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E7F2EC",
+          "text": "#286B4D"
+        }
+      ],
+      "generation_prompt_sha256": "58442db4ce466813d8d7428d82b065f60f747e08cbc318683534abc15418a61c",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-light.png",
+          "location": "repository",
+          "sha256": "cc568e8551edcfeb1e6358fa2bd83a3599636eba1102e8b115aa9247e3fefcda"
+        }
+      ],
+      "generation_history": [],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-marketplace-typography-number-hierarchy-dark.png",
+      "sha256": "1d96f23f24c76b93529fddd699b37625dfdc54902a4fddaff5ee6ea118e1c646",
+      "bytes": 1267296,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-4337996b-e82a-4f60-810e-dd4d2d580e35.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+      "c01_reference_sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca",
+      "palette": {
+        "primary": "#67D2A1",
+        "onPrimary": "#0B291D",
+        "support": "#DDB97A",
+        "supportLabel": "Warm gold",
+        "canvas": "#090C0A",
+        "surface": "#141A16",
+        "raised": "#1E2721",
+        "text": "#F2F7F3",
+        "muted": "#B9C9BD",
+        "border": "#344338",
+        "strongBorder": "#798F7E",
+        "selected": "#163325",
+        "focus": "#67D2A1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#173126",
+          "text": "#A1D8B9"
+        }
+      ],
+      "generation_prompt_sha256": "a9a48b8b834acd1366ff6ac20b8da4b5d16a2806d79cff52d3dcced75096f42a",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "../01-color-roles-theme-identity/agrimore-marketplace-design-tokens-dark.png",
+          "location": "repository",
+          "sha256": "63b4648caac7e8d4a4137aa41090bbc4bcc46a1727cf808379a1fba4ec87f4ca"
+        },
+        {
+          "input_image": 2,
+          "file": "agrimore-marketplace-typography-number-hierarchy-light.png",
+          "location": "repository",
+          "sha256": "4a3cb78d1926423272ff4d779bad861ce84b23db7b93ace0cb58a658f7c0f5f9"
+        }
+      ],
+      "generation_history": [],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    }
+  ]
+}

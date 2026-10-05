@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "foundation": "C24: Money, quantity, date and identifier formatting",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "f88101beab79e2181013af45e61c0898782b14a0",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272075
+  },
+  "domain_style": "High-contrast black/white statement figures and field units, burgundy identifier context and burnt-orange precision/time guidance.",
+  "panels": [
+    {
+      "label": "Statement precision and signs",
+      "specimen": "Card \"Money examples\", rows \"Exact statement\" = \"\u20b91,250.00\", \"Signed adjustment\" = \"\u2212 \u20b964.50\", \"Unknown amount\" = \"Amount unavailable\". Orange BOARD note \"Exact paise / no payment status implied\". No balance, cash-held, paid tick, payout date or financial action."
+    },
+    {
+      "label": "Billable distance and field units",
+      "specimen": "Card \"Unit examples\", rows \"Distance precision\" = \"4.05 km\", \"Waiting duration\" = \"7 min\", \"Item count\" = \"2 units\". Orange BOARD note \"Preserve stored precision for pay breakdowns\". No pay rate, computed fee, route/ETA or precision guarantee about GPS."
+    },
+    {
+      "label": "Rider dates and time",
+      "specimen": "Card \"Date and time examples\", \"18 Sep 2026, 9:40 AM\", date range \"18 \u2013 24 Sep 2026\"; separate \"Time unavailable\". Small \"Example timezone: IST\". Orange BOARD note \"Fixed examples / source time only\". No payment schedule, countdown, delivered/paid timeline, live clock or Today."
+    },
+    {
+      "label": "Sensitive rider identifiers",
+      "specimen": "Card \"Private summaries\", rows \"Identity document\" = \"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\", \"Bank account\" = \"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\", \"UPI\" = \"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\". Small burgundy label \"Sensitive information\". Orange BOARD note \"Malformed values must not reveal raw text\". No last digits, ID, photo, actual UPI handle, eye/reveal or verified/encrypted claim."
+    }
+  ],
+  "format_contract": [
+    "Formatting is a display contract, never price authority, commission eligibility, payment status, record identity or backend mutation.",
+    "Use en_IN Indian grouping and INR rupee symbol consistently. Exact transaction/statement/reconciliation values keep required paise; whole/compact views are labelled rounded summaries.",
+    "Unknown/missing/invalid/non-finite amounts and counts remain unavailable, distinct from a real known zero. Do not invent Free, out of stock or zero balance.",
+    "Do not parse rendered currency/compact labels into calculation or export inputs. Preserve original typed values and server rounding; validate finite/safe numbers separately.",
+    "Signed adjustments need visible sign and accessible wording; minus/spacing conventions differ by current helper. Never use color alone to imply debit, credit or settlement.",
+    "Whole order/stock counts differ from free-form pack labels/physical measurements, record counts, distances and durations. Do not silently convert units or truncate fractional counts.",
+    "Quantity/count formatting needs singular/plural and known unit; missing unit is not inferred kg/unit. Measured labels do not define stock decrement semantics.",
+    "Preserve billable distance precision from source; map/offer approximations do not recompute pay. Duration and distance carry their units.",
+    "Dates require valid source fields and meaning; display locale, timezone, calendar range boundaries and absolute accessible form are explicit decisions. Formatting DateTime alone does not convert timezone.",
+    "Unknown/invalid/pending/future timestamps do not become Now/Today/zero time; date-only helpers must not fabricate a clock time. Long-lived audit displays need a year.",
+    "Private summaries use conservative masks, including short/malformed values. Masking is not encryption/access control; legitimate owned editing/full-key lookup remain distinct.",
+    "Display abbreviation/reference is not a backend ID: retain full keys for routing, deduplication, copy where authorized and machine exports. UI masks do not guarantee exported/logged data privacy.",
+    "Format samples are independent synthetic values, fixed dates and pure bullet masks. No live amount, metric, stock, personal identifier, payment or availability outcome is asserted.",
+    "Preserve locked identity and tabular numerals with readable value alignment, labels/units beyond color, text scaling and screen-reader meaning. Runtime locale/precision/timezone/accessibility checks remain future work."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-money-quantity-date-identifier-formatting-light.png",
+      "sha256": "b25929057711e23d31179214d7a115a289485b7f8ee0a5ad22a2ef00d373760c",
+      "bytes": 1320464,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-99781755-e16b-4997-854b-5d480cfd03a7.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "4fc41f0326d1e1fbe2be9fa661cd8ea8d019ee55c322a19e87004915ccf4b81a",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-99781755-e16b-4997-854b-5d480cfd03a7.png",
+          "source_output_sha256": "b25929057711e23d31179214d7a115a289485b7f8ee0a5ad22a2ef00d373760c"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, synthetic-only monetary/count/date samples, Indian grouping/paise/signs/units, exact-versus-summary distinctions, unavailable-versus-zero, date-only Associate provenance, conservative bullet masks, no live PII/payment/stock/metric claims, no sidebar and readable dark values. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-money-quantity-date-identifier-formatting-dark.png",
+      "sha256": "874b12bacad3065ea9e27676ebb30618ff86b2fdc42b372ffde9b8e44ea94669",
+      "bytes": 1449391,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-e25cd25c-b4f7-4509-9681-493b3e4144de.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "06e3c0be00aa820ad9b81bb1d65f54cb9f3f025dd36fb847b9295b50624a6658",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-99781755-e16b-4997-854b-5d480cfd03a7.png",
+              "sha256": "b25929057711e23d31179214d7a115a289485b7f8ee0a5ad22a2ef00d373760c",
+              "reference_kind": "Generated C24 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-e25cd25c-b4f7-4509-9681-493b3e4144de.png",
+          "source_output_sha256": "874b12bacad3065ea9e27676ebb30618ff86b2fdc42b372ffde9b8e44ea94669"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, synthetic-only monetary/count/date samples, Indian grouping/paise/signs/units, exact-versus-summary distinctions, unavailable-versus-zero, date-only Associate provenance, conservative bullet masks, no live PII/payment/stock/metric claims, no sidebar and readable dark values. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "bcdcd5cfad6a42dc402b41f857f80a6e3a122d0d9d90d3441ff67cd83b63d68b"
+}

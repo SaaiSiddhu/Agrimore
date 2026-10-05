@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "foundation": "C23: Help, support and legal information",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "sales-associate",
+  "app_directory": "employee",
+  "display_name": "Agrimore Sales Associate",
+  "identity": "Premium royal blue with muted indigo, pearl and slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "7285db1207b2fa7219e2866a6c20de6334fc1ce5",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272044
+  },
+  "domain_style": "Premium royal-blue associate knowledge/contact cards, indigo clipboard/provenance context and pearl/slate legal surfaces.",
+  "panels": [
+    {
+      "label": "Associate help topics",
+      "specimen": "Card \"Associate help\", two collapsed FAQ rows \"Order attribution\" and \"Payout account changes\" with outline icons/expand chevrons. Indigo BOARD note \"Domain answers need canonical review\". No fee/commission/balance, full answer, fixed support hours or availability badge."
+    },
+    {
+      "label": "Honest clipboard contacts",
+      "specimen": "Card \"Support contact details\", PRIMARY \"Copy phone number\", SECONDARY \"Copy email address\". Below \"Paste into your phone or email app.\" Indigo BOARD note \"Copy only / no call or message sent\". No phone/email values, fake live chat or direct Call button."
+    },
+    {
+      "label": "Clipboard failure recovery",
+      "specimen": "Card \"Could not copy contact details\", body \"Try copying again.\" SECONDARY \"Try again\". Indigo BOARD note \"Proposed feedback after clipboard result\". No Copied checkmark/toast without successful operation; no ticket submission/status or new contact."
+    },
+    {
+      "label": "Associate policy access",
+      "specimen": "Card \"Legal information\", two document rows \"Terms and conditions\" and \"Privacy policy\". Indigo BOARD note \"Proposed legal entry / confirm policy source\". No browser/internal destination assertion yet, accepted-consent tick, hardcoded fee, compliance/privacy/earning guarantee or date."
+    }
+  ],
+  "support_contract": [
+    "Distinguish self-service FAQ, automated assistance, OS contact handoff, clipboard copy, server support ticket and admin case management; labels must match performed action.",
+    "Use documented configured contact sources, reconcile hardcoded conflicts and avoid sample endpoints. Configured is not verified reachable or staffed.",
+    "Phone/email app opening is not connection, sending, receipt or resolution. Check false returns and exceptions; provide readable recoverable failure.",
+    "Clipboard confirmation only after successful awaited write. Copy is not a phone/email launcher or contact event.",
+    "Keep search/filter/expand behavior functional or clearly proposed; missing FAQ matches are not support unavailability.",
+    "No fake ticket, bug report, live-agent availability, operating-hour/SLA, refund/settlement/fee or legal assurance from a static card.",
+    "Support requests use server identity/current owner and action payload; preserve idempotency and distinguish unchanged retry versus edited new request. Widget-lifetime IDs are not durable offline queues.",
+    "After upload/submit/read/confirmation, current account/session/entity/route ownership must still hold. Sensitive attachments are optional; removal UI does not certify deletion or secure storage.",
+    "Rider Submitted/Seen/Closed differs from administrative Open/In progress/Waiting/Resolved; workflow closure is not business settlement.",
+    "Routine help and emergency/safety actions remain separate. Dialer handoff does not notify support, share location or dispatch emergency help.",
+    "Policy entries require authoritative approved content/source/version; do not invent effective dates, consent state, compliance or blanket privacy guarantees. Internal versus external destination icons must reflect supported route.",
+    "Proposed legal entries for Delivery/Associate require confirmed destination; Admin settings placeholder help actions need real implementation. Do not clone every support feature across apps.",
+    "Readable headings, labelled external handoffs, target sizes, focus/announcements, text scaling and dark contrast require later runtime checks. Raster boards are target specimens, not certified live services."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-sales-associate-help-support-legal-information-light.png",
+      "sha256": "ee9d97625a2c94949dc6ce426ffc01e5ad64bf3a2fdf525502d0b02808c92aac",
+      "bytes": 1301266,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#2D56C4",
+        "onPrimary": "#FFFFFF",
+        "support": "#6950A2",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#F7F8FC",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCFF",
+        "text": "#192840",
+        "muted": "#61708B",
+        "border": "#DDE3F0",
+        "strongBorder": "#94A0B7",
+        "selected": "#EAF0FE",
+        "focus": "#2D56C4"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#EDF1FB",
+          "text": "#31549E"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          34,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          18,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+        "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cc183491-5f3c-461a-9cb5-8678895c6e3d.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "8fbf14f161ec87c7dd3978ae4f03bf4f1339c81c0dfd53b98dfad80db738cd45",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+              "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cc183491-5f3c-461a-9cb5-8678895c6e3d.png",
+          "source_output_sha256": "ee9d97625a2c94949dc6ce426ffc01e5ad64bf3a2fdf525502d0b02808c92aac"
+        }
+      ],
+      "review": "Visually reviewed for locked app identity, app-specific support/contact/copy/assistant/case boundaries, disabled empty rider request, status vocabulary rather than fabricated outcomes, clear proposed legal context, no PII/contact values/SLA/legal assurances/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-sales-associate-help-support-legal-information-dark.png",
+      "sha256": "588aa868a5f976eda829e85c228367896bc1b438947c30aadd0a7100cee26710",
+      "bytes": 1457978,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#96B4FF",
+        "onPrimary": "#142241",
+        "support": "#C0ADE7",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#090B11",
+        "surface": "#131722",
+        "raised": "#1E2533",
+        "text": "#F2F5FC",
+        "muted": "#B9C5DD",
+        "border": "#354259",
+        "strongBorder": "#8393B2",
+        "selected": "#1B2C50",
+        "focus": "#96B4FF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#1A2B4C",
+          "text": "#B2C8FF"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          34,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          12,
+          18,
+          24
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+        "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-faa701d8-7b3a-4602-93aa-b31d7b70e8bd.png",
+      "failed_attempts_without_output": [
+        {
+          "prompt": "Use case: ui-mockup\nAgrimore C23 premium Storybook board: Agrimore Sales Associate / DARK, landscape approximately 1536 x 1024. Reference 1 is approved C01 dark identity ONLY. Match palette, Inter hierarchy, spacing, shape, border and depth. NEW help/support/legal board, full canvas; NO sidebar/navbar/device/browser/phone chrome.\nHeading \"Agrimore Sales Associate\" and \"Dark\" chip. Subtitle \"Help, support and legal information\". Small \"C23 / Design proposal\". Four spacious 2x2 panels with real refined UI specimens and restrained BOARD notes external to product cards. Domain: Premium royal-blue associate knowledge/contact cards, indigo clipboard/provenance context and pearl/slate legal surfaces.\nLocked palette {\"primary\": \"#96B4FF\", \"onPrimary\": \"#142241\", \"support\": \"#C0ADE7\", \"supportLabel\": \"Supporting indigo\", \"canvas\": \"#090B11\", \"surface\": \"#131722\", \"raised\": \"#1E2533\", \"text\": \"#F2F5FC\", \"muted\": \"#B9C5DD\", \"border\": \"#354259\", \"strongBorder\": \"#8393B2\", \"selected\": \"#1B2C50\", \"focus\": \"#96B4FF\"}; status pairs [{\"role\": \"Success\", \"container\": \"#102C20\", \"text\": \"#8DE0B0\"}, {\"role\": \"Warning\", \"container\": \"#302612\", \"text\": \"#F1CE7B\"}, {\"role\": \"Error\", \"container\": \"#341B1B\", \"text\": \"#FFA39C\"}, {\"role\": \"Info\", \"container\": \"#1A2B4C\", \"text\": \"#B2C8FF\"}]. PRIMARY filled #96B4FF with #142241 inverse text/icons. SECONDARY neutral fill/primary outline label. DISABLED neutral muted fill with readable muted label. Supporting accents contextual. Dark near-black canvas, desaturated dark-grey panels, no white cards/saturated washes/gradients. Pale dark primaries DARK inverse text/icons. Delivery light black/white controls, dark off-white/DARK inverse, burgundy safety context and burnt-orange guidance.\nInter scale [34, 24, 18, 16, 14, 12], weights [600, 500, 400]; spacing [4, 8, 12, 16, 24, 32]px; radii {\"Control\": 12, \"Card\": 18, \"Sheet / dialog\": 24}px; 1px border / 2px focus. Labelled 48px targets, clear hierarchy/gutters, Flat/Soft/Raised depth, restrained outline icons.\nExact panels:\n1. Associate help topics: Card \"Associate help\", two collapsed FAQ rows \"Order attribution\" and \"Payout account changes\" with outline icons/expand chevrons. Indigo BOARD note \"Domain answers need canonical review\". No fee/commission/balance, full answer, fixed support hours or availability badge.\n2. Honest clipboard contacts: Card \"Support contact details\", PRIMARY \"Copy phone number\", SECONDARY \"Copy email address\". Below \"Paste into your phone or email app.\" Indigo BOARD note \"Copy only / no call or message sent\". No phone/email values, fake live chat or direct Call button.\n3. Clipboard failure recovery: Card \"Could not copy contact details\", body \"Try copying again.\" SECONDARY \"Try again\". Indigo BOARD note \"Proposed feedback after clipboard result\". No Copied checkmark/toast without successful operation; no ticket submission/status or new contact.\n4. Associate policy access: Card \"Legal information\", two document rows \"Terms and conditions\" and \"Privacy policy\". Indigo BOARD note \"Proposed legal entry / confirm policy source\". No browser/internal destination assertion yet, accepted-consent tick, hardcoded fee, compliance/privacy/earning guarantee or date.\nCritical meaning: only domain-evidenced support patterns above. Phone/email handoff is NOT contact made/message sent/call connected. Copy is NOT phone/email launch: Sales Associate uses COPY actions only. Marketplace assistant explicitly AUTOMATED, never human/live support case. Seller NO ticket workflow. Delivery request form EMPTY: Submit request DISABLED with explanation. Request statuses are neutral VOCABULARY legends, not live results or guaranteed timeline. Admin case statuses distinct from rider statuses; resolved/closed not refund, payout, delivery outcome. Admin settings actions explicitly PROPOSED. No bug-report-submitted success. Emergency help separate from routine support, no emergency numbers, notified/location-shared/dispatch guarantee.\nPolicy entries only titles, no substantive legal clauses, fake effective dates, consent tick, legal/compliance/security signoff or blanket encryption/sharing/erasure/insurance guarantees. Marketplace internal document chevrons; Seller external-link browser indicators. Delivery/Associate new policy entries explicitly PROPOSED with source to confirm, no invented internal/external capability. No support hours, availability badge, SLA, fixed fee, financial FAQ answer or outcome promise.\nEMPTY neutral skeletons/search/message fields only, no persons/avatars/photos, actual or synthetic names/contact values, phone/email/URL, customer/order/ticket/case IDs, bank/UPI, credentials, attachment images/names, money/rates/counts/dates/timestamps. Generic outline headset/document/chat/copy icons. Readable external notes communicate current/proposed limits. No API/schema/code/raw errors. No checkmarks or success toasts except none required; no business-success imagery.\nFooter \"Illustrative support states / Target design / C01 identity\". Premium full canvas, no logo/tagline/watermark/sidebar.\nReference 2 is selected C23 LIGHT composition for this exact app. Preserve four panels and all support/contact/legal meanings while converting EVERY surface and label to approved C01 DARK identity. Near-black canvas, neutral dark-grey panels and dark contextual notes, no white cards. Pale dark primaries require DARK inverse text/icons. Preserve disabled rider empty Submit request; generic request status DEFINITIONS, not live outcome. Delivery exact explanatory notes: 'Submit only after adding a message.' and 'Continue in your phone or email app.' Phone handoff never creates/sends a message. Associate COPY only; Admin authorised cases not rider statuses. No extra capability, legal clause, success/SLA/contact value.",
+          "references": [
+            "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+            "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cc183491-5f3c-461a-9cb5-8678895c6e3d.png"
+          ],
+          "reason": "Earlier call produced a preview but rejected before a usable saved output path was returned. No selected source artifact from that attempt."
+        }
+      ],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "12f094d783aee4bfb2dca8c26c4c90da59df397ab0f5206f23acc9041793701b",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+              "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-cc183491-5f3c-461a-9cb5-8678895c6e3d.png",
+              "sha256": "ee9d97625a2c94949dc6ce426ffc01e5ad64bf3a2fdf525502d0b02808c92aac",
+              "reference_kind": "Generated C23 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-faa701d8-7b3a-4602-93aa-b31d7b70e8bd.png",
+          "source_output_sha256": "588aa868a5f976eda829e85c228367896bc1b438947c30aadd0a7100cee26710"
+        }
+      ],
+      "review": "Visually reviewed for locked app identity, app-specific support/contact/copy/assistant/case boundaries, disabled empty rider request, status vocabulary rather than fabricated outcomes, clear proposed legal context, no PII/contact values/SLA/legal assurances/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "88ff56e1292696c5449f64257ea8aa79f0d8f77b3bb2248631df0e7b5ee2709f"
+}

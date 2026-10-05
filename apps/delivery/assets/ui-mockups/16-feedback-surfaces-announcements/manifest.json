@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "foundation": "C16: Feedback surfaces and announcements",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "High-contrast black/white field feedback, burgundy error context, burnt-orange recovery guidance and generous labelled actions.",
+  "panels": [
+    {
+      "label": "Transient toast",
+      "specimen": "High-contrast neutral toast \"Proof photo saved\" with small success icon. Caption \"Sample confirmed upload\" and note \"Photo confirmation only\". No Delivered tick, earnings, payment claim or Undo."
+    },
+    {
+      "label": "Inline notice",
+      "specimen": "Burgundy error notice \"Proof upload failed\", body \"The photo still needs to be attached.\" Burnt-orange board annotation \"Keep pending proof\". No delivered/paid status and no disappearing error timer."
+    },
+    {
+      "label": "Persistent banner",
+      "specimen": "Persistent warning banner \"Proof photo not saved\", body \"Retry to attach the pending photo.\" Generous OUTLINED black/white action \"Retry photo upload\". Separate small pending variant \"Uploading photo\" with spinner and disabled outlined action. Board note \"Retry upload only\". No dismiss X on recoverable entry."
+    },
+    {
+      "label": "Accessible updates",
+      "specimen": "Explicit \"Announcement design\" section. Quoted text \"Proof photo saved\" with speaker icon. Rules \"Announce outcome once\", \"Keep action focus\", \"No repeated warning on rebuild\". Orange supporting note \"Static feedback in reduced motion\"."
+    }
+  ],
+  "feedback_contract": [
+    "A toast confirms a short nonessential event; it is not the sole location for unresolved errors, restrictions or review state.",
+    "Inline notices belong to their affected form/record/action, preserve entered data and use safe reason-specific copy.",
+    "Persistent banners remain while their condition applies. Dismiss only when a supported nonessential notice may be hidden; do not resolve a condition by dismissal.",
+    "Toast, inline error and persistent condition are independent examples. Do not present contradictory success and failure as one live outcome.",
+    "Confirm the authoritative operation outcome before success. Local cart update, proof upload, review submission and case action have distinct scopes.",
+    "No fictional Undo, blind mutation Retry or instant approval/paid/order completion. Unknown outcome requires reconciliation before retry.",
+    "One in-flight action per scope, disabled labelled pending control, no duplicate taps; clear progress in finally/unmount/account change.",
+    "Use the existing shared helper or documented app equivalent. Future adoption should adapt canonical semantics rather than create duplicate helper classes.",
+    "Announcements are meaningful, concise, coalesced by event/entity revision and ordinarily polite. Inspect native SnackBar semantics before wrapping another live region.",
+    "Keep focus in context; announcements do not steal focus. Validation focus follows C10; route focus follows C07. Label dismiss/recovery controls and exclude decorative icon semantics.",
+    "Timeouts must allow reading and assistive use; actionable notices need accessible duration policy. Reduced motion uses static feedback; haptics are supplementary.",
+    "Use C01 locked app identity and status pairs; text/icon/action convey meaning beyond color. Check rendered light/dark, contrast, scaling, localisation and platform AT later."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-feedback-surfaces-announcements-light.png",
+      "sha256": "3a37634ffb88996e5b1c98ab3e352bfe49eabf8757a6eb7d783fb15c1e3e7226",
+      "bytes": 1307975,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-f555b34e-16d0-4adc-96e2-5b4c49f5376b.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "695edba4da87bc0d681ad0eb3d5b13ec38ee2c31248a95d4376a14569bc24f95",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-f555b34e-16d0-4adc-96e2-5b4c49f5376b.png",
+          "source_output_sha256": "3a37634ffb88996e5b1c98ab3e352bfe49eabf8757a6eb7d783fb15c1e3e7226"
+        }
+      ],
+      "review": "Visually reviewed for app identity, scoped confirmed-response examples, field/action notices, persistent conditions, supported recovery/cancellation, proposed coalesced announcements, no fake outcomes/PII, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-feedback-surfaces-announcements-dark.png",
+      "sha256": "8ff81d21994227cc43173e38953e195a0e6b96ca6d7fe28ae45f43f74e4243cf",
+      "bytes": 1595315,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-9de57474-7acf-4eba-9132-fb2364c0ba56.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "f89e94027d6632b7c395a8d25b173d30b3813a1c5ac2392cb2025880be164fab",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-f555b34e-16d0-4adc-96e2-5b4c49f5376b.png",
+              "sha256": "3a37634ffb88996e5b1c98ab3e352bfe49eabf8757a6eb7d783fb15c1e3e7226",
+              "reference_kind": "Generated C16 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-dddd7dc0-e343-491e-bfb0-0252e1ee0ddd.png",
+          "source_output_sha256": "860f2385020696cf141b37c8278c209a5a4811d51bd1b9030ee70662c1a7ffc4"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "2855134a47a61a5d50333ee0748f6963c1b8f3fed5f8c427cd810b1bfc34de30",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-dddd7dc0-e343-491e-bfb0-0252e1ee0ddd.png",
+              "sha256": "860f2385020696cf141b37c8278c209a5a4811d51bd1b9030ee70662c1a7ffc4",
+              "reference_kind": "Generated C16 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-9de57474-7acf-4eba-9132-fb2364c0ba56.png",
+          "source_output_sha256": "8ff81d21994227cc43173e38953e195a0e6b96ca6d7fe28ae45f43f74e4243cf"
+        }
+      ],
+      "review": "Visually reviewed for app identity, scoped confirmed-response examples, field/action notices, persistent conditions, supported recovery/cancellation, proposed coalesced announcements, no fake outcomes/PII, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "450f8a56654b172788341d02449fbf5a3d3d5bc779b9220c1c7371ba1ee16a3c"
+}

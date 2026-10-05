@@ -1,0 +1,304 @@
+{
+  "schema_version": 1,
+  "foundation": "C12: Cards, sections and record rows",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "Compact blue-teal operational cards, copper section cues, cool neutral grouped rows and precise inventory hierarchy.",
+  "panels": [
+    {
+      "label": "Operational cards",
+      "specimen": "Structured Sample product card with box outline icon, Inventory subtitle, neutral Draft (sample) chip, Stock / Unknown, View product action. Beside it a small Sample quote summary marked Draft (sample), no money or approval claims."
+    },
+    {
+      "label": "Inventory sections",
+      "specimen": "Copper eyebrow INVENTORY DETAILS; grouped label/value rows Product / Sample product, Variant / Not selected, Stock / Unknown. Comfortable blue-teal section title and hairline separators. Explain Unknown is not zero."
+    },
+    {
+      "label": "Record rows",
+      "specimen": "Navigable Sample order row with Order details subtitle and chevron; adjacent static Invoice total / Unavailable row with no chevron. Narrow/large-text rendition puts long value below label."
+    },
+    {
+      "label": "Surface states",
+      "specimen": "Small Rest, Selected, Focused specimens clearly distinct; Selected has check and tinted fill, Focused has 2px focus outline without a check. Separate scoped Inventory unavailable with Retry and loading skeleton. Note One row, one activation."
+    }
+  ],
+  "surface_contract": [
+    "Cards group one identifiable domain record. Order identity, contextual stage, supporting metadata and primary detail/action are distinct slots. Group related key/value rows into a section instead of putting every label into a separate card.",
+    "Static surfaces have no fake chevron or button role. Navigable cards/rows get a visible affordance, accessible name and keyboard activation. Independently labelled nested actions have separate focus/targets and activate once without triggering the parent.",
+    "Selection, hover, press, focus, loading and domain status are independent. A focus outline is not a selection check; selection is not approval, publication, delivery completion or payment settlement.",
+    "Use stable domain IDs as record keys, retain identity during asynchronous updates, and reconcile selection and interaction availability when a record disappears or permissions change. Display order is not identity.",
+    "Preserve null, malformed and unavailable values distinctly from known zero. Price, stock, total, commission and route data come from the authoritative domain source. No invented badges, ratings, percentages, counts, elapsed times, ETA or guarantees.",
+    "Keep order stage, payment state, fulfillment state, commission eligibility and payout settlement separate. Product Credit is a distinct domain ledger, not a wallet balance. Example sample statuses never claim live server confirmation.",
+    "Related sections use shared header/caption/divider spacing. Contextual errors stay within the affected surface; retry only that scope. Loading preserves geometry without inventing record text; empty differs from read failure. Reuse existing media/feedback helpers and app surfaces.",
+    "Wide rows align identity, metadata and values; narrow layouts and 100\u2013200% text stack content in meaningful reading order. Wrap essential names/status/values, keep safe image fallback, and do not truncate the only identifying field without an accessible full name.",
+    "Minimum target interaction region 48px; focus uses the C01 2px role. Decorative media/icons are excluded from duplicate semantics. Status has text as well as color. Semantics distinguish one grouped summary from independent actions.",
+    "Use each locked C01 palette, Inter hierarchy, 4/8/12/16/24/32 spacing, app-specific Card/Control radii and role-correct inverse text. Neutral near-black dark surfaces, restrained elevation and hairlines. Avoid nested raised-card stacks and status gradients.",
+    "Extend existing SellerCard/SellerListRow/SellerMenuGroup/SellerKeyValueRow and DeliveryCard/DeliverySectionHeader. Reuse associate saTokens and shared themes/responsive/feedback/media foundations. Any future shared-package migration must analyze all five apps and verify actual screens."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime source, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime or accessibility certification and no pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-cards-sections-record-rows-light.png",
+      "sha256": "755d80b975751ff5394960ddb88ddb4778c5eb7955dbf85b47885f2719c0df01",
+      "bytes": 1355781,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-951cbe3e-091c-4d2f-a151-5dfdfc1fe04a.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "8a2fdc0bd77a984ee66da9842f5e012fd514536a6731e3f6b7d2a5191b94dd94",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-951cbe3e-091c-4d2f-a151-5dfdfc1fe04a.png",
+          "source_output_sha256": "755d80b975751ff5394960ddb88ddb4778c5eb7955dbf85b47885f2719c0df01"
+        }
+      ],
+      "review": "Visually reviewed for app identity, domain card/section/row hierarchy, interaction affordance, missing-value and sample-status honesty, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-cards-sections-record-rows-dark.png",
+      "sha256": "d18844d8447ef25af63fe4e8cfb6609db3709126122fe4fbbc4453455fd9ca24",
+      "bytes": 1483948,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1ad4d6ff-5590-4759-b6ea-be5f7eb553fb.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "9964954742fe1f75460b98c1530b0f32188fdedd35a4ef0ceac6e42e8ab8ad7d",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-951cbe3e-091c-4d2f-a151-5dfdfc1fe04a.png",
+              "sha256": "755d80b975751ff5394960ddb88ddb4778c5eb7955dbf85b47885f2719c0df01",
+              "reference_kind": "Generated C12 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1ad4d6ff-5590-4759-b6ea-be5f7eb553fb.png",
+          "source_output_sha256": "d18844d8447ef25af63fe4e8cfb6609db3709126122fe4fbbc4453455fd9ca24"
+        }
+      ],
+      "review": "Visually reviewed for app identity, domain card/section/row hierarchy, interaction affordance, missing-value and sample-status honesty, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "37ca9a9e96ee95297c626ed731c830ce86ddd2c0c603640fd9194f6cc6ebef60"
+}

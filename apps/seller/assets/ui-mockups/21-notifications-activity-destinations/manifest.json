@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "foundation": "C21: Notifications, activity and destinations",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "066981a885caffbb917c102ef4d14de9fb64c9dc",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272064
+  },
+  "domain_style": "Compact blue-teal merchant inbox rows, copper chronology/read-scope annotations, cool-neutral grouped records and precise order/quote destinations.",
+  "panels": [
+    {
+      "label": "Merchant unread and read",
+      "specimen": "Two synthetic rows titled \"Quote update\", EMPTY body skeletons, quote outline icons. First has teal dot, bold title and explicit \"Unread\"; second normal \"Read\", no dot. Small nonnumeric category chips \"Orders\" and \"Quotes\", no counts. Copper BOARD note \"Read state does not delete the notice\"."
+    },
+    {
+      "label": "Merchant notice timestamps",
+      "specimen": "Card \"Notice time\", exact fixed FORMAT EXAMPLE \"18 Sep 2026, 9:40 AM\", secondary \"Time unavailable\". Copper BOARD notes \"Format example / not live activity\" and \"Group only from a valid timestamp\". No fabricated Today label, age or live clock."
+    },
+    {
+      "label": "Loaded-scope read feedback",
+      "specimen": "Three SMALL independent read-state feedback specimens: DISABLED neutral \"Marking shown as read\u2026\" with indeterminate spinner; inline confirmation \"Shown notices marked as read\"; failure \"Could not update read status\" and SECONDARY \"Try again\". Copper BOARD annotation \"Loaded notices only / confirm after write\". No All caught up, cleared count or hidden older notices assertion."
+    },
+    {
+      "label": "Order and quote destinations",
+      "specimen": "Card \"Related quote\", outline quote icon and EMPTY record context, PRIMARY \"View quote\". Copper BOARD notes \"Known quote link only\" and \"Missing order: open Orders\". Small muted \"Unknown link: keep notice readable\". No quote ID, order value, offer accepted or read-receipt claim."
+    }
+  ],
+  "notice_contract": [
+    "Read/unread is notification attention state, not order approval, payment settlement, task completion, deletion or recipient delivery proof.",
+    "Normalize documented writer schemas deliberately across unread/read/legacy isRead and existing title/body/message/actionUrl locations. Badge/query interpretation must match rows; owner rules permit only approved read fields.",
+    "Unknown badge/read load is not zero/caught up. Bound/capped counts need honest saturation; operation scope must say loaded, query snapshot or whole supported domain.",
+    "Mark-read has pending, acknowledged and failed/partial states; guard duplicate taps and keep notice readable. Announce confirmed read status only after the supported write completes; pending local projection is not server acknowledgement.",
+    "Reading/opening a notice and destination navigation are separate outcomes. Mark-read failure cannot fabricate navigation failure or business failure; destination failure cannot fabricate unread restoration.",
+    "Mark-all scope must be real: Seller loaded slice differs from Delivery server query and Associate read==false legacy compatibility. New notices during the action remain separate; partial batch completion is recoverable.",
+    "Show timestamps only from valid source fields with defined timezone and meaning. Missing/null/invalid/pending/future values cannot become Just now/Today. Event time, recorded time, transport time and readAt are distinct.",
+    "Board timestamp examples are fixed synthetic format specimens, not live events. Relative age requires actual valid time and clock; include an absolute accessible alternative for future implementation.",
+    "Payload links are untrusted routing hints, not access grants. Allowlist by app/role, validate identifiers, reread current authorised entity and preserve account/session/entity/route ownership from C19.",
+    "Missing/deleted/reassigned/forbidden/unsupported target and network-read failure require distinct safe explanations/actions. Domain legacy fallbacks must be evidenced; do not guess latest record.",
+    "Deduplicate foreground/local push/background/cold-start/inbox routing and wait for current navigator/auth/access readiness without indefinite old-session navigation.",
+    "Admin outbound history/case events have no personal unread state or recipient read receipts here. Recipient previews are clearly labelled, and push transport success is not observed/read delivery.",
+    "Reuse existing inbox models, formatters, typed destinations, auth predicates and feedback/navigation equivalents; no generic handler that weakens access or invents an app route.",
+    "Accessible labels express unread/read beyond color, comfortable full-row targets and labelled mark-read actions; preserve focus/list position and support text scaling/reduced motion. Runtime AT/contrast/routing verification remains future work."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-notifications-activity-destinations-light.png",
+      "sha256": "e2bc64fff7af6cee2ca672104bde1568b6dd19462e4143d705241778a59435e0",
+      "bytes": 1403322,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-5e1f060f-ac1f-434b-b564-704732cc1203.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "258e98b6cd29cc649d07ad0857dfdb21e2ea22a6c8d1e149da8eb02e78de59f5",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-5e1f060f-ac1f-434b-b564-704732cc1203.png",
+          "source_output_sha256": "e2bc64fff7af6cee2ca672104bde1568b6dd19462e4143d705241778a59435e0"
+        }
+      ],
+      "review": "Visually reviewed for app identity, explicit unread/read labels, illustrative timestamp and missing-time hierarchy, independent busy/confirmed/failure read examples, domain destination boundaries, Admin preview-only distinction, no PII/count/money/receipt/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-notifications-activity-destinations-dark.png",
+      "sha256": "98ff797baf0f8bdf9a8a2727fbe55168ee7e6c3df34a7d24a0a1e73eb4b3d7cc",
+      "bytes": 1502492,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-75ccf1e0-f346-432c-9e2d-a14ebcaec9ef.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "676144c8c5ca41ac834d442e1ec2f9f7d877dbf81fa2b134518f411c6030ef47",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-5e1f060f-ac1f-434b-b564-704732cc1203.png",
+              "sha256": "e2bc64fff7af6cee2ca672104bde1568b6dd19462e4143d705241778a59435e0",
+              "reference_kind": "Generated C21 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-75ccf1e0-f346-432c-9e2d-a14ebcaec9ef.png",
+          "source_output_sha256": "98ff797baf0f8bdf9a8a2727fbe55168ee7e6c3df34a7d24a0a1e73eb4b3d7cc"
+        }
+      ],
+      "review": "Visually reviewed for app identity, explicit unread/read labels, illustrative timestamp and missing-time hierarchy, independent busy/confirmed/failure read examples, domain destination boundaries, Admin preview-only distinction, no PII/count/money/receipt/business-success claims, no sidebar and readable dark inverse labels. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "c16d710e627df42d36f11a744f2ecb10db0719e47934ed146d847143e9a2d76e"
+}

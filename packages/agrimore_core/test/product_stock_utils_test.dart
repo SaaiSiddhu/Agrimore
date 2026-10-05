@@ -38,6 +38,25 @@ ProductVariant _variant({required int stock}) => ProductVariant(
     );
 
 void main() {
+  group('ProductVariant raw stock completeness', () {
+    test('missing and nonnumeric stock stay marked unknown instead of looking like a real zero', () {
+      final missing = ProductVariant.fromMap({'id': 'missing', 'name': 'Missing', 'salePrice': 10});
+      final invalid = ProductVariant.fromMap({'id': 'invalid', 'name': 'Invalid', 'salePrice': 10, 'stock': '3'});
+      expect(missing.stock, 0);
+      expect(missing.stockConfigured, isFalse);
+      expect(invalid.stockConfigured, isFalse);
+      expect(missing.toMap().containsKey('stock'), isFalse);
+      expect(invalid.toMap().containsKey('stock'), isFalse);
+    });
+
+    test('an explicit zero remains a configured count', () {
+      final zero = ProductVariant.fromMap({'id': 'zero', 'name': 'Zero', 'salePrice': 10, 'stock': 0});
+      expect(zero.stock, 0);
+      expect(zero.stockConfigured, isTrue);
+      expect(zero.toMap()['stock'], 0);
+    });
+  });
+
   group('isLowStock', () {
     test('a healthy base stock, no variants, is not low', () {
       expect(isLowStock(_product(stock: 50)), isFalse);

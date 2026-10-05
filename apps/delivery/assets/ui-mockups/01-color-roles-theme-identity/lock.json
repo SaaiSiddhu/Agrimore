@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "foundation": "C01: Color roles and theme identity",
+  "board_scope": [
+    "colors",
+    "typography",
+    "spacing",
+    "radius",
+    "borders",
+    "shadows"
+  ],
+  "version": "v2",
+  "status": "APPROVED_LOCKED",
+  "canonical_design_reference": true,
+  "classification": "OWNER_DECISION",
+  "approved_on": "2026-10-02",
+  "approval_evidence": "Brooo perfect, fantastic,.. now lock all of these",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "implementation_status": "Design references filed; runtime theme migration is outside this asset task.",
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "8dc0139df451139a087bdb84fa2585b5dd678adc24511556821205bf7b229636",
+  "revision_policy": "Keep this approved pair intact; record an owner-approved successor in a new versioned location.",
+  "board_foundations": {
+    "font_family_reference": "Inter",
+    "font_weights": [
+      700,
+      600,
+      400
+    ],
+    "type_scale_px": [
+      32,
+      24,
+      20,
+      17,
+      14,
+      12
+    ],
+    "spacing_px": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radius_px": [
+      8,
+      12,
+      18
+    ],
+    "border_width_px": {
+      "default": 1,
+      "strong": 1,
+      "focus": 2
+    },
+    "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+  },
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-design-tokens-light.png",
+      "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+      "bytes": 1054298,
+      "width": 1586,
+      "height": 992,
+      "source_board": "09-delivery-light.png",
+      "source_artifact": "images/01-color-roles/v2/09-delivery-light.png",
+      "generation_tool": "built-in image_gen",
+      "generation_mode": "edit",
+      "generation_prompt_sha256": "96a4d1611d88b885f811df55fef335f7df818b5b35d16c745a4bef92a4c458b2",
+      "generation_prompt_ends_with_newline": false,
+      "historical_edit_reference": {
+        "file": "09-delivery-light.png",
+        "sha256": "6e8c1964a547b5be54256ed4f32e3c2713d7efd1908555abfb694ccecf43c703",
+        "role": "Superseded v1 input used during the original edit; not the approved design."
+      },
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-design-tokens-dark.png",
+      "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+      "bytes": 1216848,
+      "width": 1586,
+      "height": 992,
+      "source_board": "10-delivery-dark.png",
+      "source_artifact": "images/01-color-roles/v2/10-delivery-dark.png",
+      "generation_tool": "built-in image_gen",
+      "generation_mode": "edit",
+      "generation_prompt_sha256": "0ebd257c12efc0f7ad564e38fbf751098d13a386bd09cd3fe87a8d014efe40ed",
+      "generation_prompt_ends_with_newline": false,
+      "historical_edit_reference": {
+        "file": "10-delivery-dark.png",
+        "sha256": "8842dddb4de3c936faa4e5f6e53cf5aafdff64c35cebe4da8866562eeea7e154",
+        "role": "Superseded v1 input used during the original edit; not the approved design."
+      },
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4147 @@
+{
+  "schema_version": 1,
+  "foundation": "C28: Component catalogue and adoption governance",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-04",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "64a71d4e6e6bff5ab04e9dcd38bc84d24f3b266a",
+  "source_coverage": {
+    "files": 816,
+    "lines": 253097
+  },
+  "domain_style": "Monochrome rider catalogue with burnt-orange state guidance and burgundy review context.",
+  "panels": [
+    {
+      "label": "Rider action variants",
+      "specimen": "Panel \"Action variants\": labelled \"Primary\", \"Secondary\", \"Quiet action\" each \"Review instructions\"; monochrome filled, outlined and text-only. Orange note \"Keep the main rider action unmistakable\". Quiet action is target ghost-style sample, not a new variant claim."
+    },
+    {
+      "label": "Rider state examples",
+      "specimen": "Panel \"State examples\": independent rows \"Ready\" with Review instructions, \"Loading\" static neutral progress icon and \"Loading task details\u2026\", \"Unavailable\" disabled Review instructions with \"Action unavailable in this example\". Caption \"Independent examples\"; orange note \"Show state without implying completion\". No location/route/ETA outcome."
+    },
+    {
+      "label": "Instruction composition",
+      "specimen": "Panel \"Task composition\": heading \"Pickup instructions\", readable text \"Review the collection instructions before continuing.\"; primary \"Review instructions\", secondary \"Help\". External annotation \"Instruction card + context + actions\", \"Target composition\". No actual pickup, route, phone/address or emergency action."
+    },
+    {
+      "label": "Rider source evidence",
+      "specimen": "Panel \"Adoption evidence\": documentation record \"Active order\" with \"DeliveryButton\"; rows \"Source use located\", \"Render review pending\"; proposed steps \"Component\", \"Screen state\", \"Rendered evidence\", \"Review decision\"; burgundy note \"Review task states and safe recovery separately\"; caption \"Source trace / Target review record\". No delivery/approval/verified test result."
+    }
+  ],
+  "catalogue_governance_contract": [
+    "Document each component family with source ownership, public API/variants, states, content and accessibility behavior, domain constraints and actual callers.",
+    "Catalogue definitions, source references, rendered states, tested interactions, review decisions and release adoption are distinct evidence stages. Never call a screen verified from an import, symbol count or raster mockup.",
+    "Retain five independent C01 identities and domain vocabularies. Shared generic behavior is reusable without making every app use the same palette, type scale or operational meaning.",
+    "Target package organization uses five app-owned folders: admin, marketplace, seller, sales_associate and delivery. These are future locations, not current folders or changes made by this asset task.",
+    "Reuse and extend documented primitives rather than creating equivalent wrappers; preserve valid domain-specific record/chart/map content inside canonical composition.",
+    "Each state example is independent: ready, busy, disabled, error, empty, restricted, focus, selection and recovery require appropriate actual contracts. No outcome follows from a catalogue specimen.",
+    "Static source tracing includes definition, resolved import/caller and state branch. Regex counts are candidates only; record ambiguity, aliases, hidden exports and mixed inline UI.",
+    "Verify screen adoption with rendered light/dark states, relevant widths/large text, meaningful interactions, semantics, keyboard/touch/reduced motion and error/recovery boundaries.",
+    "Use deterministic synthetic fixtures and safe preview mounts; do not access production accounts, private records or real financial/auth/delivery mutations for catalogue work.",
+    "Track exceptions and migration/deprecation decisions with exact caller scope and evidence. Remove a legacy API only after callers are migrated and relevant checks pass.",
+    "Preserve auth/session/owner guards, localization sources, navigation, privacy and server-authoritative outcomes during later presentation migration; do not treat them as duplicate UI.",
+    "C28 is asset documentation only: no runtime package folders, widgets, screen migration, render tests, adoption pass/completion percentages, assigned reviewer or release decision is created."
+  ],
+  "component_source_inventory": [
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_badge.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryBadge",
+        "DeliveryCountPill",
+        "DeliveryCountdownRing"
+      ],
+      "enums": [],
+      "sha256": "72a61301590930626f6f8eec5546d7ed03ed591743da6c5cbceb327e5e5faf84",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "DeliveryBadge",
+          "lines": [
+            183
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/offers/incoming_offer_screen.dart",
+          "symbol": "DeliveryCountdownRing",
+          "lines": [
+            181
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/my_support_requests_screen.dart",
+          "symbol": "DeliveryBadge",
+          "lines": [
+            126
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_banner.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryBanner"
+      ],
+      "enums": [],
+      "sha256": "6df1e6e79e5006abe12f8cd263e0d2149a226e99bbff25bc622bb1f40e8ee3e0",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            244
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            212
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            77,
+            187
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/home_map.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            276,
+            286,
+            296
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/pending_proof_banner.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            115,
+            123
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            379,
+            640,
+            671,
+            703,
+            1210
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            595
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/settings/device_readiness_screen.dart",
+          "symbol": "DeliveryBanner",
+          "lines": [
+            159
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_brand.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryBrandMark",
+        "DeliveryLogo",
+        "DeliveryHeroIllustration",
+        "DeliveryVehicleIllustration",
+        "DeliveryIllustration",
+        "DeliveryVehicleOption",
+        "DeliveryVehicleSelector",
+        "DeliveryTestDataRibbon"
+      ],
+      "enums": [
+        {
+          "name": "DeliveryIllustrationKind",
+          "values": [
+            "empty",
+            "emptyHistory",
+            "offline",
+            "kycReview",
+            "kycRejected",
+            "orderComplete",
+            "warning",
+            "error"
+          ]
+        },
+        {
+          "name": "DeliveryVehicleKind",
+          "values": [
+            "bicycle",
+            "motorcycle",
+            "scooter",
+            "evTwoWheeler",
+            "autoThreeWheeler",
+            "miniTruck"
+          ]
+        }
+      ],
+      "sha256": "b11d816a959bb98f05269a7dd8552f8f53625e74d737df2091b9a5f6f3cf43e1",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+          "symbol": "DeliveryHeroIllustration",
+          "lines": [
+            165
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+          "symbol": "DeliveryLogo",
+          "lines": [
+            158
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "DeliveryIllustration",
+          "lines": [
+            174
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/rider_registration_screen.dart",
+          "symbol": "DeliveryVehicleOption",
+          "lines": [
+            764,
+            769,
+            774,
+            779,
+            784,
+            789
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/rider_registration_screen.dart",
+          "symbol": "DeliveryVehicleSelector",
+          "lines": [
+            760
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryIllustration",
+          "lines": [
+            610,
+            1049
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_button.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryButton",
+        "DeliveryIconButton"
+      ],
+      "enums": [
+        {
+          "name": "DeliveryButtonVariant",
+          "values": [
+            "primary",
+            "secondary",
+            "tonal",
+            "ghost",
+            "danger"
+          ]
+        },
+        {
+          "name": "DeliveryButtonSize",
+          "values": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        }
+      ],
+      "sha256": "d3b0bf794487ab00523cb04fc08aff8c74a69dde6e05245f1982de9269a2aaf0",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            95,
+            116,
+            253,
+            265
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            222,
+            241,
+            247
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/rider_registration_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            990,
+            1002
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/history/history_filter_sheet.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            246,
+            252
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            289,
+            297
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            84,
+            163
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/money/bank_change_request_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            88
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/money/money_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            514,
+            714
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/money/statement_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            270,
+            296,
+            319
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/offers/incoming_offer_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            247,
+            253
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            483,
+            491,
+            578,
+            628,
+            634,
+            735,
+            743,
+            794,
+            1067,
+            1227,
+            1234,
+            1328,
+            1336,
+            1350
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/delivery_problem_panel.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            110
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            562,
+            701,
+            707,
+            739,
+            746,
+            752,
+            847,
+            858
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/document_submission_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            139
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/identity_change_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            234,
+            417
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            420,
+            495,
+            525,
+            559,
+            611,
+            717,
+            726,
+            958
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/my_support_requests_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            166
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/submit_support_request_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            175,
+            183
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/support_request_status_screen.dart",
+          "symbol": "DeliveryButton",
+          "lines": [
+            112
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_card.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryCard",
+        "DeliverySectionHeader"
+      ],
+      "enums": [
+        {
+          "name": "DeliveryCardVariant",
+          "values": [
+            "standard",
+            "muted",
+            "brand",
+            "outlined",
+            "elevated"
+          ]
+        }
+      ],
+      "sha256": "fa729f8b1163bbdb7e394ac948e1b3b9a4b6d71bcf11de24fa09aec79b798dfe",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            169
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            168,
+            236
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            121
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/dashboard_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            638,
+            681
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/money/money_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            332,
+            374,
+            475
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/money/statement_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            233
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/offers/incoming_offer_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            188
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            1259
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            431
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/identity_change_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            284
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            334
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliverySectionHeader",
+          "lines": [
+            339
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/help_support_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            157
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/my_support_requests_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            102
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/submit_support_request_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            158
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/support/support_request_status_screen.dart",
+          "symbol": "DeliveryCard",
+          "lines": [
+            106
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_chips.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryChipItem",
+        "DeliveryChipRow",
+        "DeliverySegmented"
+      ],
+      "enums": [],
+      "sha256": "3507ba904ee22b314118e85f6966b53f4c4b67ad89a59e1997ec419a0ee7e940",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/home/dashboard_screen.dart",
+          "symbol": "DeliveryChipItem",
+          "lines": [
+            482,
+            487
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/inbox/inbox_screen.dart",
+          "symbol": "DeliveryChipItem",
+          "lines": [
+            470,
+            475
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart",
+          "symbol": "DeliveryChipItem",
+          "lines": [
+            447,
+            453
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_feedback.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryEmptyState",
+        "DeliveryErrorState",
+        "DeliveryLoadingList"
+      ],
+      "enums": [],
+      "sha256": "9dd6ba13ebd70f434898d6ed2fddc9e22669791a53766ab3c367ce5054f3264a",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliveryEmptyState",
+          "lines": [
+            321,
+            483
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliveryErrorState",
+          "lines": [
+            466
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+          "symbol": "DeliveryErrorState",
+          "lines": [
+            46
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_fields.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryTextField",
+        "DeliveryPasswordField",
+        "DeliveryCurrencyField"
+      ],
+      "enums": [],
+      "sha256": "19595b4c4ea07ca3cb3a479fc696cf432ad7c87b1790dc3b0a4d0882ae780271",
+      "candidate_callers": []
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_layout.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryAppBar",
+        "DeliveryBottomActionBar",
+        "DeliveryResponsiveBody"
+      ],
+      "enums": [],
+      "sha256": "1f85d5391972e264de9201cc2b4595234580a57d35088f5c07d930fa608fcb2e",
+      "candidate_callers": []
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_list.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryAvatar",
+        "DeliveryListTile",
+        "DeliveryKeyValueRow"
+      ],
+      "enums": [],
+      "sha256": "e6bb99d70439739b290215132bf3cdea9c682e1dcab172295fdc8e245d835780",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliveryAvatar",
+          "lines": [
+            789
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliveryKeyValueRow",
+          "lines": [
+            325
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+          "symbol": "DeliveryListTile",
+          "lines": [
+            651,
+            667,
+            684,
+            699
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_media.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryDocUploadTile"
+      ],
+      "enums": [
+        {
+          "name": "DeliveryPhotoSlotState",
+          "values": [
+            "empty",
+            "uploading",
+            "ready",
+            "error"
+          ]
+        }
+      ],
+      "sha256": "ba4b747b38ad7f1eaf33a41086b51a909547ed800dcf5f41a367579b102509b3",
+      "candidate_callers": []
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_metrics.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryMetricTile",
+        "DeliveryMoneyLine",
+        "DeliveryMoneyBreakdown"
+      ],
+      "enums": [],
+      "sha256": "d1208fd168cf81a740d7026c7a3aaf1486b4a68a8c7dc42cbb437680fbb72758",
+      "candidate_callers": []
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_nav.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryNavDestination",
+        "DeliveryBottomNav",
+        "DeliveryOnlineSwitch"
+      ],
+      "enums": [],
+      "sha256": "60f6e464f198c87dba4500cd0c37c485da8d2679f1889d7a609d2b9bb3b02fd6",
+      "candidate_callers": []
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_otp.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryOtpField"
+      ],
+      "enums": [],
+      "sha256": "674e1b0990aabf09c2d764cd9d459df6cb94e2ed8c5b7b2ba1287390526da905",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryOtpField",
+          "lines": [
+            1215
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_search.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliverySearchField"
+      ],
+      "enums": [],
+      "sha256": "5c90d9d771c46b4817dc2a0e9f537b918e4fe1913c4b9e48922d616fa9ec0abe",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliverySearchField",
+          "lines": [
+            391
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_states.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryInteractive",
+        "DeliverySkeleton",
+        "DeliveryLoadingState"
+      ],
+      "enums": [],
+      "sha256": "2827db68e38f3b2c434091960df482fabfd5d1f90a6d7122d40b5cb46afe75ae",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+          "symbol": "DeliveryLoadingState",
+          "lines": [
+            20
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/home/home_map.dart",
+          "symbol": "DeliveryLoadingState",
+          "lines": [
+            206
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "apps/delivery/lib/design_system/components/delivery_timeline.dart",
+      "layer": "delivery",
+      "public_classes": [
+        "DeliveryTimelineStep",
+        "DeliveryStepIndicator",
+        "DeliveryRouteTimeline",
+        "DeliveryMapHeader"
+      ],
+      "enums": [
+        {
+          "name": "DeliveryTimelineStepState",
+          "values": [
+            "completed",
+            "active",
+            "upcoming",
+            "error"
+          ]
+        }
+      ],
+      "sha256": "0bbf716ad02d5d942bd6be4dd6f045980ebbb2b27f5292280d1c06672d887dfc",
+      "candidate_callers": [
+        {
+          "path": "apps/delivery/lib/screens/auth/rider_registration_screen.dart",
+          "symbol": "DeliveryStepIndicator",
+          "lines": [
+            925
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliveryRouteTimeline",
+          "lines": [
+            650
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+          "symbol": "DeliveryTimelineStep",
+          "lines": [
+            653
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+          "symbol": "DeliveryStepIndicator",
+          "lines": [
+            395
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_bottom_nav.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomButton"
+      ],
+      "enums": [
+        {
+          "name": "ButtonType",
+          "values": [
+            "primary",
+            "secondary",
+            "outlined",
+            "text"
+          ]
+        }
+      ],
+      "sha256": "124d0a3efcbb468a5a197fedd746cfb222d7988a08fc723fabed36ea9e7e844a",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            41
+          ],
+          "ambiguous_definition": true
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            501,
+            525
+          ],
+          "ambiguous_definition": true
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_button.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomButton"
+      ],
+      "enums": [
+        {
+          "name": "ButtonType",
+          "values": [
+            "filled",
+            "outlined",
+            "text"
+          ]
+        }
+      ],
+      "sha256": "d4f9239929dbe1614d8153cd0f3938f65372bbcc51e364133cfc9f1105988773",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            41
+          ],
+          "ambiguous_definition": true
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            501,
+            525
+          ],
+          "ambiguous_definition": true
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_text_field.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomTextField"
+      ],
+      "enums": [],
+      "sha256": "32f5cb1af103fe6743247721eb6b74a9691ce872bf2f98710f995e30baa1080e",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/empty_state_widget.dart",
+      "layer": "shared",
+      "public_classes": [
+        "EmptyState"
+      ],
+      "enums": [],
+      "sha256": "90210e0e2d3fa544186eacc10261eebc7ae1d803b3955eba5c54765682a50d2a",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/business/business_feed_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            60
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            623,
+            728
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/my_rfqs_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            192
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/error_view.dart",
+      "layer": "shared",
+      "public_classes": [
+        "ErrorView"
+      ],
+      "enums": [],
+      "sha256": "0bd0c0c2db7177d81857a909d6ccf23a17680e9285b061e4685e6e41b0d46fc5",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/auth/complete_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            261
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_feed_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            55
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            618
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_email_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            300
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_password_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            500
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_phone_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            290
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/delete_account_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            134
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/edit_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            1120
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            159
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section_inline.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            253
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/admin_settings_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            1237
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/loading_overlay.dart",
+      "layer": "shared",
+      "public_classes": [
+        "LoadingOverlay"
+      ],
+      "enums": [],
+      "sha256": "aa4cae16ec77d6442a0cc92db1016e97f80417f2d492a3c02ebbb1675920cec7",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sa_info_banner.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SaInfoBanner"
+      ],
+      "enums": [
+        {
+          "name": "SaBannerVariant",
+          "values": [
+            "info",
+            "warning",
+            "error",
+            "success"
+          ]
+        }
+      ],
+      "sha256": "a9ec23ec9c90773c8079de9df6eadc62e7ff18850f936acc7f30e1b72d621a31",
+      "candidate_callers": [
+        {
+          "path": "apps/employee/lib/screens/auth/associate_otp_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            270
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/forgot_password_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            97,
+            106,
+            193
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/login_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            190
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/onboarding_status_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            139
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/support/help_support_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            88
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            308,
+            317
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_request_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            163,
+            280
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            136,
+            286
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sa_loading_button.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SaLoadingButton"
+      ],
+      "enums": [
+        {
+          "name": "SaButtonVariant",
+          "values": [
+            "primary",
+            "outlined"
+          ]
+        }
+      ],
+      "sha256": "344673554a8b2b222ef2ec6b1f48ee5e65e2b91266b6e97c73c0511fd6fead49",
+      "candidate_callers": [
+        {
+          "path": "apps/employee/lib/screens/auth/associate_otp_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            292
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/forgot_password_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            139,
+            200
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/login_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            351,
+            491
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            111,
+            124
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/suspended_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            106,
+            119
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/profile_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            565
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            437,
+            624,
+            677
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_request_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            289
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            295
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sticky_photo_header.dart",
+      "layer": "shared",
+      "public_classes": [
+        "StickyHeaderBackButton",
+        "StickyPhotoHeaderSliver"
+      ],
+      "enums": [],
+      "sha256": "e98e213f06595efc95413f744c07a8da4841f390737176958897b79ddc15a510",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/edit_profile_screen.dart",
+          "symbol": "StickyPhotoHeaderSliver",
+          "lines": [
+            676
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/profile_screen.dart",
+          "symbol": "StickyPhotoHeaderSliver",
+          "lines": [
+            533
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/dialog_helper.dart",
+      "layer": "shared",
+      "public_classes": [
+        "DialogHelper"
+      ],
+      "enums": [],
+      "sha256": "d221a07b53b7346957a958c2982cea3f4db1d17f0eb94c2e07cc75d7d0de3abc",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            58
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/settings_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            70,
+            569,
+            639
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            90,
+            100,
+            131
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            542
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/profile_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            569
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            468
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            83,
+            97
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/premium_splash_screen.dart",
+      "layer": "shared",
+      "public_classes": [
+        "PremiumSplashScreen"
+      ],
+      "enums": [
+        {
+          "name": "SplashAnimationType",
+          "values": [
+            "customer",
+            "seller",
+            "delivery",
+            "admin"
+          ]
+        }
+      ],
+      "sha256": "7a0e54a84a5716ea0b2fb164296d0aba8435e43244c2f4d88f8b1b3c2b913544",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/snackbar_helper.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SnackbarHelper"
+      ],
+      "enums": [],
+      "sha256": "92f20468f3e099393e7153f809bc97b92ee79dd7c155acc2dc81369a29108ec5",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/auth/login_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            308,
+            316,
+            372,
+            380,
+            390,
+            407,
+            508,
+            593,
+            603,
+            610
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            190,
+            236
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/cart/mobile_cart_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            435,
+            2916,
+            2984
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/cart/web_cart_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            143,
+            417
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/payment_method_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            125
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/orders/rate_order_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            63,
+            76
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/profile_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            282
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            91,
+            95,
+            112,
+            160,
+            583,
+            587,
+            626,
+            630,
+            656,
+            660
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rewards/rewards_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            82,
+            90
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            60,
+            64,
+            78,
+            82,
+            112,
+            116,
+            126,
+            163,
+            168
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/widgets/request_quote_sheet.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            47,
+            53,
+            68,
+            73
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/product_details_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            1741,
+            1746
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/add_review_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            209,
+            297
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/admin_shell.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            901,
+            905
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/banners/banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            92,
+            95,
+            110,
+            113,
+            418,
+            422
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/coupon/add_edit_coupon_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            80,
+            121,
+            127,
+            132
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/coupon/coupon_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            78,
+            80,
+            94,
+            96,
+            323,
+            325,
+            358,
+            363
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            116,
+            120,
+            123
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            478,
+            494,
+            505,
+            510
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            303,
+            308,
+            704,
+            710
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            130,
+            134,
+            137,
+            190,
+            194
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            239,
+            248,
+            259,
+            264,
+            431,
+            447,
+            463,
+            469,
+            582,
+            590,
+            595,
+            729,
+            736,
+            741,
+            924,
+            931,
+            936,
+            1044,
+            1053,
+            1065,
+            1071
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            111,
+            127,
+            132,
+            143
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_support_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            162,
+            166,
+            169,
+            222,
+            226
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/associate_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            618,
+            624
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            55,
+            65,
+            70,
+            73
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            31,
+            34,
+            57,
+            60,
+            108,
+            111
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            38,
+            42,
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            50,
+            138,
+            152,
+            157,
+            160,
+            219,
+            235,
+            240,
+            243
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            108,
+            113,
+            117
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            162
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            150,
+            154,
+            177
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/home_sections/add_edit_home_product_section_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            54,
+            59,
+            90,
+            93
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/home_sections/home_product_section_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            64,
+            66
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            81,
+            201,
+            228,
+            233,
+            321,
+            380,
+            388
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/orders/order_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            160,
+            162,
+            164,
+            203,
+            205,
+            207,
+            216,
+            228,
+            248,
+            250,
+            254
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/category_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            1565,
+            1579
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/product_form_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            130,
+            203,
+            210,
+            230,
+            237,
+            314,
+            380,
+            386
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/product_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            116,
+            118,
+            823,
+            825
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/seller_product_approval_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            22,
+            26
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/widgets/image_uploader.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            44,
+            95,
+            99,
+            166,
+            174,
+            201
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/section_banners/add_edit_section_banner_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            82,
+            90,
+            121,
+            135,
+            141
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/section_banners/section_banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            227,
+            231
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/edit_seller_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            70,
+            76
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            604,
+            609,
+            612
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            93,
+            106,
+            110
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_requests_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            93,
+            97,
+            117,
+            119,
+            260
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            154,
+            158,
+            161,
+            254,
+            296
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/admin_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            186,
+            758,
+            764,
+            801,
+            857,
+            861,
+            885,
+            894,
+            1106,
+            1112,
+            1118,
+            1190,
+            1210,
+            1213
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/delivery_time_slots_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            43,
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/home_grocery_strip_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            60,
+            80,
+            85
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/home_section_order_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            104,
+            124,
+            128
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/location_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            79,
+            105,
+            109
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            89,
+            93,
+            105,
+            108,
+            171,
+            174
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            87,
+            92,
+            95,
+            977,
+            1046,
+            1158,
+            1165,
+            1174,
+            1179,
+            1208
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_queue_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            67
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/customer_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            76,
+            83
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/edit_user_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            119,
+            125
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/user_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            66,
+            68,
+            98,
+            100,
+            377
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            58,
+            166,
+            458,
+            466,
+            469
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/auth/auth_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            299
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_countdown_ring.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsCountdownRing"
+      ],
+      "enums": [],
+      "sha256": "fd48e885112280beee86a9010f4703c07c0a025dbd4acb6a551155f19e697b4f",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_feedback.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsToast"
+      ],
+      "enums": [
+        {
+          "name": "WsToastTone",
+          "values": [
+            "neutral",
+            "success",
+            "error"
+          ]
+        }
+      ],
+      "sha256": "cab24c2af8715dcfa11e0df429c13a24592455e896fc360919123a5f05fd8d73",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_otp_input.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsOtpInput"
+      ],
+      "enums": [],
+      "sha256": "d5d42ef16669ed872a73d745bda9de90d4d261dfcc3b321dd870046da9dbe632",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_step_header.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsStepHeader"
+      ],
+      "enums": [],
+      "sha256": "b085181fe8308baa978fdd1a6107f1b60af599f5c967f4abfeea6fef9f59e3d3",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_test_mode_ribbon.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsTestModeRibbon"
+      ],
+      "enums": [],
+      "sha256": "ebda5a18c16a93edaa44243f6e8be7d901bdf734715f77ccc120f1e58383c74d",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_timeline.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsTimelineStep",
+        "WsTimeline"
+      ],
+      "enums": [
+        {
+          "name": "WsTimelineState",
+          "values": [
+            "done",
+            "current",
+            "upcoming"
+          ]
+        }
+      ],
+      "sha256": "56448dd8149aa3b4e2fc7a7e82e7b58103f805543b1992591bc2185e767ae5f1",
+      "candidate_callers": []
+    }
+  ],
+  "presentation_source_inventory": [
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/auth/login_screen.dart",
+      "sha256": "fbc5fef0236f194a751b590ecf55bd41d47fe364034f91d22fcded93686852be",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "../../auth/auth_copy.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../providers/auth_provider.dart",
+        "rider_registration_screen.dart"
+      ],
+      "public_classes": [
+        "LoginScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            244
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            95,
+            116,
+            253,
+            265
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            169
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryHeroIllustration",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            165
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryLogo",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            158
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextFormField": 2,
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/auth/pending_approval_screen.dart",
+      "sha256": "ef2519f75da8ec4d5e21a04443c5aba5ca179c3a164cd841192a303fd92317e2",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "../../account/rider_account.dart",
+        "../../account/support_card.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../providers/auth_provider.dart",
+        "../../providers/location_provider.dart",
+        "../profile/rider_profile_screen.dart",
+        "rider_registration_screen.dart"
+      ],
+      "public_classes": [
+        "DeliveryPendingApprovalScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBadge",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_badge.dart"
+          ],
+          "lines": [
+            183
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            212
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            222,
+            241,
+            247
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            168,
+            236
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryIllustration",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            174
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/auth/rider_registration_screen.dart",
+      "sha256": "16e048abc09bfb6f362f133ffe4dbcbf91420c67d20176c985f6272cb2bad67d",
+      "imports": [
+        "dart:async",
+        "dart:io",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "package:provider/provider.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../providers/auth_provider.dart",
+        "../../registration/registration_draft.dart",
+        "../../registration/rider_application.dart"
+      ],
+      "public_classes": [
+        "RiderRegistrationScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            990,
+            1002
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryStepIndicator",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_timeline.dart"
+          ],
+          "lines": [
+            925
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryVehicleOption",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            764,
+            769,
+            774,
+            779,
+            784,
+            789
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryVehicleSelector",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            760
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextFormField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/history/history_filter_sheet.dart",
+      "sha256": "468a3ef618a4595aa0fa253cbf94a0de7e6a65a5dc6ba0f10275140bee5f02e8",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../data/rider_history.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart"
+      ],
+      "public_classes": [
+        "HistoryFilterSheet"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            246,
+            252
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/history/rider_history_screen.dart",
+      "sha256": "203f172041395a709cc6f2d71d96976cd160d676b94593fcb95106ad5c44fa45",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "../../account/support_card.dart",
+        "../../data/order_timeline.dart",
+        "../../data/rider_history.dart",
+        "../../data/rider_work.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/money_text.dart",
+        "../../money/rider_money.dart",
+        "../../providers/order_provider.dart",
+        "../home/active_work_states.dart",
+        "../money/statement_screen.dart",
+        "../orders/active_order_screen.dart",
+        "history_filter_sheet.dart"
+      ],
+      "public_classes": [
+        "RiderHistoryScreen",
+        "HistoryDetail"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            289,
+            297
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryEmptyState",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_feedback.dart"
+          ],
+          "lines": [
+            321,
+            483
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryErrorState",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_feedback.dart"
+          ],
+          "lines": [
+            466
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryRouteTimeline",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_timeline.dart"
+          ],
+          "lines": [
+            650
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliverySearchField",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_search.dart"
+          ],
+          "lines": [
+            391
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryTimelineStep",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_timeline.dart"
+          ],
+          "lines": [
+            653
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/active_work_states.dart",
+      "sha256": "59987f5bf51f735d09cf4ded4ba6c5ed0e57a2975b8f6809b6d23fc3b96ee4bd",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "../../data/rider_work.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart"
+      ],
+      "public_classes": [
+        "ActiveWorkLoading",
+        "ActiveWorkError",
+        "MultipleActiveOrders",
+        "ActiveOrderSummaryCard",
+        "StaleDataBanner"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            77,
+            187
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            84,
+            163
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            121
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryErrorState",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_feedback.dart"
+          ],
+          "lines": [
+            46
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryLoadingState",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_states.dart"
+          ],
+          "lines": [
+            20
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/dashboard_screen.dart",
+      "sha256": "9494d612ad60f1ae42a9406533395b1ceb695382495139008873c9a339010a82",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:geolocator/geolocator.dart",
+        "package:provider/provider.dart",
+        "../../delivery/delivery_problems.dart",
+        "../../delivery/proof_photo_recovery.dart",
+        "../../design_system/design_system.dart",
+        "../../inbox/rider_inbox.dart",
+        "../../l10n/app_localizations.dart",
+        "../../location/location_disclosure.dart",
+        "../../location/location_policy.dart",
+        "../../money/rider_money.dart",
+        "../../offers/offer_alerts.dart",
+        "../../offers/offer_launch.dart",
+        "../../providers/auth_provider.dart",
+        "../../providers/location_provider.dart",
+        "../../providers/offer_provider.dart",
+        "../../providers/order_provider.dart",
+        "../../app/delivery_tab.dart",
+        "../history/rider_history_screen.dart",
+        "../inbox/inbox_screen.dart",
+        "../money/money_screen.dart",
+        "../orders/active_order_screen.dart",
+        "active_work_states.dart",
+        "home_app_bar.dart",
+        "home_map.dart",
+        "home_operations_panel.dart",
+        "pending_proof_banner.dart"
+      ],
+      "public_classes": [
+        "DashboardScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            638,
+            681
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryChipItem",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_chips.dart"
+          ],
+          "lines": [
+            482,
+            487
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/home_app_bar.dart",
+      "sha256": "460ce8679f19ca7ce0e7f9fe25cb417b50ff82a9ff77d36862dee85751f1cd56",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../inbox/rider_inbox.dart",
+        "../../l10n/app_localizations.dart",
+        "../../safety/emergency_sheet.dart",
+        "../inbox/inbox_screen.dart",
+        "../support/help_sheet.dart"
+      ],
+      "public_classes": [
+        "HomeAppBar"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/home_map.dart",
+      "sha256": "c55a2905c7c955d6f8e6ff2326fde7fe7d6f3c7725a5e50f3022631533062a38",
+      "imports": [
+        "dart:async",
+        "package:flutter/material.dart",
+        "package:geolocator/geolocator.dart",
+        "package:google_maps_flutter/google_maps_flutter.dart",
+        "package:provider/provider.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../providers/location_provider.dart"
+      ],
+      "public_classes": [
+        "HomeMap"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            276,
+            286,
+            296
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryLoadingState",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_states.dart"
+          ],
+          "lines": [
+            206
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/home_operations_panel.dart",
+      "sha256": "3c5cb9f25adaa7e4f8d03f835c9e8f1e3aa5934ded1398d45f17b72009c7759b",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart"
+      ],
+      "public_classes": [
+        "HomeOperationsPanel"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/home/pending_proof_banner.dart",
+      "sha256": "917a5679b553a954a2e35b8961f28787f6aa60b5b37cbbe59db34f1f60242cc4",
+      "imports": [
+        "dart:io",
+        "dart:typed_data",
+        "package:flutter/material.dart",
+        "../../delivery/delivery_problems.dart",
+        "../../delivery/proof_photo_recovery.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart"
+      ],
+      "public_classes": [
+        "PendingProofBanner"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            115,
+            123
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/inbox/inbox_screen.dart",
+      "sha256": "94a46fbe59b42d3badf841e701db515725e07506b5d4574eea9576f47d36f2bc",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "../../app/delivery_tab.dart",
+        "../../data/order_timeline.dart",
+        "../../data/rider_history.dart",
+        "../../design_system/design_system.dart",
+        "../../inbox/rider_inbox.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/rider_money.dart",
+        "../history/rider_history_screen.dart",
+        "../money/bank_change_request_screen.dart",
+        "../money/money_screen.dart",
+        "../money/statement_screen.dart",
+        "../orders/active_order_screen.dart",
+        "../profile/document_submission_screen.dart",
+        "../profile/identity_change_screen.dart",
+        "../profile/rider_profile_screen.dart",
+        "../support/support_request_status_screen.dart",
+        "../../safety/incident_status_screen.dart"
+      ],
+      "public_classes": [
+        "InboxScreen",
+        "InboxButton"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryChipItem",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_chips.dart"
+          ],
+          "lines": [
+            470,
+            475
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/money/bank_change_request_screen.dart",
+      "sha256": "43d46f783b10e4384dd9771c53aae2ab4e9429cec00c734dc58cf15c79147cce",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/rider_money.dart",
+        "../profile/identity_change_screen.dart",
+        "money_screen.dart"
+      ],
+      "public_classes": [
+        "BankChangeRequestScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            88
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/money/money_screen.dart",
+      "sha256": "c7ca1b986e7d5ed6a1d0f6e1261ca7e23fc1f45d3e7c4f31cf40260a56039f00",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/money_text.dart",
+        "../../money/rider_money.dart",
+        "statement_screen.dart"
+      ],
+      "public_classes": [
+        "MoneyScreen",
+        "EarningTile",
+        "BankChangeForm"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            514,
+            714
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            332,
+            374,
+            475
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextField": 4,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/money/statement_screen.dart",
+      "sha256": "fe913d3dc6c601469e8767a86adc77ad4afc6491f0e59cd1708f0cdcfb1319e8",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/money_text.dart",
+        "../../money/rider_money.dart",
+        "money_screen.dart"
+      ],
+      "public_classes": [
+        "StatementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            270,
+            296,
+            319
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            233
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/offers/incoming_offer_screen.dart",
+      "sha256": "b3a6ed8652129d27bb6d091931c86610965c9c4ea348b277fc389f97bddf0672",
+      "imports": [
+        "dart:async",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:flutter_local_notifications/flutter_local_notifications.dart",
+        "package:provider/provider.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../offers/delivery_offer.dart",
+        "../../offers/offer_alerts.dart",
+        "../../offers/offer_launch.dart",
+        "../../offers/offer_platform.dart",
+        "../../providers/offer_provider.dart",
+        "../orders/active_order_screen.dart"
+      ],
+      "public_classes": [
+        "IncomingOfferScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            247,
+            253
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            188
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCountdownRing",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_badge.dart"
+          ],
+          "lines": [
+            181
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+      "sha256": "520b4d847db719dc41db87f146c79565321a6fafe172abeefcdc670b5e20f6d1",
+      "imports": [
+        "dart:async",
+        "dart:io",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:image_picker/image_picker.dart",
+        "package:path_provider/path_provider.dart",
+        "package:provider/provider.dart",
+        "package:url_launcher/url_launcher.dart",
+        "../../account/support_card.dart",
+        "../../delivery/delivery_problems.dart",
+        "../../delivery/proof_photo_recovery.dart",
+        "../../delivery/rider_steps.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../navigation/navigation_launch.dart",
+        "../../providers/order_provider.dart",
+        "../../safety/emergency_sheet.dart",
+        "delivery_problem_panel.dart",
+        "widgets/rider_route_card.dart"
+      ],
+      "public_classes": [
+        "ActiveOrderScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            379,
+            640,
+            671,
+            703,
+            1210
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            483,
+            491,
+            578,
+            628,
+            634,
+            735,
+            743,
+            794,
+            1067,
+            1227,
+            1234,
+            1328,
+            1336,
+            1350
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            1259
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryIllustration",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_brand.dart"
+          ],
+          "lines": [
+            610,
+            1049
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryOtpField",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_otp.dart"
+          ],
+          "lines": [
+            1215
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryStepIndicator",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_timeline.dart"
+          ],
+          "lines": [
+            395
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/orders/delivery_problem_panel.dart",
+      "sha256": "e459ad30a0222180b248d9486c24b3dcdabb09aa25a502efa5fd67482d47f63f",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "../../delivery/delivery_problems.dart",
+        "../../delivery/rider_steps.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart"
+      ],
+      "public_classes": [
+        "DeliveryProblemPanel",
+        "ProblemReportSheet"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            110
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/orders/widgets/rider_route_card.dart",
+      "sha256": "8eb9247f5f015d79c0d7f3b8e39241fa3906576492ff02367ddb5d2bc0c8b4e2",
+      "imports": [
+        "dart:async",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:geolocator/geolocator.dart",
+        "package:google_maps_flutter/google_maps_flutter.dart",
+        "package:provider/provider.dart",
+        "package:url_launcher/url_launcher.dart",
+        "../../../design_system/design_system.dart",
+        "../../../l10n/app_localizations.dart",
+        "../../../navigation/navigation_launch.dart",
+        "../../../navigation/rider_navigation.dart",
+        "../../../providers/location_provider.dart",
+        "route_recovery.dart"
+      ],
+      "public_classes": [
+        "RiderRouteCard",
+        "StaleLocationBanner"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            595
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            562,
+            701,
+            707,
+            739,
+            746,
+            752,
+            847,
+            858
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            431
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryChipItem",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_chips.dart"
+          ],
+          "lines": [
+            447,
+            453
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/orders/widgets/route_recovery.dart",
+      "sha256": "3687cae93aa1f082dda4820b954ef9886f4eef7d2a9d1b294d7fd5dcceff35e5",
+      "imports": [],
+      "public_classes": [
+        "StreamStatus"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/profile/document_submission_screen.dart",
+      "sha256": "f5b6ceff57ab9e5f17a194c8891f180953a886b36f8773ca1bc14e3eb26c7a7b",
+      "imports": [
+        "dart:typed_data",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "../../design_system/design_system.dart",
+        "../../identity/rider_document_review.dart",
+        "../../l10n/app_localizations.dart",
+        "identity_change_screen.dart"
+      ],
+      "public_classes": [
+        "DocumentSubmissionScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            139
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/profile/identity_change_screen.dart",
+      "sha256": "851beb3616d728e9a70e8105837e4977860493eab5a8612b62c9df9f489a3c5d",
+      "imports": [
+        "package:agrimore_core/agrimore_core.dart",
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../identity/rider_identity.dart",
+        "../../l10n/app_localizations.dart",
+        "../auth/rider_registration_screen.dart"
+      ],
+      "public_classes": [
+        "IdentityChangeScreen",
+        "RequestStatusCard"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            234,
+            417
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            284
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextField": 3
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/profile/rider_profile_screen.dart",
+      "sha256": "ccbe87a90f210b96f862039bf45bf401300052fc81021f9c850db563529f1727",
+      "imports": [
+        "dart:typed_data",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "package:provider/provider.dart",
+        "../../account/rider_account.dart",
+        "../../account/support_card.dart",
+        "../../design_system/design_system.dart",
+        "../../identity/rider_document_review.dart",
+        "../../identity/rider_identity.dart",
+        "../../l10n/app_localizations.dart",
+        "../../money/rider_money.dart",
+        "../../providers/auth_provider.dart",
+        "../../providers/order_provider.dart",
+        "../../registration/rider_application.dart",
+        "../../safety/incident_status_screen.dart",
+        "../auth/rider_registration_screen.dart",
+        "../money/money_screen.dart",
+        "../orders/active_order_screen.dart",
+        "../settings/device_readiness_screen.dart",
+        "../support/help_support_screen.dart",
+        "../support/my_support_requests_screen.dart",
+        "identity_change_screen.dart"
+      ],
+      "public_classes": [
+        "RiderProfileScreen",
+        "ContactEditSheet"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryAvatar",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_list.dart"
+          ],
+          "lines": [
+            789
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            420,
+            495,
+            525,
+            559,
+            611,
+            717,
+            726,
+            958
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            334
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryKeyValueRow",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_list.dart"
+          ],
+          "lines": [
+            325
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryListTile",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_list.dart"
+          ],
+          "lines": [
+            651,
+            667,
+            684,
+            699
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliverySectionHeader",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            339
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 2,
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/settings/device_readiness_screen.dart",
+      "sha256": "da11edf44d6c2f0bd0513cb8b56c3199882afdcfd1961eeae92bd618decac691",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../location/location_disclosure.dart",
+        "../../location/rider_platform.dart",
+        "../../offers/device_readiness.dart",
+        "../../offers/offer_alerts.dart",
+        "../../offers/offer_platform.dart",
+        "../../providers/location_provider.dart"
+      ],
+      "public_classes": [
+        "DeviceReadinessScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBanner",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_banner.dart"
+          ],
+          "lines": [
+            159
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/support/help_sheet.dart",
+      "sha256": "04c91b576d32150f7ccffc51c65bf85f09e46beacf1befa36d76c311f6d056f3",
+      "imports": [
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "../../account/support_card.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../safety/emergency_sheet.dart",
+        "../../support/rider_support.dart",
+        "my_support_requests_screen.dart",
+        "submit_support_request_screen.dart"
+      ],
+      "public_classes": [
+        "HelpSheet"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/support/help_support_screen.dart",
+      "sha256": "7f3d16daca5051f2f3b44a598c499cb6d1c2192d0670beb2fa64f89567d38f9c",
+      "imports": [
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "../../account/support_card.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../safety/emergency_sheet.dart",
+        "../../support/rider_support.dart",
+        "my_support_requests_screen.dart",
+        "submit_support_request_screen.dart"
+      ],
+      "public_classes": [
+        "HelpSupportScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            157
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/support/my_support_requests_screen.dart",
+      "sha256": "639bf97ffb77f2382a2c3576a2aa67d93b2fc9d93980e39fde4191017c4f5cfb",
+      "imports": [
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../support/rider_support.dart",
+        "support_request_status_screen.dart"
+      ],
+      "public_classes": [
+        "MySupportRequestsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryBadge",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_badge.dart"
+          ],
+          "lines": [
+            126
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            166
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            102
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/support/submit_support_request_screen.dart",
+      "sha256": "9e10fef2e85bd4017016cd7b2718899419cfd975cafe05a29e4b144d4f4907a5",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../support/rider_support.dart",
+        "support_request_status_screen.dart"
+      ],
+      "public_classes": [
+        "SubmitSupportRequestScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            175,
+            183
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            158
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "delivery",
+      "path": "apps/delivery/lib/screens/support/support_request_status_screen.dart",
+      "sha256": "e2e47dbfbdc4f2c95f41528ea15a7519a8af9eb96518e656e899451bb51b6aab",
+      "imports": [
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:flutter/material.dart",
+        "../../design_system/design_system.dart",
+        "../../l10n/app_localizations.dart",
+        "../../support/rider_support.dart",
+        "../profile/identity_change_screen.dart"
+      ],
+      "public_classes": [
+        "SupportRequestStatusScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DeliveryButton",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_button.dart"
+          ],
+          "lines": [
+            112
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "DeliveryCard",
+          "candidate_definition_files": [
+            "apps/delivery/lib/design_system/components/delivery_card.dart"
+          ],
+          "lines": [
+            106
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    }
+  ],
+  "manual_source_traces": [
+    {
+      "app": "delivery",
+      "screen": "Active order",
+      "component": "DeliveryButton",
+      "caller": "apps/delivery/lib/screens/orders/active_order_screen.dart",
+      "line": 483,
+      "definition": "apps/delivery/lib/design_system/components/delivery_button.dart",
+      "dependency": "App-local design_system barrel",
+      "state_scope": "Secondary button call in active-order presentation; other task/proof/command branches need separate review.",
+      "source_status": "SOURCE_TRACED",
+      "render_review": "NOT_RUN",
+      "interaction_tests": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED",
+      "caller_sha256": "520b4d847db719dc41db87f146c79565321a6fafe172abeefcdc670b5e20f6d1",
+      "definition_sha256": "d3b0bf794487ab00523cb04fc08aff8c74a69dde6e05245f1982de9269a2aaf0"
+    }
+  ],
+  "source_mapping_method": "Textual source inventory with lightweight comment/string screening; not Dart AST, resolved imports, route coverage, distinct screen counts, adoption percentages or rendered verification. Five separately reviewed call-site traces are SOURCE_TRACED only.",
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster catalogue proposals; static source candidates and manually traced uses are not rendered verification, screen adoption, tested interaction or pixel-exact token certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-component-catalogue-adoption-governance-light.png",
+      "sha256": "a7d5432d075e4751d498de0a3a24c184c6982e67c2aca7ca216397f83fc746fb",
+      "bytes": 1390694,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6631f359-cbd0-41f8-8f39-a9fcd04fe6d9.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "111d6d4d36954f9df06ad45dee5309fd91170df15da23a6fd612d7bad36b483f",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7d32f032-1f46-4e0b-bd6b-01fd155f2549.png",
+          "source_output_sha256": "cbdbf3478f2027f0bfab4da30482bfce8d68ec7b0b78765ae0185bf569605f2c"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "19f143de5db33cdad1b9ff5255fc04bf1587c3faf52fcba6ca4fa12164afc08c",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7d32f032-1f46-4e0b-bd6b-01fd155f2549.png",
+              "sha256": "cbdbf3478f2027f0bfab4da30482bfce8d68ec7b0b78765ae0185bf569605f2c",
+              "reference_kind": "Generated C28 composition reference outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6631f359-cbd0-41f8-8f39-a9fcd04fe6d9.png",
+          "source_output_sha256": "a7d5432d075e4751d498de0a3a24c184c6982e67c2aca7ca216397f83fc746fb"
+        }
+      ],
+      "review": "Visually reviewed for C01 app identity and inverse primary content, documented target variants, independent state examples, domain composition, source-use/render-pending distinction, readable full labels, no invented source paths/code/tokens/checkmark certification, no actual operational records/outcomes and no sidebar. Raster tokens approximate; not rendered Flutter adoption verification."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-component-catalogue-adoption-governance-dark.png",
+      "sha256": "6795644ed48ccfb8b39f5b189416d7bef5527247632739b14269c01e0461f041",
+      "bytes": 1570961,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3557e8e0-a48a-40c3-afc1-931b5711bd2e.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "39f072c0d02549780709ba4822bb3ccd928797d1b6134d72ad96070aed90f218",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-6631f359-cbd0-41f8-8f39-a9fcd04fe6d9.png",
+              "sha256": "a7d5432d075e4751d498de0a3a24c184c6982e67c2aca7ca216397f83fc746fb",
+              "reference_kind": "Generated C28 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-3557e8e0-a48a-40c3-afc1-931b5711bd2e.png",
+          "source_output_sha256": "6795644ed48ccfb8b39f5b189416d7bef5527247632739b14269c01e0461f041"
+        }
+      ],
+      "review": "Visually reviewed for C01 app identity and inverse primary content, documented target variants, independent state examples, domain composition, source-use/render-pending distinction, readable full labels, no invented source paths/code/tokens/checkmark certification, no actual operational records/outcomes and no sidebar. Raster tokens approximate; not rendered Flutter adoption verification."
+    }
+  ],
+  "prompts_file_sha256": "0962bf44de3896fd7806a0b6d86c7dc252c69a2db7b459f3e63f32b50a9070a8"
+}

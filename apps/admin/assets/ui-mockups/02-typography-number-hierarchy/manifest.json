@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "foundation": "C02 Typography and number hierarchy",
+  "version": "v1",
+  "generated_on": "2026-10-02",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "generation_tool": "built-in image_gen",
+  "reading_priority": "Review/exception title → exact financial amount or queue count → status → actor/record identifier → audit timestamp.",
+  "font_family_reference": "Inter",
+  "role_specification": [
+    {
+      "role": "KPI",
+      "size_logical_px": 32,
+      "line_height_logical_px": 40,
+      "weight": 600,
+      "specimen": "1,248"
+    },
+    {
+      "role": "Title",
+      "size_logical_px": 24,
+      "line_height_logical_px": 32,
+      "weight": 600,
+      "specimen": "Finance reconciliation"
+    },
+    {
+      "role": "Section",
+      "size_logical_px": 18,
+      "line_height_logical_px": 26,
+      "weight": 600,
+      "specimen": "Settlement summary"
+    },
+    {
+      "role": "Body",
+      "size_logical_px": 16,
+      "line_height_logical_px": 24,
+      "weight": 400,
+      "specimen": "Review unmatched financial records."
+    },
+    {
+      "role": "Label",
+      "size_logical_px": 14,
+      "line_height_logical_px": 20,
+      "weight": 500,
+      "specimen": "Unmatched amount"
+    },
+    {
+      "role": "Caption",
+      "size_logical_px": 12,
+      "line_height_logical_px": 18,
+      "weight": 400,
+      "specimen": "Updated 2 Oct 2026"
+    },
+    {
+      "role": "Money",
+      "size_logical_px": 16,
+      "line_height_logical_px": 24,
+      "weight": 600,
+      "specimen": "₹1,25,000.00"
+    },
+    {
+      "role": "Record ID",
+      "size_logical_px": 14,
+      "line_height_logical_px": 20,
+      "weight": 500,
+      "specimen": "PAY-2048"
+    }
+  ],
+  "c01_status": "APPROVED_LOCKED",
+  "c01_version": "v2",
+  "c01_lock_file": "../01-color-roles-theme-identity/lock.json",
+  "c01_board_foundations": {
+    "font_family_reference": "Inter",
+    "font_weights": [
+      600,
+      500,
+      400
+    ],
+    "type_scale_px": [
+      32,
+      24,
+      18,
+      16,
+      14,
+      12
+    ],
+    "spacing_px": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radius_px": [
+      8,
+      12,
+      16
+    ],
+    "border_width_px": {
+      "default": 1,
+      "strong": 1,
+      "focus": 2
+    },
+    "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+  },
+  "prompts_file": "prompts.md",
+  "prompts_file_sha256": "79e49457378ea0793a857b45874de8df64dc017c4a4533480de03e4e9392d194",
+  "implementation_status": "Visual references only; no runtime theme or source migration.",
+  "verification_boundary": "Palette/status specification equality and file integrity are checked; visual review is recorded. Pixel-level raster color/font equivalence is not asserted.",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-typography-number-hierarchy-light.png",
+      "sha256": "d7693edba24899c7e8eaa93668ae9374fe58ea7f09191bdd47f37436bedb67ec",
+      "bytes": 1325411,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-b1932cf5-7636-4881-907d-5ff188e3246d.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+      "c01_reference_sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "generation_prompt_sha256": "7b69cc5ba82b9c411c2b7c7f7b20b9dca0a70bd6052884808c8e90eb9a596a8f",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "exec-59246e76-793a-4850-bf72-3b79bd4b498f.png",
+          "location": "historical generated-image input outside repository",
+          "sha256": "b02dde9cce8ae2d3e1b1b37fb933e9f65a1e4891ab21c4b811347d2aa2800b45"
+        },
+        {
+          "input_image": 2,
+          "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+          "location": "repository",
+          "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4"
+        }
+      ],
+      "generation_history": [
+        {
+          "source_file": "exec-59246e76-793a-4850-bf72-3b79bd4b498f.png",
+          "source_sha256": "b02dde9cce8ae2d3e1b1b37fb933e9f65a1e4891ab21c4b811347d2aa2800b45",
+          "prompt": "Input image 1: the attached APPROVED C01 Agrimore Admin light board is the authoritative visual-system reference. Preserve this exact app/theme identity, canvas, panel/raised surface colors, primary/muted text colors, border colors, brand/support colors, header treatment, theme pill, quiet shadows and rounded-corner language. Replace the old Color roles, generic Typography, Surfaces & actions, Spacing, Radius, Borders and Shadows specimen sections with the new C02 typography/number content below. Do not reproduce a C01 color-swatches board. Use the specified C02 layout and domain examples while retaining the original design-system skin.\nUse case: ui-mockup.\nAsset type: C02 Typography and number hierarchy, premium Storybook-style design-system reference board for Agrimore Admin, light theme. Generate ONE complete image, landscape 16:10, high-resolution crisp product-design typography. This is a NEW typography board, not a color-swatches board or a whole app screenshot.\nBrand identity: Professional institutional blue; cyan and steel/slate support. This app must have its own domain-specific type hierarchy and specimen composition; do not copy another Agrimore app's system.\nLocked palette: canvas #F5F7FB; panel surface #FFFFFF; raised surface #F9FBFE; primary text #14243B; secondary text #5B6B82; border #D8E1EF; brand accent #1D4F91; supporting accent #087E8B. All text must have excellent contrast. Use an airy light neutral canvas with clean white panels; readable dark text and restrained app-specific accents.\nTypeface: precise Inter-style sans serif, real professional UI typography. Roles differ by domain, not by random novelty fonts. Weights 400/500/600/700 where specified. Tabular, lining numerals for money, quantities, counts, timers and IDs; stable-width digits and correct rupee glyph. No decorative serif, stencil, handwritten or futuristic font.\nHeader: ONLY the app name \"Agrimore Admin\" and a small \"Light\" theme pill. A subordinate section label \"Typography & number hierarchy\" may appear beneath it. No tagline or slogan.\nComposition: Precise institutional typography: restrained specimen column and a broad comparison ledger with right-aligned tabular currency, clear column labels and strong row alignment. A blue queue-count specimen is secondary; cyan highlights review context. Avoid oversized consumer price styling. Generous margins, thin restrained borders, quiet elevation, highly legible labels. Make the two themes share this app's role values, content and composition. No sidebar, navigation menu, device frame, browser chrome, logo, watermark, photography or illustration.\nPanel \"Type roles\": columns \"Role\", \"Size / line · weight\", and \"Specimen\". The numeric annotations describe logical UI pixels and font weights. Render specimen words with the correct relative sizes and weights. Exact rows:\n\"KPI\" | \"32 / 40 · 600\" | \"1,248\"\n\"Title\" | \"24 / 32 · 600\" | \"Finance reconciliation\"\n\"Section\" | \"18 / 26 · 600\" | \"Settlement summary\"\n\"Body\" | \"16 / 24 · 400\" | \"Review unmatched financial records.\"\n\"Label\" | \"14 / 20 · 500\" | \"Unmatched amount\"\n\"Caption\" | \"12 / 18 · 400\" | \"Updated 2 Oct 2026\"\n\"Money\" | \"16 / 24 · 600\" | \"₹1,25,000.00\"\n\"Record ID\" | \"14 / 20 · 500\" | \"PAY-2048\"\nDomain hierarchy: Review/exception title → exact financial amount or queue count → status → actor/record identifier → audit timestamp.\nPanel \"Financial comparison\": a compact ledger with headers \"Record\" and \"Amount\". Three rows read \"Collected\" with \"₹1,25,000.00\", \"Settled\" with \"₹1,24,500.00\", and \"Unmatched\" with \"₹500.00\". Keep all rupee amounts exactly aligned at the right edge, retain all decimals and Indian digit grouping. The unmatched value is labeled explicitly; color alone must not communicate its state.\nPanel \"Operational count\": \"Orders to review\" with \"1,248\". Under it show \"Payment reference\" and \"PAY-2048\", then \"2 Oct 2026, 10:30 AM\" as caption text.\nPanel \"Number rules\": \"Exact financial values\"; \"Right-aligned tabular columns\"; \"Status labels beyond color\".\nBottom micro-specimen: \"0123456789  ₹  %  kg  L  km\" with the label \"Tabular numerals\". Use readable caption size, not tiny microtext. Keep body copy natural, sentence case and clearly secondary to titles and operational amounts. Keep units visually attached to their value while giving the numeric value emphasis. Financial columns align to the right; names align to the left. Count and weight are different quantities. Price and cash figures are fictional specimen data, not live application data.\nText accuracy: copy every quoted heading, specimen, amount, decimal, Indian comma grouping and unit exactly. Render ₹ correctly, not $ or an invented glyph. Maintain clear numerical hierarchy, generous reading space and a full uncropped board. No extra invented panels, generic lorem ipsum, green brand remnants in blue apps, universal supporting blue, gradients, glows, low-contrast captions or illegible text.\nC01 additional immutable color roles: onPrimary #FFFFFF; strongBorder #8C9DB5; selected #E8EFF8; focus #1D4F91. Border styling: default 1px #D8E1EF; strong 1px #8C9DB5; focus 2px #1D4F91. Radius references: 8 / 12 / 16 px; spacing rhythm: 4 / 8 / 12 / 16 / 24 / 32 px. Match the original calm shadow appearance, do not introduce glowing elevation.\nSemantic status typography must use ONLY the original C01 role pairs: Success: container #E7F5ED, foreground #146C43; Warning: container #FFF4D6, foreground #805400; Error: container #FDECEA, foreground #B42318; Info: container #E8F0FA, foreground #24528C. Add a small four-chip line labeled \"State labels\" with \"Success\", \"Warning\", \"Error\", \"Info\"; each chip uses its corresponding exact container/foreground pair and a small status symbol. Do not use success green as Seller/Admin/Associate's brand accent, or recolor warnings to their supporting copper/cyan/indigo. Do not confuse Delivery's neutral Info with a blue badge. This strip demonstrates label legibility, not a new status-color system.\n",
+          "prompt_sha256": "761a0379bb2810ffaf015cb5349d9dc0f96b16d33dc67c081b8c78fce7f4ddf0",
+          "disposition": "Initial draft; secondary accent review requested targeted refinement."
+        }
+      ],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-typography-number-hierarchy-dark.png",
+      "sha256": "b3cfe045632dc1e1dd028acc04d4239d512ce796d32dd0720426a27bf949f433",
+      "bytes": 1266444,
+      "width": 1586,
+      "height": 992,
+      "generated_source_file": "exec-a8b9f83d-95d5-4d7f-a3e6-69252e42ffe3.png",
+      "c01_reference_file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+      "c01_reference_sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "generation_prompt_sha256": "bfb2b8208112cb51ab97a208d1794c060bb58a4578a9d4370736b4569748b6ae",
+      "generation_references": [
+        {
+          "input_image": 1,
+          "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+          "location": "repository",
+          "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b"
+        },
+        {
+          "input_image": 2,
+          "file": "agrimore-admin-typography-number-hierarchy-light.png",
+          "location": "repository",
+          "sha256": "d7693edba24899c7e8eaa93668ae9374fe58ea7f09191bdd47f37436bedb67ec"
+        }
+      ],
+      "generation_history": [],
+      "visual_review": "Reviewed generated output inline: correct app/theme heading, domain-specific hierarchy, accurate displayed role annotations and numerical examples, all panels readable and uncropped, no sidebar; approved C01 skin used as reference. Exact color/type tokens are recorded in the specification; raster pixel equality is not asserted."
+    }
+  ]
+}

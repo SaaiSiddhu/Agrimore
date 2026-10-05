@@ -1,0 +1,71 @@
+# Agrimore Sales Associate — C15 exact image prompts
+
+Built-in image_gen; **PROVISIONAL_DIRECTION / TARGET_IMPLEMENTATION**. Exact fenced prompts and reference inputs recorded for every selected generation stage. For a false Original final newline, omit the separator newline before the closing fence when reproducing the hash.
+
+## Light — initial generation
+
+Prompt SHA-256: 11aa636a6185daaec2f01ecae7b1ef33959c5644d185a968a2198d4b288c7ef5. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png · SHA-256 5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C15 premium Storybook design-system board, Agrimore Sales Associate / LIGHT, full landscape image approximately 1536 x 1024.
+Input image 1 is the APPROVED C01 light color identity reference ONLY. Inherit its palette, Inter type hierarchy, corner/spacing/border/elevation language. New subject: Lists, pagination and load-more recovery. Do not copy its token table.
+Full clean canvas with NO sidebar or device/browser chrome. Heading exactly "Agrimore Sales Associate" and small "Light" theme chip. Subtitle exactly "Lists, pagination and load-more recovery". Small "C15 / Design proposal". Four spacious panels in a clearly separated 2x2 grid, labelled Stable records, Refresh, Load more, Recovery and end in reading order. Each contains concise readable domain-specific UI specimens, simple outline icons and short board annotations. Premium restrained editorial presentation; avoid dense tiny text. Domain character: Premium royal-blue attributed-order rows, pearl/slate stable surfaces and indigo loaded-scope guidance; continuation expands a live prefix rather than appending cursor pages.
+Locked palette: primary #2D56C4; onPrimary #FFFFFF; support #6950A2; canvas #F7F8FC; surface #FFFFFF; raised #FBFCFF; text #192840; muted #61708B; border #DDE3F0; strongBorder #94A0B7; selected #EAF0FE; focus #2D56C4. Status pairs [{"role": "Success", "container": "#E7F5ED", "text": "#146C43"}, {"role": "Warning", "container": "#FFF4D6", "text": "#805400"}, {"role": "Error", "container": "#FDECEA", "text": "#B42318"}, {"role": "Info", "container": "#EDF1FB", "text": "#31549E"}]. All list footer actions are SECONDARY OUTLINED controls: neutral surface fill, app primary #2D56C4 border and label. Pending variants stay outlined, with muted disabled label and spinner; do not transform them into bright filled buttons or clickable duplicate controls. If any primary filled action exists it must use #2D56C4 and #FFFFFF inverse text. Supporting accents are context guidance, not another app's primary. Dark canvas neutral near-black and desaturated dark-grey panels, never saturated blue/green surfaces, white cards, neon or glossy gradients.
+Inter scale [34, 24, 18, 16, 14, 12], weights [600, 500, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 12, "Card": 18, "Sheet / dialog": 24}px; 1px border / 2px focus, 48px comfortable labelled footer controls. Actions and disabled states are indicated by text and shape as well as color.
+Exact four panel content:
+1. Stable records: Relationship-style list labelled "Sample attributed orders". Two record rows titled "Sample business order" and "Sample retail order"; subtle indigo B2B and Retail context chips. No order IDs, names, amounts or status outcomes. Helper "Stable identity across live updates". Caption "Newest first within loaded orders".
+2. Refresh: Retained sample order rows under a small strip "Updating attributed orders" and spinner. Helper "Keep search and mode". Indigo annotation "Live records may change". Separate small failed-update example "Update unavailable" and OUTLINED action "Retry connection"; caption "Proposed recovery". No misleading frozen-history guarantee.
+3. Load more: Secondary OUTLINED royal-blue "Load more orders". Separate disabled outlined pending control "Loading more orders" with spinner. Caption "Expands the loaded list". A small distinct inset "No matches in loaded orders" with an outlined "Load more orders" control and helper "Only when more may exist". No cursor terminology in the app-facing specimen.
+4. Recovery and end: Separate examples. Expanded-read failure "More orders couldn’t be loaded", helper "Keep available orders and filters", OUTLINED "Retry loading more", caption "Proposed recovery". End "End of attributed orders", helper "Only after a complete current read". No earnings amount, balance, paid status, earning promise or global search claim.
+Critical behavior: preserve independent isolated examples. A pending request is not a successful page or percentage. Page failure leaves previously loaded records visible; retry is scoped to that read, not refresh-all, approval, publishing, payout or mutation replay. End is plain scoped text, NEVER a success tick, completed-system review or paid/settled outcome. A bounded or failed read is not evidence of exhaustion. Keep Seller pagination explicitly Proposed; Sales Associate extends a loaded live list, NOT cursor-appending frozen history. Category reads and exact order lookup keep their separate scopes.
+Only synthetic records explicitly labelled Sample are permitted. No real names, address, assignee, email, phone, order/case IDs, calendar dates, ETA, prices, stock values, rupee amounts, ratings, balances, selection totals, page numbers, global results, invented counts or guarantees. No fabricated record completion or live server confirmation. Do not invent new query filters or combine admin status and My cases.
+Footer exactly "Illustrative lists / Target design / C01 identity". No sidebar, unrelated token chart, watermark, promotional copy or fake metrics.
+```
+
+## Light — refinement 1
+
+Prompt SHA-256: ed7834a74618d711c4d52f2cda6c22b286a07ef9e6abbd8f23b9330908eea52a. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-8b5a3079-d418-48a0-948d-1ca4b5821da7.png · SHA-256 40e6513a7068fc1682c3f81d551cf6c1ab3bdde9342d394704c24ee2c3e54b0e
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png · SHA-256 5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19
+
+```text
+Edit image 1, the Agrimore Sales Associate C15 LIGHT Storybook board. Image 2 is the approved C01 LIGHT identity. Make only these corrections:
+1. Every blue footer-action OUTLINE, action LABEL and active loading/focus accent must be the approved royal blue #2D56C4, not electric #003DFF. Supporting B2B/Retail context stays indigo #6950A2 on a subtle pearl surface. 2. Change the lower-right panel heading "Recovery" to "Recovery and end". 3. In its end specimen replace "You’ve reached the end of the currently loaded orders." with exactly "Only after this order query is exhausted". Remove the separate duplicate "Only after a complete current read" line below that card. Preserve the title "End of attributed orders". A loaded-prefix boundary alone is never an end.
+Preserve all other exact copy, rows, neutral surfaces, icons, 2x2 structure, refresh/proposed labels, outlined ready/disabled pending action variants, sample names, sidebar-free full canvas and footer. Keep the sample cases distinct and synthetic; add no numbers, records or outcomes. All actions remain secondary outlined; no filled bright buttons. Maintain clearly readable text and 48px comfortable controls.
+```
+
+## Dark — initial generation
+
+Prompt SHA-256: b5b281d667c7405cf48f0abf383e1b067fcc37f52a47b97647e3deadb852e6c2. Original final newline: False.
+
+Inputs:
+
+- /Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png · SHA-256 579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62
+- /Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ac1b9832-32cd-4abb-b617-cc9ab0587919.png · SHA-256 0f8cb2c384def7de47a769bdb6716c143d981b29e5fa21f14909443247da5920
+
+```text
+Use case: ui-mockup
+Asset: Agrimore C15 premium Storybook design-system board, Agrimore Sales Associate / DARK, full landscape image approximately 1536 x 1024.
+Input image 1 is the APPROVED C01 dark color identity reference ONLY. Inherit its palette, Inter type hierarchy, corner/spacing/border/elevation language. New subject: Lists, pagination and load-more recovery. Do not copy its token table.
+Full clean canvas with NO sidebar or device/browser chrome. Heading exactly "Agrimore Sales Associate" and small "Dark" theme chip. Subtitle exactly "Lists, pagination and load-more recovery". Small "C15 / Design proposal". Four spacious panels in a clearly separated 2x2 grid, labelled Stable records, Refresh, Load more, Recovery and end in reading order. Each contains concise readable domain-specific UI specimens, simple outline icons and short board annotations. Premium restrained editorial presentation; avoid dense tiny text. Domain character: Premium royal-blue attributed-order rows, pearl/slate stable surfaces and indigo loaded-scope guidance; continuation expands a live prefix rather than appending cursor pages.
+Locked palette: primary #96B4FF; onPrimary #142241; support #C0ADE7; canvas #090B11; surface #131722; raised #1E2533; text #F2F5FC; muted #B9C5DD; border #354259; strongBorder #8393B2; selected #1B2C50; focus #96B4FF. Status pairs [{"role": "Success", "container": "#102C20", "text": "#8DE0B0"}, {"role": "Warning", "container": "#302612", "text": "#F1CE7B"}, {"role": "Error", "container": "#341B1B", "text": "#FFA39C"}, {"role": "Info", "container": "#1A2B4C", "text": "#B2C8FF"}]. All list footer actions are SECONDARY OUTLINED controls: neutral surface fill, app primary #96B4FF border and label. Pending variants stay outlined, with muted disabled label and spinner; do not transform them into bright filled buttons or clickable duplicate controls. If any primary filled action exists it must use #96B4FF and #142241 inverse text. Supporting accents are context guidance, not another app's primary. Dark canvas neutral near-black and desaturated dark-grey panels, never saturated blue/green surfaces, white cards, neon or glossy gradients.
+Inter scale [34, 24, 18, 16, 14, 12], weights [600, 500, 400]; spacing [4, 8, 12, 16, 24, 32]px; radius roles {"Control": 12, "Card": 18, "Sheet / dialog": 24}px; 1px border / 2px focus, 48px comfortable labelled footer controls. Actions and disabled states are indicated by text and shape as well as color.
+Exact four panel content:
+1. Stable records: Relationship-style list labelled "Sample attributed orders". Two record rows titled "Sample business order" and "Sample retail order"; subtle indigo B2B and Retail context chips. No order IDs, names, amounts or status outcomes. Helper "Stable identity across live updates". Caption "Newest first within loaded orders".
+2. Refresh: Retained sample order rows under a small strip "Updating attributed orders" and spinner. Helper "Keep search and mode". Indigo annotation "Live records may change". Separate small failed-update example "Update unavailable" and OUTLINED action "Retry connection"; caption "Proposed recovery". No misleading frozen-history guarantee.
+3. Load more: Secondary OUTLINED royal-blue "Load more orders". Separate disabled outlined pending control "Loading more orders" with spinner. Caption "Expands the loaded list". A small distinct inset "No matches in loaded orders" with an outlined "Load more orders" control and helper "Only when more may exist". No cursor terminology in the app-facing specimen.
+4. Recovery and end: Separate examples. Expanded-read failure "More orders couldn’t be loaded", helper "Keep available orders and filters", OUTLINED "Retry loading more", caption "Proposed recovery". End "End of attributed orders", helper "Only after a complete current read". No earnings amount, balance, paid status, earning promise or global search claim.
+Critical behavior: preserve independent isolated examples. A pending request is not a successful page or percentage. Page failure leaves previously loaded records visible; retry is scoped to that read, not refresh-all, approval, publishing, payout or mutation replay. End is plain scoped text, NEVER a success tick, completed-system review or paid/settled outcome. A bounded or failed read is not evidence of exhaustion. Keep Seller pagination explicitly Proposed; Sales Associate extends a loaded live list, NOT cursor-appending frozen history. Category reads and exact order lookup keep their separate scopes.
+Only synthetic records explicitly labelled Sample are permitted. No real names, address, assignee, email, phone, order/case IDs, calendar dates, ETA, prices, stock values, rupee amounts, ratings, balances, selection totals, page numbers, global results, invented counts or guarantees. No fabricated record completion or live server confirmation. Do not invent new query filters or combine admin status and My cases.
+Footer exactly "Illustrative lists / Target design / C01 identity". No sidebar, unrelated token chart, watermark, promotional copy or fake metrics.
+Additional references: image 1 is approved C01 DARK and governs colors. Image 2 is the REFINED selected C15 LIGHT board for this app, used only for composition, sample list identity, exact corrected labels and action variants. Convert all canvas/panels/rows/status containers/text to the locked dark palette. Keep footer actions SECONDARY OUTLINED with neutral #131722 fill, #96B4FF outline and text; pending controls stay outlined and visibly disabled. Do not change outlined Load more/Retry into pastel filled controls. No white cards, neon, saturated blue canvas or invented success. Preserve distinct isolated variants, not simultaneously active requests. Keep the corrected panel heading "Recovery and end". The end-specimen body is exactly "Only after this order query is exhausted", never a loaded-prefix completion claim. Retain proposed recovery and loaded-list expansion wording. B2B/Retail context remains subdued indigo #C0ADE7, not green or cyan.
+```
+

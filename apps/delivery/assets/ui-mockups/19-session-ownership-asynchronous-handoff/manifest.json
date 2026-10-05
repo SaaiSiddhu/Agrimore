@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "foundation": "C19: Session ownership and asynchronous handoff",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "785d7b91391079cc9fdb4cc275ae8caf2a64c934",
+  "source_coverage": {
+    "files": 818,
+    "lines": 271801
+  },
+  "domain_style": "High-contrast black/white rider rebinding, burgundy stale-task boundaries, burnt-orange field guidance and large single-purpose recovery controls.",
+  "panels": [
+    {
+      "label": "Rider work transition",
+      "specimen": "Card \"Updating rider workspace\", indeterminate spinner and \"Loading work for the current rider.\" EMPTY work-row skeletons. Orange BOARD notes \"Previous rider work hidden\" and \"Old task screens close\". No job values, rider name, live-map marker, online toggle or assigned-count metric."
+    },
+    {
+      "label": "Sign-in required",
+      "specimen": "Card \"Sign in to delivery\", lock icon, body \"Sign in again. Rider access will be checked before work opens.\" black PRIMARY \"Sign in again\" in light, off-white with dark text in dark. Orange BOARD note \"Confirmed session end / not proof of suspension\". No delivered/online/suspended badge."
+    },
+    {
+      "label": "Late task boundary",
+      "specimen": "Neutral card \"Current rider task\", EMPTY task skeleton. Burgundy BOARD diagram \"Earlier step reply\" arrow crossed at \"Not applied to this rider view\". Orange board note \"No step completion from an old session\" and \"Server outcome is checked separately\". No delivered tick, replay step, proof-photo thumbnail or released-order success."
+    },
+    {
+      "label": "Current work recovery",
+      "specimen": "Card \"Reload rider work\", body \"Read work for the current authorised rider.\" PRIMARY \"Try again\", small \"Read recovery\" caption. Orange BOARD note \"Reload only / no automatic task replay\". No accept offer, resume proof, reconfirm delivery, online state, location or task-count value."
+    }
+  ],
+  "handoff_contract": [
+    "Capture current account, auth episode, entity/operation, route and provider lifetime before starting asynchronous work. Mounted alone is insufficient.",
+    "On account change, invalidate old UI ownership, cancel/rebind scoped listeners and hide prior sensitive projection before loading the new account. Hiding UI is not deleting remote records.",
+    "Recheck the captured ticket after every await and before writes initiated from a stale dialog, local state changes, feedback, loading cleanup, modal close or navigation.",
+    "A later same-UID auth episode can revoke an old UI ticket. UID-only equality and canceled streams are not universal proof of episode ownership.",
+    "Late reads/listeners/commands must not overwrite current account or current entity data, clear a newer spinner, show old success/error or pop a replacement route.",
+    "Ignored UI response is not canceled server work, rollback, refund, unsent request or failed mutation. Reconcile original action outcome under its authorised owner before repeat action.",
+    "Confirmed missing/expired auth can require sign-in again. Network error, profile read failure, rate limit, recent-login challenge and account suspension are distinct; never infer expiry from every exception.",
+    "During sign-in/role restoration keep protected content hidden and re-evaluate C18 profile/approval/access requirements; no automatic privileged shell or work availability.",
+    "Recovery stays bound to original owner and operation identity; current-account read/navigation recovery is separate from mutation replay. Persisted journals must never expose another account\u2019s payload.",
+    "Sensitive local edits do not transfer across accounts. Preserve evidenced owner-scoped checkout recovery; no universal disk-draft, proof-owner schema or automatic form-resume promise.",
+    "Use indeterminate loading without fabricated countdowns, metrics or success badges. Accessible transition/error announcements and focus after safe routing need rendered AT verification.",
+    "Reuse existing auth services, session predicates, domain providers and feedback/navigation equivalents. No duplicate helper and no weakened server/rules authorization."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-session-ownership-asynchronous-handoff-light.png",
+      "sha256": "f279504216d48c904e14d8353cb4e808dc3a5cdb5d3309a7c651b5059ada59c3",
+      "bytes": 1360409,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b526ee3b-cade-41ed-9826-0065c41503a0.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "ff820a4fdcfc305d3ed4bc015525af9ec0572ae008375462404a527adae9a6f2",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b526ee3b-cade-41ed-9826-0065c41503a0.png",
+          "source_output_sha256": "f279504216d48c904e14d8353cb4e808dc3a5cdb5d3309a7c651b5059ada59c3"
+        }
+      ],
+      "review": "Visually reviewed for app identity, account-change projection clearing, confirmed sign-in boundary, ignored UI result versus server outcome distinction, domain-owned recovery, empty records without PII, no fake outcome/success/rollback guarantees, no sidebar and neutral dark surfaces. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-session-ownership-asynchronous-handoff-dark.png",
+      "sha256": "06f15b3bb7105ee45ff359c333c6cfa933d815658147590d184a84c1b379db19",
+      "bytes": 1515279,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-fc0711df-12c4-4a95-8793-a09e8be7357c.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "ac5bc038b2634638cc66e4d374aca54c7ad2686fdcbefeba0b97276a9c6bd4dd",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b526ee3b-cade-41ed-9826-0065c41503a0.png",
+              "sha256": "f279504216d48c904e14d8353cb4e808dc3a5cdb5d3309a7c651b5059ada59c3",
+              "reference_kind": "Generated C19 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-fc0711df-12c4-4a95-8793-a09e8be7357c.png",
+          "source_output_sha256": "06f15b3bb7105ee45ff359c333c6cfa933d815658147590d184a84c1b379db19"
+        }
+      ],
+      "review": "Visually reviewed for app identity, account-change projection clearing, confirmed sign-in boundary, ignored UI result versus server outcome distinction, domain-owned recovery, empty records without PII, no fake outcome/success/rollback guarantees, no sidebar and neutral dark surfaces. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "ff3da7572c5b93fc3bda30767ca75b8a6f7db2ccda9eceb631bfe46b4fd0f88f"
+}

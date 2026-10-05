@@ -1,0 +1,4914 @@
+{
+  "schema_version": 1,
+  "foundation": "C28: Component catalogue and adoption governance",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-04",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "64a71d4e6e6bff5ab04e9dcd38bc84d24f3b266a",
+  "source_coverage": {
+    "files": 816,
+    "lines": 253097
+  },
+  "domain_style": "Professional-blue operations components, cyan evidence guidance and steel/slate review surfaces.",
+  "panels": [
+    {
+      "label": "Operations action variants",
+      "specimen": "Panel \"Action variants\": labelled \"Primary\", \"Secondary\", \"Text action\" each \"Open details\"; professional-blue filled, outlined and text-only specimens. Cyan note \"Document review actions by priority\"."
+    },
+    {
+      "label": "Review state examples",
+      "specimen": "Panel \"State examples\": independent rows \"Ready\" with Open details, \"Loading\" static progress icon plus \"Loading case details\u2026\", \"Unavailable\" disabled Open details with \"Action unavailable in this example\"; caption \"Independent examples\". Cyan note \"Keep state and permissions distinct\". No real denial, approval or resolved case."
+    },
+    {
+      "label": "Review composition",
+      "specimen": "Panel \"Case composition\": title \"Support case details\", body \"Review the available context.\", neutral document icon; primary \"Open case details\", secondary \"Back\". External annotation \"Record + context + actions\", \"Target composition\". No case ID, user evidence, account or audit outcome."
+    },
+    {
+      "label": "Operations source evidence",
+      "specimen": "Panel \"Adoption evidence\": documentation record \"Support case\" with \"SnackbarHelper\"; rows \"Source use located\", \"Render review pending\"; proposed steps \"Component\", \"Screen state\", \"Rendered evidence\", \"Review decision\". Cyan note \"Helper usage is not whole-screen adoption\"; caption \"Source trace / Target review record\". No fake success toast, passed coverage percentage, approved account or resolved case."
+    }
+  ],
+  "catalogue_governance_contract": [
+    "Document each component family with source ownership, public API/variants, states, content and accessibility behavior, domain constraints and actual callers.",
+    "Catalogue definitions, source references, rendered states, tested interactions, review decisions and release adoption are distinct evidence stages. Never call a screen verified from an import, symbol count or raster mockup.",
+    "Retain five independent C01 identities and domain vocabularies. Shared generic behavior is reusable without making every app use the same palette, type scale or operational meaning.",
+    "Target package organization uses five app-owned folders: admin, marketplace, seller, sales_associate and delivery. These are future locations, not current folders or changes made by this asset task.",
+    "Reuse and extend documented primitives rather than creating equivalent wrappers; preserve valid domain-specific record/chart/map content inside canonical composition.",
+    "Each state example is independent: ready, busy, disabled, error, empty, restricted, focus, selection and recovery require appropriate actual contracts. No outcome follows from a catalogue specimen.",
+    "Static source tracing includes definition, resolved import/caller and state branch. Regex counts are candidates only; record ambiguity, aliases, hidden exports and mixed inline UI.",
+    "Verify screen adoption with rendered light/dark states, relevant widths/large text, meaningful interactions, semantics, keyboard/touch/reduced motion and error/recovery boundaries.",
+    "Use deterministic synthetic fixtures and safe preview mounts; do not access production accounts, private records or real financial/auth/delivery mutations for catalogue work.",
+    "Track exceptions and migration/deprecation decisions with exact caller scope and evidence. Remove a legacy API only after callers are migrated and relevant checks pass.",
+    "Preserve auth/session/owner guards, localization sources, navigation, privacy and server-authoritative outcomes during later presentation migration; do not treat them as duplicate UI.",
+    "C28 is asset documentation only: no runtime package folders, widgets, screen migration, render tests, adoption pass/completion percentages, assigned reviewer or release decision is created."
+  ],
+  "component_source_inventory": [
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_bottom_nav.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomButton"
+      ],
+      "enums": [
+        {
+          "name": "ButtonType",
+          "values": [
+            "primary",
+            "secondary",
+            "outlined",
+            "text"
+          ]
+        }
+      ],
+      "sha256": "124d0a3efcbb468a5a197fedd746cfb222d7988a08fc723fabed36ea9e7e844a",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            41
+          ],
+          "ambiguous_definition": true
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            501,
+            525
+          ],
+          "ambiguous_definition": true
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_button.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomButton"
+      ],
+      "enums": [
+        {
+          "name": "ButtonType",
+          "values": [
+            "filled",
+            "outlined",
+            "text"
+          ]
+        }
+      ],
+      "sha256": "d4f9239929dbe1614d8153cd0f3938f65372bbcc51e364133cfc9f1105988773",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            41
+          ],
+          "ambiguous_definition": true
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "CustomButton",
+          "lines": [
+            501,
+            525
+          ],
+          "ambiguous_definition": true
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/custom_text_field.dart",
+      "layer": "shared",
+      "public_classes": [
+        "CustomTextField"
+      ],
+      "enums": [],
+      "sha256": "32f5cb1af103fe6743247721eb6b74a9691ce872bf2f98710f995e30baa1080e",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/empty_state_widget.dart",
+      "layer": "shared",
+      "public_classes": [
+        "EmptyState"
+      ],
+      "enums": [],
+      "sha256": "90210e0e2d3fa544186eacc10261eebc7ae1d803b3955eba5c54765682a50d2a",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/business/business_feed_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            60
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            623,
+            728
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/my_rfqs_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "EmptyState",
+          "lines": [
+            192
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/error_view.dart",
+      "layer": "shared",
+      "public_classes": [
+        "ErrorView"
+      ],
+      "enums": [],
+      "sha256": "0bd0c0c2db7177d81857a909d6ccf23a17680e9285b061e4685e6e41b0d46fc5",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/auth/complete_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            261
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_feed_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            55
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            618
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_email_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            300
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_password_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            500
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/change_phone_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            290
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/delete_account_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            134
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/edit_profile_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            1120
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            159
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/reviews_section_inline.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            253
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/admin_settings_screen.dart",
+          "symbol": "ErrorView",
+          "lines": [
+            1237
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/loading_overlay.dart",
+      "layer": "shared",
+      "public_classes": [
+        "LoadingOverlay"
+      ],
+      "enums": [],
+      "sha256": "aa4cae16ec77d6442a0cc92db1016e97f80417f2d492a3c02ebbb1675920cec7",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sa_info_banner.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SaInfoBanner"
+      ],
+      "enums": [
+        {
+          "name": "SaBannerVariant",
+          "values": [
+            "info",
+            "warning",
+            "error",
+            "success"
+          ]
+        }
+      ],
+      "sha256": "a9ec23ec9c90773c8079de9df6eadc62e7ff18850f936acc7f30e1b72d621a31",
+      "candidate_callers": [
+        {
+          "path": "apps/employee/lib/screens/auth/associate_otp_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            270
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/forgot_password_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            97,
+            106,
+            193
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/login_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            190
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/onboarding_status_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            139
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/support/help_support_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            88
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            308,
+            317
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_request_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            163,
+            280
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+          "symbol": "SaInfoBanner",
+          "lines": [
+            136,
+            286
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sa_loading_button.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SaLoadingButton"
+      ],
+      "enums": [
+        {
+          "name": "SaButtonVariant",
+          "values": [
+            "primary",
+            "outlined"
+          ]
+        }
+      ],
+      "sha256": "344673554a8b2b222ef2ec6b1f48ee5e65e2b91266b6e97c73c0511fd6fead49",
+      "candidate_callers": [
+        {
+          "path": "apps/employee/lib/screens/auth/associate_otp_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            292
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/forgot_password_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            139,
+            200
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/login_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            351,
+            491
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/pending_approval_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            111,
+            124
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/auth/suspended_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            106,
+            119
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/profile_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            565
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_account_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            437,
+            624,
+            677
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_request_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            289
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/wallet/payout_review_screen.dart",
+          "symbol": "SaLoadingButton",
+          "lines": [
+            295
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/common/sticky_photo_header.dart",
+      "layer": "shared",
+      "public_classes": [
+        "StickyHeaderBackButton",
+        "StickyPhotoHeaderSliver"
+      ],
+      "enums": [],
+      "sha256": "e98e213f06595efc95413f744c07a8da4841f390737176958897b79ddc15a510",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/edit_profile_screen.dart",
+          "symbol": "StickyPhotoHeaderSliver",
+          "lines": [
+            676
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/profile_screen.dart",
+          "symbol": "StickyPhotoHeaderSliver",
+          "lines": [
+            533
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/dialog_helper.dart",
+      "layer": "shared",
+      "public_classes": [
+        "DialogHelper"
+      ],
+      "enums": [],
+      "sha256": "d221a07b53b7346957a958c2982cea3f4db1d17f0eb94c2e07cc75d7d0de3abc",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            58
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/settings_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            70,
+            569,
+            639
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            90,
+            100,
+            131
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            542
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/employee/lib/screens/profile/profile_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            569
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            468
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart",
+          "symbol": "DialogHelper",
+          "lines": [
+            83,
+            97
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/premium_splash_screen.dart",
+      "layer": "shared",
+      "public_classes": [
+        "PremiumSplashScreen"
+      ],
+      "enums": [
+        {
+          "name": "SplashAnimationType",
+          "values": [
+            "customer",
+            "seller",
+            "delivery",
+            "admin"
+          ]
+        }
+      ],
+      "sha256": "7a0e54a84a5716ea0b2fb164296d0aba8435e43244c2f4d88f8b1b3c2b913544",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/widgets/snackbar_helper.dart",
+      "layer": "shared",
+      "public_classes": [
+        "SnackbarHelper"
+      ],
+      "enums": [],
+      "sha256": "92f20468f3e099393e7153f809bc97b92ee79dd7c155acc2dc81369a29108ec5",
+      "candidate_callers": [
+        {
+          "path": "apps/marketplace/lib/screens/auth/login_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            308,
+            316,
+            372,
+            380,
+            390,
+            407,
+            508,
+            593,
+            603,
+            610
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/business/business_profile_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            190,
+            236
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/cart/mobile_cart_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            435,
+            2916,
+            2984
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/cart/web_cart_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            143,
+            417
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/checkout/payment_method_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            125
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/orders/rate_order_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            63,
+            76
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/profile_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            282
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/profile/settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            91,
+            95,
+            112,
+            160,
+            583,
+            587,
+            626,
+            630,
+            656,
+            660
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rewards/rewards_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            82,
+            90
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            60,
+            64,
+            78,
+            82,
+            112,
+            116,
+            126,
+            163,
+            168
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/rfq/widgets/request_quote_sheet.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            47,
+            53,
+            68,
+            73
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/product_details_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            1741,
+            1746
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/shop/widgets/add_review_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            209,
+            297
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/marketplace/lib/screens/user/wallet/add_money_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/admin_shell.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            901,
+            905
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/banners/banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            92,
+            95,
+            110,
+            113,
+            418,
+            422
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/coupon/add_edit_coupon_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            80,
+            121,
+            127,
+            132
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/coupon/coupon_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            78,
+            80,
+            94,
+            96,
+            323,
+            325,
+            358,
+            363
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            116,
+            120,
+            123
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            478,
+            494,
+            505,
+            510
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            303,
+            308,
+            704,
+            710
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            130,
+            134,
+            137,
+            190,
+            194
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            239,
+            248,
+            259,
+            264,
+            431,
+            447,
+            463,
+            469,
+            582,
+            590,
+            595,
+            729,
+            736,
+            741,
+            924,
+            931,
+            936,
+            1044,
+            1053,
+            1065,
+            1071
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            111,
+            127,
+            132,
+            143
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/delivery/rider_support_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            162,
+            166,
+            169,
+            222,
+            226
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/associate_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            618,
+            624
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            55,
+            65,
+            70,
+            73
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            31,
+            34,
+            57,
+            60,
+            108,
+            111
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            38,
+            42,
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            50,
+            138,
+            152,
+            157,
+            160,
+            219,
+            235,
+            240,
+            243
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            108,
+            113,
+            117
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            162
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            150,
+            154,
+            177
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/home_sections/add_edit_home_product_section_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            54,
+            59,
+            90,
+            93
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/home_sections/home_product_section_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            64,
+            66
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            81,
+            201,
+            228,
+            233,
+            321,
+            380,
+            388
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/orders/order_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            160,
+            162,
+            164,
+            203,
+            205,
+            207,
+            216,
+            228,
+            248,
+            250,
+            254
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/category_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            1565,
+            1579
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/product_form_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            130,
+            203,
+            210,
+            230,
+            237,
+            314,
+            380,
+            386
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/product_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            116,
+            118,
+            823,
+            825
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/seller_product_approval_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            22,
+            26
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/products/widgets/image_uploader.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            44,
+            95,
+            99,
+            166,
+            174,
+            201
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/section_banners/add_edit_section_banner_dialog.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            82,
+            90,
+            121,
+            135,
+            141
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/section_banners/section_banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            227,
+            231
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/edit_seller_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            70,
+            76
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            604,
+            609,
+            612
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            93,
+            106,
+            110
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_requests_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            93,
+            97,
+            117,
+            119,
+            260
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            154,
+            158,
+            161,
+            254,
+            296
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/admin_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            186,
+            758,
+            764,
+            801,
+            857,
+            861,
+            885,
+            894,
+            1106,
+            1112,
+            1118,
+            1190,
+            1210,
+            1213
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/delivery_time_slots_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            43,
+            45
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/home_grocery_strip_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            60,
+            80,
+            85
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/home_section_order_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            104,
+            124,
+            128
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/settings/location_settings_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            79,
+            105,
+            109
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            89,
+            93,
+            105,
+            108,
+            171,
+            174
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            87,
+            92,
+            95,
+            977,
+            1046,
+            1158,
+            1165,
+            1174,
+            1179,
+            1208
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/support/support_queue_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            67
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/customer_detail_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            76,
+            83
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/edit_user_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            119,
+            125
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/users/user_management_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            66,
+            68,
+            98,
+            100,
+            377
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            58,
+            166,
+            458,
+            466,
+            469
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "path": "apps/admin/lib/screens/auth/auth_screen.dart",
+          "symbol": "SnackbarHelper",
+          "lines": [
+            299
+          ],
+          "ambiguous_definition": false
+        }
+      ]
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_countdown_ring.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsCountdownRing"
+      ],
+      "enums": [],
+      "sha256": "fd48e885112280beee86a9010f4703c07c0a025dbd4acb6a551155f19e697b4f",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_feedback.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsToast"
+      ],
+      "enums": [
+        {
+          "name": "WsToastTone",
+          "values": [
+            "neutral",
+            "success",
+            "error"
+          ]
+        }
+      ],
+      "sha256": "cab24c2af8715dcfa11e0df429c13a24592455e896fc360919123a5f05fd8d73",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_otp_input.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsOtpInput"
+      ],
+      "enums": [],
+      "sha256": "d5d42ef16669ed872a73d745bda9de90d4d261dfcc3b321dd870046da9dbe632",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_step_header.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsStepHeader"
+      ],
+      "enums": [],
+      "sha256": "b085181fe8308baa978fdd1a6107f1b60af599f5c967f4abfeea6fef9f59e3d3",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_test_mode_ribbon.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsTestModeRibbon"
+      ],
+      "enums": [],
+      "sha256": "ebda5a18c16a93edaa44243f6e8be7d901bdf734715f77ccc120f1e58383c74d",
+      "candidate_callers": []
+    },
+    {
+      "path": "packages/agrimore_ui/lib/workspace/kit/ws_timeline.dart",
+      "layer": "shared",
+      "public_classes": [
+        "WsTimelineStep",
+        "WsTimeline"
+      ],
+      "enums": [
+        {
+          "name": "WsTimelineState",
+          "values": [
+            "done",
+            "current",
+            "upcoming"
+          ]
+        }
+      ],
+      "sha256": "56448dd8149aa3b4e2fc7a7e82e7b58103f805543b1992591bc2185e767ae5f1",
+      "candidate_callers": []
+    }
+  ],
+  "presentation_source_inventory": [
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/admin_dashboard.dart",
+      "sha256": "7ac22f5df866a12e9c3639845aa819547602d6e1c5c5c2e85bc554f2316e0430",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:intl/intl.dart",
+        "package:provider/provider.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../app/themes/admin_colors.dart",
+        "../../providers/admin_provider.dart",
+        "../../providers/auth_provider.dart",
+        "products/product_management_screen.dart",
+        "orders/order_management_screen.dart",
+        "users/user_management_screen.dart",
+        "analytics/analytics_screen.dart",
+        "coupon/coupon_management_screen.dart",
+        "products/product_form_screen.dart",
+        "banners/banner_management_screen.dart",
+        "products/seller_product_approval_screen.dart"
+      ],
+      "public_classes": [
+        "AdminDashboard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/admin_shell.dart",
+      "sha256": "55315d7a232a8af46efa0cdcb76b8b5e7a5575b60ebb4b385bf56dc880eeea81",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:go_router/go_router.dart",
+        "package:provider/provider.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../app/themes/admin_colors.dart",
+        "../../app/app_router.dart",
+        "../../providers/auth_provider.dart"
+      ],
+      "public_classes": [
+        "AdminShell"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            901,
+            905
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 1,
+        "AlertDialog": 1,
+        "ListTile": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/analytics/analytics_screen.dart",
+      "sha256": "2dc2b02a155645d5a84d5d0d52df8959fc9e06fa851a1415cda602cf85a6f7b8",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart"
+      ],
+      "public_classes": [
+        "AnalyticsScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/banners/add_edit_banner_dialog.dart",
+      "sha256": "b5126d176cf2494f370b1182372491857e40aedd2d53199f0736e0783024cee2",
+      "imports": [
+        "dart:io",
+        "dart:typed_data",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "package:provider/provider.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/banner_provider.dart",
+        "../../../providers/admin_provider.dart"
+      ],
+      "public_classes": [
+        "AddEditBannerDialog"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextFormField": 2,
+        "SnackBar": 4
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/banners/banner_card.dart",
+      "sha256": "9ae863cf528ca3ffb7381affbda635cbd1e2b1059af996ff208a24c2b4ccda94",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart"
+      ],
+      "public_classes": [
+        "BannerCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/banners/banner_management_screen.dart",
+      "sha256": "a1153c03c437d99628b8389634a2f07922cf4012a4290b94767dc1a52d41c1f9",
+      "imports": [
+        "dart:async",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/banner_provider.dart",
+        "banner_card.dart",
+        "add_edit_banner_dialog.dart"
+      ],
+      "public_classes": [
+        "BannerManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            92,
+            95,
+            110,
+            113,
+            418,
+            422
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 6,
+        "TextField": 1,
+        "AlertDialog": 2,
+        "Checkbox": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/benefit_program/compliance_control_screen.dart",
+      "sha256": "8d056f62f33d8da9206f6b4f5ae53bc0806d8950556ad9892ec68a2bcb566107",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/benefit_compliance_provider.dart"
+      ],
+      "public_classes": [
+        "ComplianceControlScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 6,
+        "TextButton": 5,
+        "TextField": 4,
+        "AlertDialog": 3,
+        "SnackBar": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/benefit_program/feature_flags_screen.dart",
+      "sha256": "8f412ffced8af2c8c1a1312c1f0dbd7bf0cf4948db8aad0e1b6a4845dff1985f",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/benefit_compliance_provider.dart"
+      ],
+      "public_classes": [
+        "FeatureFlagsScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 1,
+        "TextField": 1,
+        "AlertDialog": 1,
+        "SnackBar": 1,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/bestsellers/bestseller_management_screen.dart",
+      "sha256": "7b851e83879c9905705394f22edfe91c3c4e1f06a80bafc4953710d69b94f9c2",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/bestseller_provider.dart",
+        "../../../app/themes/admin_colors.dart",
+        "edit_bestseller_slot_dialog.dart"
+      ],
+      "public_classes": [
+        "BestsellerManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/bestsellers/edit_bestseller_slot_dialog.dart",
+      "sha256": "ea0ce36ff521681dd5c83cb20bdde96fff12b4afd74fda8781dccab36576b1e7",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:image_picker/image_picker.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/bestseller_provider.dart",
+        "../../../providers/category_provider.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "EditBestsellerSlotDialog"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "TextButton": 3,
+        "AlertDialog": 1,
+        "SnackBar": 6
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart",
+      "sha256": "84c230e42fad5f768ce513b113956815678c3edf76587ae46aa8c47d6ccce1f6",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:go_router/go_router.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/category_section_provider.dart",
+        "../../../providers/category_provider.dart",
+        "../../../app/themes/admin_colors.dart",
+        "../../../app/app_router.dart",
+        "edit_category_section_screen.dart"
+      ],
+      "public_classes": [
+        "CategorySectionManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 3,
+        "TextButton": 1,
+        "AlertDialog": 1,
+        "SnackBar": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/category_sections/edit_category_section_screen.dart",
+      "sha256": "4c283162073655b556b2345b665cf995bef6fa2b059691883d5f1e721397469d",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "package:image_picker/image_picker.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/category_section_provider.dart",
+        "../../../providers/category_provider.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "EditCategorySectionScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "OutlinedButton": 2,
+        "TextButton": 1,
+        "TextFormField": 1,
+        "AlertDialog": 1,
+        "SnackBar": 7,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/coupon/add_edit_coupon_dialog.dart",
+      "sha256": "342ab74847106acd422d3527a64ea0abb320176414b02d2d0c81d6911df1f5d9",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/coupon_provider.dart",
+        "../../../providers/product_provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "AddEditCouponDialog"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            80,
+            121,
+            127,
+            132
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextFormField": 7,
+        "Switch": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/coupon/coupon_card.dart",
+      "sha256": "a58f8652cd5cb8f3c076b59e9c1178a3b07fee7b7263ff3597816ae48019cdcf",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "CouponCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "SnackBar": 1,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/coupon/coupon_management_screen.dart",
+      "sha256": "87a8d12f00417609cb558cd8628fb5f8409b66a8aaf17f327ef76670a618236a",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/coupon_provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "coupon_card.dart",
+        "add_edit_coupon_dialog.dart"
+      ],
+      "public_classes": [
+        "CouponManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            78,
+            80,
+            94,
+            96,
+            323,
+            325,
+            358,
+            363
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 6,
+        "TextButton": 4,
+        "TextField": 1,
+        "AlertDialog": 2,
+        "Checkbox": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/add_delivery_partner_dialog.dart",
+      "sha256": "3f7409a5028b3fabc0a8f6dab083d1e489b24e403b72e09b7422f1c4174a0cce",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:firebase_core/firebase_core.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "AddDeliveryPartnerDialog"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextFormField": 5,
+        "AlertDialog": 1,
+        "SnackBar": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/delivery_flags.dart",
+      "sha256": "601c85e302dbdedf90f1c0ff761c67d8056b909056ca7fe7bceda6bf5a6ffb3b",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "StepCheck",
+        "DeliveryFlagsCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/delivery_partner_management_screen.dart",
+      "sha256": "b9fe231c5d7641aa0ca98e15b33129914df4f1a6acfae612e365aac6abc75d61",
+      "imports": [
+        "dart:async",
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/app_router.dart",
+        "../../../app/themes/admin_colors.dart",
+        "add_delivery_partner_dialog.dart",
+        "rider_review_sheet.dart"
+      ],
+      "public_classes": [
+        "DeliveryPartnerManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "OutlinedButton": 1,
+        "TextButton": 1,
+        "TextField": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_admin.dart",
+      "sha256": "f8c9d9cfc73ed7007a4f9ed50575b91f7d3af426bd68ff6494d20bb90bddf5e9",
+      "imports": [],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart",
+      "sha256": "7621cb7083e14cd3d735475bf9df9f915faad1833f754569aaa684a44c9e5413",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:url_launcher/url_launcher.dart",
+        "delivery_problems_admin.dart",
+        "rider_incidents_admin.dart",
+        "../widgets/actor_support_cases_section.dart"
+      ],
+      "public_classes": [
+        "DeliveryProblemsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            116,
+            120,
+            123
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 3,
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/dispatch_queue.dart",
+      "sha256": "e16d7071df8ccf5c282e5630e637cc47faec0b50231985eda3704ec888fb8b49",
+      "imports": [
+        "dart:math",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_core/agrimore_core.dart"
+      ],
+      "public_classes": [
+        "DispatchEntry",
+        "OfferEvent",
+        "AssignableRider"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart",
+      "sha256": "e71e865f6b966b9698ac4da809079ae1f675024f42a8d950788c8e011646bf24",
+      "imports": [
+        "dart:async",
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../app/themes/admin_colors.dart",
+        "delivery_flags.dart",
+        "dispatch_queue.dart",
+        "order_assignment_screen.dart"
+      ],
+      "public_classes": [
+        "DispatchQueueScreen",
+        "DispatchDetailScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart",
+      "sha256": "5d193fa988c3eae6e5443818fd1cfd739fa8b4eecefd55f0f9a3fa34900b248b",
+      "imports": [
+        "dart:async",
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/themes/admin_colors.dart",
+        "dispatch_queue.dart"
+      ],
+      "public_classes": [
+        "OrderAssignmentScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DialogHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/dialog_helper.dart"
+          ],
+          "lines": [
+            468
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            478,
+            494,
+            505,
+            510
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {},
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_cash_ledger_screen.dart",
+      "sha256": "1d8c66cc45e248c2b19727ef7ad7b82b1cf718ded92e92346568aa49c8eadf7f",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "RiderCashLedgerScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Card": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart",
+      "sha256": "5240f3d90748cd0dda06f778ee71ef496835de8283b67db11f194d4ff8873849",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../orders/admin_order_details_screen.dart",
+        "../widgets/actor_support_cases_section.dart",
+        "../widgets/paginated_query_list.dart",
+        "rider_cash_ledger_screen.dart",
+        "rider_review_sheet.dart"
+      ],
+      "public_classes": [
+        "RiderDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            303,
+            308,
+            704,
+            710
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 1,
+        "TextButton": 5,
+        "TextField": 2,
+        "Card": 6,
+        "AlertDialog": 2,
+        "ListTile": 5
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_admin.dart",
+      "sha256": "8860d2f24a29a56eb6a360fa940696fc0a67c08664049dc56e35c25d92f8c61e",
+      "imports": [
+        "package:flutter/material.dart"
+      ],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart",
+      "sha256": "25187152f9cf243d30fc088ad9d83faea099c4d6b29be654bdd8116519e535f4",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:url_launcher/url_launcher.dart",
+        "rider_incidents_admin.dart",
+        "../widgets/actor_support_cases_section.dart"
+      ],
+      "public_classes": [
+        "RiderIncidentsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            130,
+            134,
+            137,
+            190,
+            194
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 3,
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_money_admin.dart",
+      "sha256": "20f0dad1d294c391fc50fbaef7c2a06622530d927751937e13f7a03afd28e795",
+      "imports": [
+        "dart:math"
+      ],
+      "public_classes": [
+        "RateField",
+        "DepositAttempts"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart",
+      "sha256": "7efe0467cddd7ae61bb19631605d183db6f7f3fbe9295afa22f7a0b15ada0677",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "rider_incidents_admin.dart",
+        "rider_money_admin.dart",
+        "rider_cash_ledger_screen.dart"
+      ],
+      "public_classes": [
+        "RiderPayoutsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            239,
+            248,
+            259,
+            264,
+            431,
+            447,
+            463,
+            469,
+            582,
+            590,
+            595,
+            729,
+            736,
+            741,
+            924,
+            931,
+            936,
+            1044,
+            1053,
+            1065,
+            1071
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 1,
+        "TextButton": 8,
+        "TextField": 7,
+        "Card": 5,
+        "AlertDialog": 5,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_review.dart",
+      "sha256": "fef04259c3620e5f03bfbe579e68f574a4e102a9753f75beb559682ee6fd0bea",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_core/agrimore_core.dart"
+      ],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart",
+      "sha256": "49a72d78745cc79aace1d1f76beb9f1e3d2be3dc12c56e8b4405c675c34f2c76",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:url_launcher/url_launcher.dart",
+        "../../../app/themes/admin_colors.dart",
+        "rider_review.dart"
+      ],
+      "public_classes": [
+        "RiderStatusBadge",
+        "RiderReviewSheet"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "DialogHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/dialog_helper.dart"
+          ],
+          "lines": [
+            83,
+            97
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            111,
+            127,
+            132,
+            143
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/delivery/rider_support_screen.dart",
+      "sha256": "555a7bba284a9185459f0c324fb8c902f4d7c0b57f3bd05c7cd18d4d90e6d5f8",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:url_launcher/url_launcher.dart",
+        "rider_incidents_admin.dart",
+        "../widgets/actor_support_cases_section.dart"
+      ],
+      "public_classes": [
+        "RiderSupportScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            162,
+            166,
+            169,
+            222,
+            226
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2,
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/add_employee_screen.dart",
+      "sha256": "9961524ebbfa249d2f4018ca4e8f2769fdd41360b906112886775169e5b5d590",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_functions/cloud_functions.dart"
+      ],
+      "public_classes": [
+        "AddEmployeeScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextFormField": 5,
+        "SnackBar": 2
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/associate_detail_screen.dart",
+      "sha256": "ce08a0fe55291763aa6b2613e7f985c0105ed9966e175182a04a2e988b01e1bf",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../orders/admin_order_details_screen.dart",
+        "../widgets/actor_support_cases_section.dart",
+        "../widgets/paginated_query_list.dart"
+      ],
+      "public_classes": [
+        "AssociateDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            618,
+            624
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 2,
+        "TextField": 1,
+        "Card": 4,
+        "AlertDialog": 1,
+        "ListTile": 4
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart",
+      "sha256": "cb045ce8bac2e2f088b1516a4affef1ad073908bd3a8754da0a29833ef4abab7",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "CommissionExceptionsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            55,
+            65,
+            70,
+            73
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 1,
+        "Card": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/employee_management_screen.dart",
+      "sha256": "fabb5d9024ef237a99bf9e69f47f0af642ff8d1842087fbba9b3cd7ff3258c60",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/app_router.dart"
+      ],
+      "public_classes": [
+        "EmployeeManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            31,
+            34,
+            57,
+            60,
+            108,
+            111
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2,
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart",
+      "sha256": "e78d6785244a5eead00648d8b918b8adf61b4f5b437f743ab2aeffe2186e2cab",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../sellers/seller_wallet_admin.dart"
+      ],
+      "public_classes": [
+        "EmployeePayoutAccountReviewScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            38,
+            42,
+            45
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 2,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart",
+      "sha256": "ffb617257c452bb1dff1a5ca436a9facddf3a607ead2951765addf3a9ff255e0",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "EmployeePayoutDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            50,
+            138,
+            152,
+            157,
+            160,
+            219,
+            235,
+            240,
+            243
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2,
+        "TextButton": 2,
+        "TextField": 2,
+        "AlertDialog": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart",
+      "sha256": "efbbac5bc3157839793f39a98dd780eb54fd2eded6940ec12b470d741a772743",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "employee_payout_detail_screen.dart"
+      ],
+      "public_classes": [
+        "EmployeePayoutsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            108,
+            113,
+            117
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextField": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_models.dart",
+      "sha256": "be544a8af86b99cf108b612ed0a8d09b49e420005b014239ab75b5a0c3dd77e5",
+      "imports": [
+        "package:cloud_functions/cloud_functions.dart"
+      ],
+      "public_classes": [
+        "FinanceFinding",
+        "ScanCoverageGroup",
+        "ScanCoverage",
+        "ScanPage",
+        "MalformedScanResponseException",
+        "FinanceReconciliationRepository",
+        "CallableFinanceReconciliationRepository"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/finance/finance_reconciliation_screen.dart",
+      "sha256": "bee6874e95a73dfe5a2b225c659498530dfd7eb293bb9e39dcf951ee18574c37",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../support/support_case_constants.dart",
+        "finance_reconciliation_models.dart"
+      ],
+      "public_classes": [
+        "FinanceReconciliationScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            162
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2,
+        "Card": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart",
+      "sha256": "e3a4d139e1220db6ab1fe8983e61d4d14a22d1f9da9bae77abea93ad5a74e065",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../sellers/seller_wallet_admin.dart",
+        "../support/support_case_constants.dart"
+      ],
+      "public_classes": [
+        "FinancialRecordDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            150,
+            154,
+            177
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 3,
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 4,
+        "AlertDialog": 1,
+        "ListTile": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/home_sections/add_edit_home_product_section_dialog.dart",
+      "sha256": "5f46721a1e9598c48d6a3c280e598c46ca5ab5e1525b95a67eee5e69ba267522",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "../../../providers/home_product_section_provider.dart"
+      ],
+      "public_classes": [
+        "AddEditHomeProductSectionDialog"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            54,
+            59,
+            90,
+            93
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 1,
+        "TextButton": 1,
+        "TextField": 2,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/home_sections/home_product_section_management_screen.dart",
+      "sha256": "ebaeb98653ea52e26355743a7cf0752169d4d73571e5c35fb7c5bf3ad99737b2",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "../../../providers/home_product_section_provider.dart",
+        "add_edit_home_product_section_dialog.dart"
+      ],
+      "public_classes": [
+        "HomeProductSectionManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            64,
+            66
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 3,
+        "Card": 1,
+        "AlertDialog": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/notifications/send_notification_screen.dart",
+      "sha256": "35d7662b85013d67d81b84183ca44c4ff25b2d6956f58776ca71792aa0a379b5",
+      "imports": [
+        "dart:io",
+        "package:flutter/material.dart",
+        "package:flutter/foundation.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:image_picker/image_picker.dart",
+        "package:intl/intl.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "SendNotificationScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            81,
+            201,
+            228,
+            233,
+            321,
+            380,
+            388
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "TextButton": 1,
+        "TextFormField": 3,
+        "Card": 1,
+        "AlertDialog": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/admin_order_details_screen.dart",
+      "sha256": "f1c85a5fcadea0e5938c470994b3647ccbda7687a9cef7be0cca14be48f1f40b",
+      "imports": [
+        "dart:io",
+        "dart:typed_data",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "package:go_router/go_router.dart",
+        "package:intl/intl.dart",
+        "package:timeline_tile/timeline_tile.dart",
+        "package:url_launcher/url_launcher.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:font_awesome_flutter/font_awesome_flutter.dart",
+        "package:pdf/widgets.dart",
+        "package:pdf/pdf.dart",
+        "package:printing/printing.dart",
+        "package:path_provider/path_provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/themes/admin_colors.dart",
+        "../../../app/app_router.dart",
+        "../../../providers/order_provider.dart",
+        "../delivery/delivery_flags.dart",
+        "../delivery/order_assignment_screen.dart",
+        "../widgets/actor_support_cases_section.dart",
+        "widgets/order_status_updater.dart"
+      ],
+      "public_classes": [
+        "AdminOrderDetailsScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "OutlinedButton": 2,
+        "SnackBar": 3
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/order_management_screen.dart",
+      "sha256": "da0d7254eeb0322e97279c3acd9b4c41a040a9f4221f12071fc8deaadecb0826",
+      "imports": [
+        "dart:convert",
+        "dart:io",
+        "package:flutter/material.dart",
+        "package:flutter/foundation.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:intl/intl.dart",
+        "package:path_provider/path_provider.dart",
+        "package:share_plus/share_plus.dart",
+        "../../../app/themes/admin_colors.dart",
+        "../../../providers/order_provider.dart",
+        "web_download_stub.dart",
+        "admin_order_details_screen.dart",
+        "widgets/admin_order_card.dart",
+        "widgets/order_reason_dialog.dart"
+      ],
+      "public_classes": [],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            160,
+            162,
+            164,
+            203,
+            205,
+            207,
+            216,
+            228,
+            248,
+            250,
+            254
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/web_download_impl.dart",
+      "sha256": "08842048194ea7805a31332f41607c0761c5f5ce6b7bf8663057f8c70e85a9ab",
+      "imports": [
+        "dart:html"
+      ],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/web_download_stub.dart",
+      "sha256": "e3f91552c473b361c71bbee1c058a9aabc14faeca7ee4fe531d3f3d7387c3b82",
+      "imports": [],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/widgets/admin_order_card.dart",
+      "sha256": "0ca947a461b2b9b1baf2a9c9739988c1ee1aeb5812fa555eba1f075b66f580d3",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:intl/intl.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "AdminOrderCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/widgets/order_reason_dialog.dart",
+      "sha256": "89d91256a59572b53d60ec0aff40280e947af42a168fb5207fdc0749b079f1c4",
+      "imports": [
+        "package:flutter/material.dart"
+      ],
+      "public_classes": [],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 1,
+        "TextField": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/orders/widgets/order_status_updater.dart",
+      "sha256": "4de128f302e28c95300c09d8cad103f9a112e96b81af1d87ef86bf2d1d8488aa",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../../app/themes/admin_colors.dart",
+        "../../../../providers/order_provider.dart",
+        "order_reason_dialog.dart"
+      ],
+      "public_classes": [
+        "OrderStatusUpdater"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextField": 1,
+        "SnackBar": 3
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/category_management_screen.dart",
+      "sha256": "4ea972ee7f3f9ea0b9f169fad2fed4e999b48074edd83cb6e38ff8fe39e339de",
+      "imports": [
+        "dart:io",
+        "dart:typed_data",
+        "package:flutter/material.dart",
+        "package:flutter/foundation.dart",
+        "package:provider/provider.dart",
+        "package:file_picker/file_picker.dart",
+        "package:cached_network_image/cached_network_image.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/admin_provider.dart",
+        "../../../providers/theme_provider.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "CategoryManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            1565,
+            1579
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 6,
+        "TextButton": 5,
+        "TextFormField": 3,
+        "AlertDialog": 1,
+        "SnackBar": 5,
+        "Switch": 3
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/product_form_screen.dart",
+      "sha256": "f996f667b1b5258cc7a9b9d0e4bd646bd4f7ec4a8f9b75c11beb595676d5a159",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "../../../providers/category_provider.dart",
+        "../../../app/app_router.dart",
+        "../../../app/themes/admin_colors.dart",
+        "widgets/image_uploader.dart",
+        "widgets/product_form.dart",
+        "widgets/stock_manager.dart",
+        "widgets/specification_form.dart",
+        "widgets/variant_form.dart",
+        "widgets/delivery_info_form.dart"
+      ],
+      "public_classes": [
+        "ProductFormScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            130,
+            203,
+            210,
+            230,
+            237,
+            314,
+            380,
+            386
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "OutlinedButton": 2,
+        "TextButton": 1,
+        "AlertDialog": 1,
+        "SnackBar": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/product_management_screen.dart",
+      "sha256": "bdc91c4ea4d895f6beaf7b31fffd3badc16c196b128b6494b1c8c2f607d7e40e",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:go_router/go_router.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "../../../app/app_router.dart",
+        "../../../app/themes/admin_colors.dart",
+        "category_management_screen.dart",
+        "widgets/admin_product_card.dart"
+      ],
+      "public_classes": [
+        "ProductManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            116,
+            118,
+            823,
+            825
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 6,
+        "TextButton": 4,
+        "TextField": 1,
+        "AlertDialog": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/seller_product_approval_screen.dart",
+      "sha256": "42b3e31380f60918c6df0a1863a9c8940ee87251bb88a1bfe2946b3a93bacad3",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:intl/intl.dart"
+      ],
+      "public_classes": [
+        "SellerProductApprovalScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            22,
+            26
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "Card": 1,
+        "Switch": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/admin_product_card.dart",
+      "sha256": "85741245be1143c5ff96e6167be2655b95d3ca91f96fe12f945e7c859d4b34c2",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../../providers/theme_provider.dart"
+      ],
+      "public_classes": [
+        "AdminProductCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Card": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/delivery_info_form.dart",
+      "sha256": "bb812734581da54d398d4f3403dbe799331b89f05eda9385d1fc026c32662ea4",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "../../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "DeliveryInfoForm"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextFormField": 1,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/image_uploader.dart",
+      "sha256": "5ef8f1876bba644959066d4ef80e56ab97739f2b2ddc26c3913abcb921353259",
+      "imports": [
+        "dart:io",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:image_picker/image_picker.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:uuid/uuid.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "ImageUploader"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            44,
+            95,
+            99,
+            166,
+            174,
+            201
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextFormField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/product_form.dart",
+      "sha256": "371b7a3d7ac3fefbf1d2f4d15877a79903511dcb32024a3b3bd3bd28866d403e",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../../providers/category_provider.dart",
+        "../../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "ProductForm"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextFormField": 1,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/specification_form.dart",
+      "sha256": "c27182e3c0870aecb927d026f94456658501b9c633caf959469bf8266f7b863c",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "../../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "SpecificationForm"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextFormField": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/stock_manager.dart",
+      "sha256": "69296012f778a0b1af72122a91cbe375b494f9c9a360f5c5ba4a1a1bfaf335f6",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "../../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "StockManager"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextFormField": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/products/widgets/variant_form.dart",
+      "sha256": "df7057793433028bf462411c347cae1948a25e1932f9958fc3d0bbe0d7ad3ddd",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:uuid/uuid.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../../app/themes/admin_colors.dart",
+        "image_uploader.dart"
+      ],
+      "public_classes": [
+        "VariantForm"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "TextFormField": 3
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/reviews/review_management_screen.dart",
+      "sha256": "51661da9fb36ad4f1d88f43e209e7b95021ba73c549bc841170df4a01471109a",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "ReviewManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/rewards/rewards_management_screen.dart",
+      "sha256": "e81723d32be69b447511221eec131ee8baef666369afea944e016b080fddec1e",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "RewardsManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "SnackBar": 2,
+        "ListTile": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/section_banners/add_edit_section_banner_dialog.dart",
+      "sha256": "960ebab58a22529cba5be882a4346a15746a3b56498ed21196c0d51ae9852c52",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:image_picker/image_picker.dart",
+        "package:cached_network_image/cached_network_image.dart",
+        "../../../providers/section_banner_provider.dart"
+      ],
+      "public_classes": [
+        "AddEditSectionBannerDialog"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            82,
+            90,
+            121,
+            135,
+            141
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 1,
+        "TextFormField": 5
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/section_banners/section_banner_management_screen.dart",
+      "sha256": "6b8746ee5efa710b60b5820282e8e189b55abca41971ad8927735fed99f622e4",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:cached_network_image/cached_network_image.dart",
+        "../../../providers/section_banner_provider.dart",
+        "add_edit_section_banner_dialog.dart"
+      ],
+      "public_classes": [
+        "SectionBannerManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            227,
+            231
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 3,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/security/payment_security_logs_screen.dart",
+      "sha256": "a8485181e9c4068a6c8a861316826c58fd78e59ee20b71e1427b7165fb17a91c",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "PaymentSecurityLogsScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Card": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/security/verified_payment_lookup_screen.dart",
+      "sha256": "803d7fb216690748228fd6a960e05001d5f8b70efcaac5816a5c6992b2e16af0",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "VerifiedPaymentLookupScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextField": 1,
+        "Card": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/add_seller_screen.dart",
+      "sha256": "33ad069e295a8504a7d021e190f6c5cac76254792095d4e1ae2dbe70d901c849",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_functions/cloud_functions.dart"
+      ],
+      "public_classes": [
+        "AddSellerScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextFormField": 6,
+        "SnackBar": 2
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/edit_seller_screen.dart",
+      "sha256": "80a925ac5bc08012f5cb0496a33ce4a7574b07117672b75530eaec2fa078e47a",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../products/widgets/image_uploader.dart"
+      ],
+      "public_classes": [
+        "EditSellerScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            70,
+            76
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextFormField": 3,
+        "Card": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/manage_sellers_screen.dart",
+      "sha256": "93b774c4df17951e36c6ffe6688b5ed3d5e91d348a11ca4ab88ed00b38e5e878",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/app_router.dart"
+      ],
+      "public_classes": [
+        "ManageSellersScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Card": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart",
+      "sha256": "412b417a70296523a062309ba07de6542350399a0378846c3c4057c0ddcc822a",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../orders/admin_order_details_screen.dart",
+        "../products/product_form_screen.dart",
+        "../widgets/actor_support_cases_section.dart",
+        "../widgets/paginated_query_list.dart",
+        "edit_seller_screen.dart"
+      ],
+      "public_classes": [
+        "SellerDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            604,
+            609,
+            612
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 2,
+        "TextField": 1,
+        "Card": 3,
+        "AlertDialog": 1,
+        "ListTile": 4
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart",
+      "sha256": "3f01163d3bb449a19912308df650d83a861d5fe3612637627f05c61c5e827758",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../delivery/rider_incidents_admin.dart",
+        "seller_wallet_admin.dart"
+      ],
+      "public_classes": [
+        "SellerPayoutsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            93,
+            106,
+            110
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextField": 1,
+        "Card": 1,
+        "AlertDialog": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/seller_requests_management_screen.dart",
+      "sha256": "8175d23c22357be6f8c6c581fb6f88b0118505fe060b2e593a9a87f52b5c3270",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:url_launcher/url_launcher.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "SellerRequestsManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            93,
+            97,
+            117,
+            119,
+            260
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 1,
+        "TextButton": 1,
+        "Card": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart",
+      "sha256": "e0d119857d91f3b8720bd9d0d7df1d6c90743cd003cbf7b5e4ed7bd09d3f8ee4",
+      "imports": [
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "../delivery/rider_money_admin.dart"
+      ],
+      "public_classes": [
+        "SellerPayoutDestinationResolution",
+        "SellerWithdrawalsTab",
+        "SellerPayoutChangesTab"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            154,
+            158,
+            161,
+            254,
+            296
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 4,
+        "TextField": 2,
+        "Card": 2,
+        "AlertDialog": 2
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/admin_settings_screen.dart",
+      "sha256": "76a35b2fa06941e50a94d8c2e9479c8b5a09e0be8dd831e85be13707ab4532e4",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:go_router/go_router.dart",
+        "../../../providers/auth_provider.dart",
+        "../../../app/app_router.dart",
+        "wallet_config_screen.dart",
+        "location_settings_screen.dart",
+        "../home_sections/home_product_section_management_screen.dart",
+        "home_grocery_strip_settings_screen.dart",
+        "home_section_order_settings_screen.dart",
+        "../security/payment_security_logs_screen.dart",
+        "../security/verified_payment_lookup_screen.dart"
+      ],
+      "public_classes": [
+        "AdminSettingsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "ErrorView",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/common/error_view.dart"
+          ],
+          "lines": [
+            1237
+          ],
+          "ambiguous_definition": false
+        },
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            186,
+            758,
+            764,
+            801,
+            857,
+            861,
+            885,
+            894,
+            1106,
+            1112,
+            1118,
+            1190,
+            1210,
+            1213
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 11,
+        "OutlinedButton": 2,
+        "TextButton": 11,
+        "TextField": 4,
+        "AlertDialog": 11,
+        "ListTile": 15,
+        "Switch": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/delivery_time_slots_management_screen.dart",
+      "sha256": "aadbc66d633262f11fb106b506dc79776fb53bf24814c44aadfaf0094f2613fe",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_services/agrimore_services.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "DeliveryTimeSlotsManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            43,
+            45
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextField": 4,
+        "Card": 1,
+        "AlertDialog": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/home_grocery_strip_settings_screen.dart",
+      "sha256": "32f8fb935fc0b7ac01448ee2fc410357c9afb4b2a7a00d87ce3994bcf6636167",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/category_provider.dart"
+      ],
+      "public_classes": [
+        "HomeGroceryStripSettingsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            60,
+            80,
+            85
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextField": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/home_section_order_settings_screen.dart",
+      "sha256": "80a2b743d9c31cb9abb3feecc0c5268224f94dc26f6cc8b1d93358c9c3d13310",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "HomeSectionOrderSettingsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            104,
+            124,
+            128
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/location_settings_screen.dart",
+      "sha256": "9357916f474d695f877672f4f1f08b50bde8077c40bf0ea80f3298785c6975a5",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "LocationSettingsScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            79,
+            105,
+            109
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "TextField": 5,
+        "Card": 3,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/settings/wallet_config_screen.dart",
+      "sha256": "cfe9494b2c5e74a3750b4e4be3547d563fbc1a1b6aa4dbc5fe2513c00649e24a",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:provider/provider.dart",
+        "../../../providers/wallet_config_provider.dart",
+        "../../../providers/theme_provider.dart"
+      ],
+      "public_classes": [
+        "WalletConfigScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 6,
+        "TextButton": 2,
+        "TextFormField": 1,
+        "TextField": 4,
+        "AlertDialog": 2,
+        "SnackBar": 1,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sponsored_banners/add_edit_sponsored_banner_dialog.dart",
+      "sha256": "be2e987b3d685493680d26727e7e830f7e1b17e5cc1f971629bb9a5f1232f99d",
+      "imports": [
+        "dart:io",
+        "dart:typed_data",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:image_picker/image_picker.dart",
+        "package:provider/provider.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/sponsored_banner_provider.dart",
+        "../../../providers/product_provider.dart"
+      ],
+      "public_classes": [
+        "AddEditSponsoredBannerDialog"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextFormField": 2,
+        "SnackBar": 2
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_card.dart",
+      "sha256": "473295e67a4aaf4d8cc1355d330be9d8c522c1c96548617109bd42bbef2ef041",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "SponsoredBannerCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_management_screen.dart",
+      "sha256": "c7f328f681a61d27acd895ee975e9b0276d2499a461c5c5ab2374e0cc582db2d",
+      "imports": [
+        "dart:async",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/sponsored_banner_provider.dart",
+        "sponsored_banner_card.dart",
+        "add_edit_sponsored_banner_dialog.dart"
+      ],
+      "public_classes": [
+        "SponsoredBannerManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            89,
+            93,
+            105,
+            108,
+            171,
+            174
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 6,
+        "TextField": 1,
+        "AlertDialog": 2,
+        "Checkbox": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/subscriptions/subscription_management_screen.dart",
+      "sha256": "e4bb061960e7f8196325b65db1db0e371158d6bc71fd9bae2671c538693c31c0",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "SubscriptionManagementScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "TextButton": 1,
+        "TextField": 4,
+        "AlertDialog": 1,
+        "SnackBar": 2,
+        "Switch": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/support/support_case_constants.dart",
+      "sha256": "0caca6a4b5befd49f43662b0b87b3cf4acd1e83ab9a47a0b7ca5c4671806282c",
+      "imports": [
+        "package:uuid/uuid.dart"
+      ],
+      "public_classes": [
+        "SupportRequestIdTracker"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+      "sha256": "05bf21a3fc775c4872775f916c6f4bf85417edde6e0ccb584370ce403113db48",
+      "imports": [
+        "dart:io",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:file_picker/file_picker.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:firebase_storage/firebase_storage.dart",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:http/http.dart",
+        "package:path_provider/path_provider.dart",
+        "package:share_plus/share_plus.dart",
+        "package:uuid/uuid.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../orders/web_download_stub.dart",
+        "../widgets/paginated_query_list.dart",
+        "support_case_constants.dart"
+      ],
+      "public_classes": [
+        "SupportCaseDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            87,
+            92,
+            95,
+            977,
+            1046,
+            1158,
+            1165,
+            1174,
+            1179,
+            1208
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 5,
+        "TextButton": 10,
+        "TextField": 4,
+        "Card": 4,
+        "AlertDialog": 6,
+        "ListTile": 5
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/support/support_queue_screen.dart",
+      "sha256": "aae267edc223939e0e13e97e1f4c3a773e77c44b48038b780bcbc4358c6902dd",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:firebase_auth/firebase_auth.dart",
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../widgets/paginated_query_list.dart",
+        "support_case_constants.dart"
+      ],
+      "public_classes": [
+        "SupportQueueScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            67
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 1,
+        "TextField": 2,
+        "Card": 1,
+        "AlertDialog": 1,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/users/customer_detail_screen.dart",
+      "sha256": "9fa728aa3c10864882738b87c3800423ff27271a48059694b70222a5af8b0a3d",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "../orders/admin_order_details_screen.dart",
+        "../widgets/actor_support_cases_section.dart",
+        "../widgets/paginated_query_list.dart",
+        "edit_user_screen.dart"
+      ],
+      "public_classes": [
+        "CustomerDetailScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            76,
+            83
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "OutlinedButton": 1,
+        "Card": 3,
+        "ListTile": 5
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/users/edit_user_screen.dart",
+      "sha256": "11a6f29d75a262fdce9b5320d49c0b05d4d22508ad231d6962308c02c63c7157",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../providers/admin_provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "EditUserScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            119,
+            125
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 4,
+        "TextButton": 1,
+        "TextFormField": 3,
+        "AlertDialog": 1,
+        "Switch": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/users/user_management_screen.dart",
+      "sha256": "dc8ae07fc65fd402be2195d68f23d60320743aa40b21992c0063f39e1764beb9",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../../../app/app_router.dart",
+        "../../../providers/admin_provider.dart",
+        "edit_user_screen.dart",
+        "widgets/user_card.dart"
+      ],
+      "public_classes": [
+        "UserManagementScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            66,
+            68,
+            98,
+            100,
+            377
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "TextButton": 3,
+        "TextField": 1,
+        "AlertDialog": 1,
+        "Checkbox": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/users/widgets/role_badge.dart",
+      "sha256": "ab08225f5964f86a7a4e6b3f189dbe5a087bb6a6a4085ff886824cea70aca3b8",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "RoleBadge"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/users/widgets/user_card.dart",
+      "sha256": "3a3bfebcfb53bd8a945f0de91adcd592719a184e542e8dfb30aa04ff06e575ae",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "role_badge.dart"
+      ],
+      "public_classes": [
+        "UserCard"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "OutlinedButton": 2,
+        "Card": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/vendors/vendors_list_screen.dart",
+      "sha256": "a1002b5d8ab4b9975bcf1402cc0538746c631d5d89750c70d15b73255f252a68",
+      "imports": [
+        "package:flutter/material.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "../../../providers/vendor_provider.dart",
+        "../../../app/themes/admin_colors.dart"
+      ],
+      "public_classes": [
+        "VendorsListScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "TextButton": 2,
+        "TextField": 3,
+        "Card": 1,
+        "AlertDialog": 2,
+        "ListTile": 1
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/wallet/wallet_tracking_screen.dart",
+      "sha256": "54ff778a282e136e9a09c9df734fb01bf183c588a4a7d684f4125af16c74a5db",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart",
+        "package:agrimore_core/agrimore_core.dart",
+        "package:agrimore_ui/agrimore_ui.dart"
+      ],
+      "public_classes": [
+        "WalletTrackingScreen"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {},
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart",
+      "sha256": "d677f0c84d9cf2dc9dd474714e9b2698655b39f061adf669a9517b19e180bf17",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:cloud_functions/cloud_functions.dart",
+        "package:flutter/material.dart",
+        "package:go_router/go_router.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "../support/support_case_constants.dart",
+        "paginated_query_list.dart"
+      ],
+      "public_classes": [
+        "ActorSupportCasesSection",
+        "OrderLinkedSupportCasesSection"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            58,
+            166,
+            458,
+            466,
+            469
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "OutlinedButton": 2,
+        "TextButton": 3,
+        "TextField": 3,
+        "Card": 1,
+        "AlertDialog": 3,
+        "ListTile": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/admin/widgets/paginated_query_list.dart",
+      "sha256": "546be3b96b27f9473212f901078a1412a17267a062b7547e935124812c48376b",
+      "imports": [
+        "package:cloud_firestore/cloud_firestore.dart",
+        "package:flutter/material.dart"
+      ],
+      "public_classes": [
+        "SectionMessage",
+        "PaginatedQueryList"
+      ],
+      "candidate_components": [],
+      "inline_material_candidates": {
+        "OutlinedButton": 2
+      },
+      "mapping_status": "MANUAL_MAPPING_NEEDED",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    },
+    {
+      "app": "admin",
+      "path": "apps/admin/lib/screens/auth/auth_screen.dart",
+      "sha256": "0be93d2e821f9dadd2ab79a6d95271064461370c3bcdc2b9622ec6f1a44c1303",
+      "imports": [
+        "dart:async",
+        "dart:ui",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:shared_preferences/shared_preferences.dart",
+        "package:provider/provider.dart",
+        "package:agrimore_ui/agrimore_ui.dart",
+        "package:go_router/go_router.dart",
+        "../../app/app_router.dart",
+        "../../providers/auth_provider.dart",
+        "package:agrimore_core/agrimore_core.dart"
+      ],
+      "public_classes": [
+        "AuthScreen"
+      ],
+      "candidate_components": [
+        {
+          "symbol": "SnackbarHelper",
+          "candidate_definition_files": [
+            "packages/agrimore_ui/lib/widgets/snackbar_helper.dart"
+          ],
+          "lines": [
+            299
+          ],
+          "ambiguous_definition": false
+        }
+      ],
+      "inline_material_candidates": {
+        "ElevatedButton": 2,
+        "OutlinedButton": 2,
+        "TextFormField": 1,
+        "Checkbox": 1
+      },
+      "mapping_status": "CANDIDATE_SOURCE_USE",
+      "render_review": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED"
+    }
+  ],
+  "manual_source_traces": [
+    {
+      "app": "admin",
+      "screen": "Support case",
+      "component": "SnackbarHelper",
+      "caller": "apps/admin/lib/screens/admin/support/support_case_detail_screen.dart",
+      "line": 92,
+      "definition": "packages/agrimore_ui/lib/widgets/snackbar_helper.dart",
+      "dependency": "package:agrimore_ui/agrimore_ui.dart barrel",
+      "state_scope": "FirebaseFunctionsException catch feedback. Helper use is not whole-screen adoption or copy sanitization.",
+      "source_status": "SOURCE_TRACED",
+      "render_review": "NOT_RUN",
+      "interaction_tests": "NOT_RUN",
+      "adoption_status": "NOT_VERIFIED",
+      "caller_sha256": "05bf21a3fc775c4872775f916c6f4bf85417edde6e0ccb584370ce403113db48",
+      "definition_sha256": "92f20468f3e099393e7153f809bc97b92ee79dd7c155acc2dc81369a29108ec5"
+    }
+  ],
+  "source_mapping_method": "Textual source inventory with lightweight comment/string screening; not Dart AST, resolved imports, route coverage, distinct screen counts, adoption percentages or rendered verification. Five separately reviewed call-site traces are SOURCE_TRACED only.",
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster catalogue proposals; static source candidates and manually traced uses are not rendered verification, screen adoption, tested interaction or pixel-exact token certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-component-catalogue-adoption-governance-light.png",
+      "sha256": "7cdaba569ac1d97f85280a3302c0856be4065b9e4afed9f640312d530b9b9e7f",
+      "bytes": 1452421,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b85fbb79-8667-4c1c-8ccb-a0faa988119e.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "d0ba628a7904e24f8f81ad91083397aa74adbd4ceeb3cf2a3a5edecf1ecefffc",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-be05aa47-501a-4892-8a65-c866cb4d1143.png",
+          "source_output_sha256": "72acd1c2e668cf1690c530e2148b7359a079af5de471ef6cae54153e8efc7ee4"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "c50b19577a3edd23fe81edede6cc30fab96b92d60de6200caba95959b05d6e4f",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-be05aa47-501a-4892-8a65-c866cb4d1143.png",
+              "sha256": "72acd1c2e668cf1690c530e2148b7359a079af5de471ef6cae54153e8efc7ee4",
+              "reference_kind": "Generated C28 composition reference outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b85fbb79-8667-4c1c-8ccb-a0faa988119e.png",
+          "source_output_sha256": "7cdaba569ac1d97f85280a3302c0856be4065b9e4afed9f640312d530b9b9e7f"
+        }
+      ],
+      "review": "Visually reviewed for C01 app identity and inverse primary content, documented target variants, independent state examples, domain composition, source-use/render-pending distinction, readable full labels, no invented source paths/code/tokens/checkmark certification, no actual operational records/outcomes and no sidebar. Raster tokens approximate; not rendered Flutter adoption verification."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-component-catalogue-adoption-governance-dark.png",
+      "sha256": "bd628441c8eb9679363dd7a13a8d378e1482198fcb93ac25fdb94a642620cf8c",
+      "bytes": 1617816,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b103425c-c85f-4878-85a7-b17850f95eb7.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "38ac6cd7a6720353574594244997c0c5f296353e7b6a972b225e80364c7c0a6f",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b85fbb79-8667-4c1c-8ccb-a0faa988119e.png",
+              "sha256": "7cdaba569ac1d97f85280a3302c0856be4065b9e4afed9f640312d530b9b9e7f",
+              "reference_kind": "Generated C28 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-b103425c-c85f-4878-85a7-b17850f95eb7.png",
+          "source_output_sha256": "bd628441c8eb9679363dd7a13a8d378e1482198fcb93ac25fdb94a642620cf8c"
+        }
+      ],
+      "review": "Visually reviewed for C01 app identity and inverse primary content, documented target variants, independent state examples, domain composition, source-use/render-pending distinction, readable full labels, no invented source paths/code/tokens/checkmark certification, no actual operational records/outcomes and no sidebar. Raster tokens approximate; not rendered Flutter adoption verification."
+    }
+  ],
+  "prompts_file_sha256": "c21d98046ed936e16067dc93d436f37b2b3ef64611beb177957f0d620e2197e7"
+}

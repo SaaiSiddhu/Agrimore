@@ -1,0 +1,644 @@
+App,Inventory ID,Category,Area,Screen or view,Class,Source,Line,Purpose,Route paths,Source caller count
+Marketplace,MKP-002,Screen,auth,Complete Profile,CompleteProfileScreen,apps/marketplace/lib/screens/auth/complete_profile_screen.dart,23,Complete the required customer profile after authentication.,/complete-profile,2
+Marketplace,MKP-003,Screen,auth,Enable Notifications,EnableNotificationsScreen,apps/marketplace/lib/screens/auth/enable_notifications_screen.dart,15,Notification-permission onboarding.,,1
+Marketplace,MKP-004,Screen,auth,Sign in and OTP verification,LoginScreen,apps/marketplace/lib/screens/auth/login_screen.dart,74,"Phone entry and OTP states in one sign-in screen, with Google entry.",/login; /complete-profile; /forgot-password,8
+Marketplace,MKP-005,Screen,auth,Mobile Number,MobileNumberScreen,apps/marketplace/lib/screens/auth/mobile_number_screen.dart,15,Collect a mobile number during onboarding.,/mobile-number,1
+Marketplace,MKP-006,Screen,auth,Onboarding Address,OnboardingAddressScreen,apps/marketplace/lib/screens/auth/onboarding_address_screen.dart,17,Onboarding address and profile/checkout add or edit address modes.,/onboarding-address; /profile/add-address; /profile/edit-address; /checkout/add-address,4
+Marketplace,MKP-007,Screen,auth,Signup,SignupScreen,apps/marketplace/lib/screens/auth/signup_screen.dart,13,Customer registration form.,/signup,1
+Marketplace,MKP-008,Screen,business,Business Feed,BusinessFeedScreen,apps/marketplace/lib/screens/business/business_feed_screen.dart,10,Following feed for business posts.,/business-feed,1
+Marketplace,MKP-009,Screen,business,Business Profile,BusinessProfileScreen,apps/marketplace/lib/screens/business/business_profile_screen.dart,25,Seller public storefront and profile.,/business/:id,1
+Marketplace,MKP-010,Screen,chat,AI Chat,AIChatScreen,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,12,AI conversation and support entry.,/support,1
+Marketplace,MKP-011,Screen,chat,Chat History,ChatHistoryScreen,apps/marketplace/lib/screens/chat/chat_history_screen.dart,6,Saved AI conversation history.,/chat-history,2
+Marketplace,MKP-012,Screen,employee,Sales Associate application entry,EmployeeApplyScreen,apps/marketplace/lib/screens/employee/employee_apply_screen.dart,6,Presentation for sales associate application entry.,/employee/apply,1
+Marketplace,MKP-013,Screen,employee / onboarding,Sales Associate registration,AssociateOnboardingScreen,apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart,44,Presentation for sales associate registration.,/employee/onboarding; /employee/onboarding?handoff=…,2
+Marketplace,MKP-014,Screen,landing,Landing,LandingScreen,apps/marketplace/lib/screens/landing/landing_screen.dart,9,Public marketing and sign-in landing view.,/landing,2
+Marketplace,MKP-015,Screen,legal,Privacy Policy,PrivacyPolicyScreen,apps/marketplace/lib/screens/legal/privacy_policy_screen.dart,8,Privacy document.,/privacy-policy,1
+Marketplace,MKP-016,Screen,legal,Terms,TermsScreen,apps/marketplace/lib/screens/legal/terms_screen.dart,8,Terms and conditions document.,/terms,1
+Marketplace,MKP-017,Screen,,Not Found,NotFoundScreen,apps/marketplace/lib/screens/not_found_screen.dart,15,Unknown route or invalid route-argument fallback.,,2
+Marketplace,MKP-018,Screen,onboarding,Onboarding,OnboardingScreen,apps/marketplace/lib/screens/onboarding/onboarding_screen.dart,7,Introductory onboarding slides.,/onboarding,1
+Marketplace,MKP-019,Screen,seller,Open the Seller app,SellerHandoffScreen,apps/marketplace/lib/screens/seller/seller_handoff_screen.dart,14,Presentation for open the seller app.,/seller/apply; /seller/panel; /seller/dashboard,1
+Marketplace,MKP-020,Screen,splash,Splash,SplashScreen,apps/marketplace/lib/screens/splash/splash_screen.dart,7,Standalone splash implementation retained in source.,,0
+Marketplace,MKP-021,Screen,user / cart,Blinkit Coupon,BlinkitCouponScreen,apps/marketplace/lib/screens/user/cart/blinkit_coupon_screen.dart,11,Alternative coupon interface.,,1
+Marketplace,MKP-022,Screen,user / cart,Cart,CartScreen,apps/marketplace/lib/screens/user/cart/cart_screen.dart,6,Presentation for cart.,,2
+Marketplace,MKP-023,Screen,user / cart,Coupon Selection,CouponSelectionScreen,apps/marketplace/lib/screens/user/cart/coupon_selection_screen.dart,13,Coupon selection for checkout.,/cart/coupons,2
+Marketplace,MKP-024,Platform variant,user / cart,Mobile Cart,MobileCartScreen,apps/marketplace/lib/screens/user/cart/mobile_cart_screen.dart,63,Presentation for mobile cart.,,1
+Marketplace,MKP-025,Platform variant,user / cart,Web Cart,WebCartScreen,apps/marketplace/lib/screens/user/cart/web_cart_screen.dart,15,Presentation for web cart.,,1
+Marketplace,MKP-026,Screen,user / categories,Categories,CategoriesScreen,apps/marketplace/lib/screens/user/categories/categories_screen.dart,21,Presentation for categories.,,1
+Marketplace,MKP-027,Screen,user / checkout,Add Address,AddAddressScreen,apps/marketplace/lib/screens/user/checkout/add_address_screen.dart,20,Separate address-entry form retained alongside OnboardingAddressScreen.,,1
+Marketplace,MKP-028,Screen,user / checkout,Checkout,CheckoutScreen,apps/marketplace/lib/screens/user/checkout/checkout_screen.dart,18,Checkout address and order-review composition.,/checkout,1
+Marketplace,MKP-029,Screen,user / checkout,Order Success,OrderSuccessScreen,apps/marketplace/lib/screens/user/checkout/order_success_screen.dart,14,Order result presentation requiring order data.,/order-success,5
+Marketplace,MKP-030,Screen,user / checkout,Payment Method,PaymentMethodScreen,apps/marketplace/lib/screens/user/checkout/payment_method_screen.dart,27,"Payment choice, delivery slot, totals and associate-code composition.",/checkout/payment,1
+Marketplace,MKP-031,Screen,user / flash_sale,Flash Sale,FlashSaleScreen,apps/marketplace/lib/screens/user/flash_sale/flash_sale_screen.dart,6,Flash-sale discovery.,/flash-sale,1
+Marketplace,MKP-032,Screen,user / help,Help,HelpScreen,apps/marketplace/lib/screens/user/help/help_screen.dart,10,"Help, FAQ and support presentation for this app.",,1
+Marketplace,MKP-033,Screen,user / home,Home,HomeScreen,apps/marketplace/lib/screens/user/home/home_screen.dart,6,Presentation for home.,,1
+Marketplace,MKP-034,Platform variant,user / home,Mobile Home,MobileHomeScreen,apps/marketplace/lib/screens/user/home/mobile_home_screen.dart,32,Presentation for mobile home.,,1
+Marketplace,MKP-035,Screen,user / home / search,Search Results,SearchResultsScreen,apps/marketplace/lib/screens/user/home/search/search_results_screen.dart,12,Presentation for search results.,/search/results; /search?q=…,2
+Marketplace,MKP-036,Screen,user / home / search,Search — routed search flow,SearchScreen,apps/marketplace/lib/screens/user/home/search/search_screen.dart,13,Presentation for search — routed search flow.,/search,1
+Marketplace,MKP-037,Platform variant,user / home,Web Home,WebHomeScreen,apps/marketplace/lib/screens/user/home/web_home_screen.dart,30,Presentation for web home.,,2
+Marketplace,MKP-038,Screen,user / notifications,Notifications,NotificationsScreen,apps/marketplace/lib/screens/user/notifications/notifications_screen.dart,5,Presentation for notifications.,/notifications,1
+Marketplace,MKP-039,Screen,user / offers,Offers,OffersScreen,apps/marketplace/lib/screens/user/offers/offers_screen.dart,21,Offer discovery.,/offers,1
+Marketplace,MKP-040,Screen,user / orders,Live Tracking,LiveTrackingScreen,apps/marketplace/lib/screens/user/orders/live_tracking_screen.dart,36,Live rider/order map tracking.,,2
+Marketplace,MKP-041,Screen,user / orders,Order Details,OrderDetailsScreen,apps/marketplace/lib/screens/user/orders/order_details_screen.dart,22,Customer order detail and action entry points.,/order-details; /order/:id,4
+Marketplace,MKP-042,Screen,user / orders,Order Tracking,OrderTrackingScreen,apps/marketplace/lib/screens/user/orders/order_tracking_screen.dart,9,Order progress presentation.,/order-tracking,1
+Marketplace,MKP-043,Screen,user / orders,Orders,OrdersScreen,apps/marketplace/lib/screens/user/orders/orders_screen.dart,17,Presentation for orders.,/orders; /my-orders,1
+Marketplace,MKP-044,Screen,user / orders,Rate Order,RateOrderScreen,apps/marketplace/lib/screens/user/orders/rate_order_screen.dart,7,Order rating and review form.,/rate-order,2
+Marketplace,MKP-045,Screen,user / profile,Change Email,ChangeEmailScreen,apps/marketplace/lib/screens/user/profile/change_email_screen.dart,31,Owned email-change and verification flow.,,1
+Marketplace,MKP-046,Screen,user / profile,Change Password,ChangePasswordScreen,apps/marketplace/lib/screens/user/profile/change_password_screen.dart,10,Password-change form.,/profile/change-password,1
+Marketplace,MKP-047,Screen,user / profile,Change Phone,ChangePhoneScreen,apps/marketplace/lib/screens/user/profile/change_phone_screen.dart,27,Owned phone-change and verification flow.,,1
+Marketplace,MKP-048,Screen,user / profile,Delete Account,DeleteAccountScreen,apps/marketplace/lib/screens/user/profile/delete_account_screen.dart,20,Account deletion presentation and confirmation.,,1
+Marketplace,MKP-049,Screen,user / profile,Edit Profile,EditProfileScreen,apps/marketplace/lib/screens/user/profile/edit_profile_screen.dart,13,Profile editing and account-ownership states.,/profile/edit,1
+Marketplace,MKP-050,Screen,user / profile,Profile,ProfileScreen,apps/marketplace/lib/screens/user/profile/profile_screen.dart,69,Presentation for profile.,,2
+Marketplace,MKP-051,Screen,user / profile,Saved Addresses,SavedAddressesScreen,apps/marketplace/lib/screens/user/profile/saved_addresses_screen.dart,12,Saved delivery-address management.,/profile/addresses,2
+Marketplace,MKP-052,Screen,user / profile,Settings,SettingsScreen,apps/marketplace/lib/screens/user/profile/settings_screen.dart,15,Presentation for settings.,/settings,1
+Marketplace,MKP-053,Screen,user / rewards,Rewards,RewardsScreen,apps/marketplace/lib/screens/user/rewards/rewards_screen.dart,7,Rewards presentation.,/rewards,1
+Marketplace,MKP-054,Screen,user / rfq,My Quote Requests,MyRfqsScreen,apps/marketplace/lib/screens/user/rfq/my_rfqs_screen.dart,13,Customer quote-request list.,/my-rfqs,1
+Marketplace,MKP-055,Screen,user / rfq,Quote Detail,RfqDetailScreen,apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart,25,Customer quote detail and offer actions.,/rfq-detail,1
+Marketplace,MKP-056,Platform variant,user / search,Mobile Search,MobileSearchScreen,apps/marketplace/lib/screens/user/search/mobile_search_screen.dart,13,Presentation for mobile search.,,2
+Marketplace,MKP-057,Screen,user / search,Search — responsive search wrapper,SearchScreen,apps/marketplace/lib/screens/user/search/search_screen.dart,6,Presentation for search — responsive search wrapper.,,0
+Marketplace,MKP-058,Platform variant,user / search,Web Search,WebSearchScreen,apps/marketplace/lib/screens/user/search/web_search_screen.dart,5,Presentation for web search.,,2
+Marketplace,MKP-059,Screen,user / settings,Language,LanguageScreen,apps/marketplace/lib/screens/user/settings/language_screen.dart,3,Language-selection presentation.,/language,1
+Marketplace,MKP-060,Platform variant,user / shop,Mobile Shop,MobileShopScreen,apps/marketplace/lib/screens/user/shop/mobile_shop_screen.dart,18,Presentation for mobile shop.,,2
+Marketplace,MKP-061,Screen,user / shop,Product Details,ProductDetailsScreen,apps/marketplace/lib/screens/user/shop/product_details_screen.dart,23,"Product information, variants, delivery and reviews.",/product-details; /product/:id,2
+Marketplace,MKP-062,Screen,user / shop,Shop,ShopScreen,apps/marketplace/lib/screens/user/shop/shop_screen.dart,6,Presentation for shop.,/recently-viewed; /deals; /category/:id,4
+Marketplace,MKP-063,Platform variant,user / shop,Web Shop,WebShopScreen,apps/marketplace/lib/screens/user/shop/web_shop_screen.dart,12,Presentation for web shop.,,2
+Marketplace,MKP-064,Screen,user / subscriptions,My Subscriptions,MySubscriptionsScreen,apps/marketplace/lib/screens/user/subscriptions/my_subscriptions_screen.dart,5,Recurring-order subscription list.,/my-subscriptions,1
+Marketplace,MKP-065,Screen,user / subscriptions,Subscription Setup,SubscriptionSetupScreen,apps/marketplace/lib/screens/user/subscriptions/subscription_setup_screen.dart,5,Configure a product subscription.,/subscription-setup,1
+Marketplace,MKP-066,Screen,user / wallet,Add Money,AddMoneyScreen,apps/marketplace/lib/screens/user/wallet/add_money_screen.dart,16,Wallet top-up form.,/wallet/add-money,1
+Marketplace,MKP-067,Screen,user / wallet,Product Credit,ProductCreditScreen,apps/marketplace/lib/screens/user/wallet/product_credit_screen.dart,15,Separate product-credit history.,/wallet/product-credit,1
+Marketplace,MKP-068,Screen,user / wallet,Referral,ReferralScreen,apps/marketplace/lib/screens/user/wallet/referral_screen.dart,11,Referral information and sharing.,/wallet/referral,1
+Marketplace,MKP-069,Screen,user / wallet,Transaction History,TransactionHistoryScreen,apps/marketplace/lib/screens/user/wallet/transaction_history_screen.dart,11,Wallet transaction history.,/wallet/history,1
+Marketplace,MKP-070,Screen,user / wallet,Wallet,WalletScreen,apps/marketplace/lib/screens/user/wallet/wallet_screen.dart,28,Presentation for wallet.,/wallet,1
+Marketplace,MKP-071,Platform variant,user / wishlist,Mobile Wishlist,MobileWishlistScreen,apps/marketplace/lib/screens/user/wishlist/mobile_wishlist_screen.dart,15,Presentation for mobile wishlist.,,1
+Marketplace,MKP-072,Platform variant,user / wishlist,Web Wishlist,WebWishlistScreen,apps/marketplace/lib/screens/user/wishlist/web_wishlist_screen.dart,13,Presentation for web wishlist.,,2
+Marketplace,MKP-073,Screen,user / wishlist,Wishlist,WishlistScreen,apps/marketplace/lib/screens/user/wishlist/wishlist_screen.dart,6,Presentation for wishlist.,/wishlist,1
+Seller,SEL-002,Screen,account,Help,HelpScreen,apps/seller/lib/screens/account/help_screen.dart,10,"Help, FAQ and support presentation for this app.",,2
+Seller,SEL-003,Screen,account,Notification Settings,NotificationSettingsScreen,apps/seller/lib/screens/account/notification_settings_screen.dart,16,Notification preferences and quiet hours.,,2
+Seller,SEL-004,Screen,account,Seller Policies,SellerPoliciesScreen,apps/seller/lib/screens/account/policies_screen.dart,10,Merchant legal documents.,,2
+Seller,SEL-005,Screen,account,Seller Settings,SellerSettingsScreen,apps/seller/lib/screens/account/settings_screen.dart,14,"Merchant appearance, app information and links.",,2
+Seller,SEL-006,Screen,account,Store Schedule,StoreScheduleScreen,apps/seller/lib/screens/account/store_schedule.dart,89,"Store operating schedule, weekly off and holidays.",,1
+Seller,SEL-007,Screen,ai,Seller AI Chat,SellerAiChatScreen,apps/seller/lib/screens/ai/seller_ai_chat_screen.dart,12,Merchant AI conversation.,,1
+Seller,SEL-008,Screen,auth,Rejected or suspended account,AccountRestrictedScreen,apps/seller/lib/screens/auth/account_restricted_screen.dart,17,Presentation for rejected or suspended account.,,2
+Seller,SEL-009,Screen,auth,Application Status,ApplicationStatusScreen,apps/seller/lib/screens/auth/application_status_screen.dart,14,Merchant application review status.,,1
+Seller,SEL-010,Screen,auth,Email Sign In,EmailSignInScreen,apps/seller/lib/screens/auth/email_sign_in_screen.dart,12,Merchant email/password sign-in and reset sheet.,,1
+Seller,SEL-011,Screen,auth,Seller Sign In,SellerSignInScreen,apps/seller/lib/screens/auth/seller_sign_in_screen.dart,23,Merchant sign-in entry.,,1
+Seller,SEL-012,Screen,home,Add or edit product,AddProductScreen,apps/seller/lib/screens/home/add_product_screen.dart,44,"Create/edit product with stock, images, pricing and linked editor subpages.",,6
+Seller,SEL-013,Screen,home,Dashboard,DashboardScreen,apps/seller/lib/screens/home/dashboard_screen.dart,33,Merchant operational home and quick actions.,,1
+Seller,SEL-014,Screen,insights,Health,HealthScreen,apps/seller/lib/screens/insights/health_screen.dart,51,Merchant store-health indicators.,,1
+Seller,SEL-015,Screen,insights,Insights,InsightsScreen,apps/seller/lib/screens/insights/insights_screen.dart,21,Merchant sales and order insights.,,1
+Seller,SEL-016,Screen,notifications,Notifications,NotificationsScreen,apps/seller/lib/screens/notifications/notifications_screen.dart,49,Presentation for notifications.,,1
+Seller,SEL-017,Screen,onboarding,Application,ApplicationScreen,apps/seller/lib/screens/onboarding/application_screen.dart,16,Five-step merchant application host.,,1
+Seller,SEL-018,Screen,onboarding,Apply Intro,ApplyIntroScreen,apps/seller/lib/screens/onboarding/apply_intro_screen.dart,13,Merchant application introduction.,,1
+Seller,SEL-019,Screen,orders,Invoice,InvoiceScreen,apps/seller/lib/screens/orders/invoice_screen.dart,11,Seller order invoice.,,1
+Seller,SEL-020,Screen,orders,Seller Order Detail,SellerOrderDetailScreen,apps/seller/lib/screens/orders/seller_order_detail_screen.dart,20,Merchant order details and stage actions.,,5
+Seller,SEL-021,Screen,orders,Seller Orders,SellerOrdersScreen,apps/seller/lib/screens/orders/seller_orders_screen.dart,62,Merchant order list.,,1
+Seller,SEL-022,Screen,payments,Payments,PaymentsScreen,apps/seller/lib/screens/payments/payments_screen.dart,88,"Merchant payments, wallet and settlement composition.",,1
+Seller,SEL-023,Screen,payments,All Settlements,AllSettlementsScreen,apps/seller/lib/screens/payments/payments_screen.dart,344,Full merchant settlement list.,,1
+Seller,SEL-024,Screen,payments,Settlement Detail,SettlementDetailScreen,apps/seller/lib/screens/payments/payments_screen.dart,361,Single settlement detail and timeline.,,1
+Seller,SEL-025,Screen,payments,Statement,StatementScreen,apps/seller/lib/screens/payments/statements.dart,56,Statement detail for the supplied statement context.,,1
+Seller,SEL-026,Screen,payments,Payout Account,PayoutAccountScreen,apps/seller/lib/screens/payments/wallet.dart,544,Payout destination form or account presentation.,,1
+Seller,SEL-027,Screen,posts,Create Post,CreatePostScreen,apps/seller/lib/screens/posts/create_post_screen.dart,16,Create a merchant feed post.,,2
+Seller,SEL-028,Screen,posts,Followers and merchant posts,FollowersScreen,apps/seller/lib/screens/posts/followers_screen.dart,97,Presentation for followers and merchant posts.,,1
+Seller,SEL-029,Screen,products,Product catalogue,SellerProductsScreen,apps/seller/lib/screens/products/seller_products_screen.dart,39,Presentation for product catalogue.,,1
+Seller,SEL-030,Screen,profile,Delivery Fee,DeliveryFeeScreen,apps/seller/lib/screens/profile/delivery_fee_sheet.dart,43,Store delivery-fee settings.,,1
+Seller,SEL-031,Screen,profile,Seller AI Integration,SellerAiIntegrationScreen,apps/seller/lib/screens/profile/seller_ai_integration_screen.dart,44,Merchant AI-provider integration.,,2
+Seller,SEL-032,Screen,profile,Seller Profile,SellerProfileScreen,apps/seller/lib/screens/profile/seller_profile_screen.dart,56,Presentation for seller profile.,,1
+Seller,SEL-033,Screen,reviews,Seller Reviews,SellerReviewsScreen,apps/seller/lib/screens/reviews/reviews_screen.dart,17,Customer reviews and merchant reply.,,1
+Seller,SEL-034,Screen,rfq,Seller Quote Detail,SellerRfqDetailScreen,apps/seller/lib/screens/rfq/seller_rfq_detail_screen.dart,17,Merchant quote-request detail.,,3
+Seller,SEL-035,Screen,rfq,Seller Quote Inbox,SellerRfqInboxScreen,apps/seller/lib/screens/rfq/seller_rfq_inbox_screen.dart,15,Merchant quote inbox.,,3
+Seller,SEL-036,Screen,search,Seller Search,SellerSearchScreen,apps/seller/lib/screens/search/search_screen.dart,18,Merchant cross-record search.,,1
+Seller,SEL-037,Screen,storefront,Storefront Editor,StorefrontEditorScreen,apps/seller/lib/screens/storefront/storefront_editor_screen.dart,23,Public storefront editing.,,2
+Seller,SEL-038,Screen,storefront,Storefront Preview,StorefrontPreviewScreen,apps/seller/lib/screens/storefront/storefront_editor_screen.dart,319,Synthetic preview of the current storefront draft.,,1
+Delivery,DEL-002,Screen,safety,Incident Status,IncidentStatusScreen,apps/delivery/lib/safety/incident_status_screen.dart,56,Rider incident status.,,3
+Delivery,DEL-003,Screen,safety,My Incidents,MyIncidentsScreen,apps/delivery/lib/safety/incident_status_screen.dart,105,Rider incident list.,,1
+Delivery,DEL-004,Screen,auth,Login,LoginScreen,apps/delivery/lib/screens/auth/login_screen.dart,17,Rider sign-in presentation.,,1
+Delivery,DEL-005,Screen,auth,Pending rejected suspended or deactivated account,DeliveryPendingApprovalScreen,apps/delivery/lib/screens/auth/pending_approval_screen.dart,54,Presentation for pending rejected suspended or deactivated account.,,1
+Delivery,DEL-006,Screen,auth,Rider Registration,RiderRegistrationScreen,apps/delivery/lib/screens/auth/rider_registration_screen.dart,74,Five-stage rider account and application form.,,3
+Delivery,DEL-007,Screen,history,Delivery history,RiderHistoryScreen,apps/delivery/lib/screens/history/rider_history_screen.dart,46,Presentation for delivery history.,,2
+Delivery,DEL-008,Screen,home,Dashboard,DashboardScreen,apps/delivery/lib/screens/home/dashboard_screen.dart,43,"Rider home, duty/map/current-work presentation.",,1
+Delivery,DEL-009,Screen,inbox,Inbox,InboxScreen,apps/delivery/lib/screens/inbox/inbox_screen.dart,117,Rider notification inbox and destination handling.,,3
+Delivery,DEL-010,Screen,money,Bank Change Request,BankChangeRequestScreen,apps/delivery/lib/screens/money/bank_change_request_screen.dart,16,Rider payout-account change request status.,,1
+Delivery,DEL-011,Screen,money,Earnings and payouts,MoneyScreen,apps/delivery/lib/screens/money/money_screen.dart,23,Presentation for earnings and payouts.,,5
+Delivery,DEL-012,Screen,money,Statement,StatementScreen,apps/delivery/lib/screens/money/statement_screen.dart,31,Statement detail for the supplied statement context.,,3
+Delivery,DEL-013,Screen,offers,Incoming Offer,IncomingOfferScreen,apps/delivery/lib/screens/offers/incoming_offer_screen.dart,27,Incoming dispatch offer and response presentation.,,1
+Delivery,DEL-014,Screen,orders,Active Order,ActiveOrderScreen,apps/delivery/lib/screens/orders/active_order_screen.dart,194,"Active delivery task, route, verification/proof, payment context and recovery.",,5
+Delivery,DEL-015,Screen,profile,Document Submission,DocumentSubmissionScreen,apps/delivery/lib/screens/profile/document_submission_screen.dart,31,Rider document submission and review states.,,1
+Delivery,DEL-016,Screen,profile,Identity Change,IdentityChangeScreen,apps/delivery/lib/screens/profile/identity_change_screen.dart,44,Rider identity-change presentation.,,3
+Delivery,DEL-017,Screen,profile,Rider Profile,RiderProfileScreen,apps/delivery/lib/screens/profile/rider_profile_screen.dart,68,"Rider account, documents and support actions.",,2
+Delivery,DEL-018,Screen,settings,Device Readiness,DeviceReadinessScreen,apps/delivery/lib/screens/settings/device_readiness_screen.dart,20,"Location, notification and device-readiness checks.",,1
+Delivery,DEL-019,Screen,support,Help Support,HelpSupportScreen,apps/delivery/lib/screens/support/help_support_screen.dart,29,App-domain help and support presentation.,,1
+Delivery,DEL-020,Screen,support,My Support Requests,MySupportRequestsScreen,apps/delivery/lib/screens/support/my_support_requests_screen.dart,16,Rider support-request list.,,3
+Delivery,DEL-021,Screen,support,Submit Support Request,SubmitSupportRequestScreen,apps/delivery/lib/screens/support/submit_support_request_screen.dart,18,Submit a rider support request.,,2
+Delivery,DEL-022,Screen,support,Support Request Status,SupportRequestStatusScreen,apps/delivery/lib/screens/support/support_request_status_screen.dart,27,Support-request status and outcome presentation.,,3
+Sales Associate,SSA-002,Screen,auth,Associate OTP,AssociateOtpScreen,apps/employee/lib/screens/auth/associate_otp_screen.dart,23,Associate mobile-number verification.,,1
+Sales Associate,SSA-003,Screen,auth,Forgot Password,ForgotPasswordScreen,apps/employee/lib/screens/auth/forgot_password_screen.dart,9,Associate password-reset request.,,1
+Sales Associate,SSA-004,Screen,auth,Login,LoginScreen,apps/employee/lib/screens/auth/login_screen.dart,32,Associate sign-in entry and authentication states.,,1
+Sales Associate,SSA-005,Screen,auth,Pending associate approval,EmployeePendingApprovalScreen,apps/employee/lib/screens/auth/pending_approval_screen.dart,8,Presentation for pending associate approval.,,1
+Sales Associate,SSA-006,Screen,auth,Suspended,SuspendedScreen,apps/employee/lib/screens/auth/suspended_screen.dart,11,Associate suspension state.,,1
+Sales Associate,SSA-007,Screen,home,Dashboard,DashboardScreen,apps/employee/lib/screens/home/dashboard_screen.dart,20,Associate sales and attribution dashboard.,,1
+Sales Associate,SSA-008,Screen,notifications,Notifications,NotificationsScreen,apps/employee/lib/screens/notifications/notifications_screen.dart,11,Presentation for notifications.,,2
+Sales Associate,SSA-009,Screen,orders,Order Detail,OrderDetailScreen,apps/employee/lib/screens/orders/order_detail_screen.dart,10,Attributed-order detail.,,2
+Sales Associate,SSA-010,Screen,orders,Attributed orders,OrdersScreen,apps/employee/lib/screens/orders/orders_screen.dart,15,Presentation for attributed orders.,,1
+Sales Associate,SSA-011,Screen,profile,Onboarding Status,OnboardingStatusScreen,apps/employee/lib/screens/profile/onboarding_status_screen.dart,10,Associate onboarding and activation information.,,2
+Sales Associate,SSA-012,Screen,profile,Profile,ProfileScreen,apps/employee/lib/screens/profile/profile_screen.dart,22,Presentation for profile.,,1
+Sales Associate,SSA-013,Screen,support,Help Support,HelpSupportScreen,apps/employee/lib/screens/support/help_support_screen.dart,9,App-domain help and support presentation.,,4
+Sales Associate,SSA-014,Screen,wallet,Payout Account,PayoutAccountScreen,apps/employee/lib/screens/wallet/payout_account_screen.dart,40,Payout destination form or account presentation.,,3
+Sales Associate,SSA-015,Screen,wallet,Payout Details,PayoutDetailsScreen,apps/employee/lib/screens/wallet/payout_details_screen.dart,11,Individual associate payout result/detail.,,2
+Sales Associate,SSA-016,Screen,wallet,Payout History,PayoutHistoryScreen,apps/employee/lib/screens/wallet/payout_history_screen.dart,14,Associate payout history.,,1
+Sales Associate,SSA-017,Screen,wallet,Payout Request,PayoutRequestScreen,apps/employee/lib/screens/wallet/payout_request_screen.dart,14,Associate payout amount and account prerequisites.,,1
+Sales Associate,SSA-018,Screen,wallet,Payout Review,PayoutReviewScreen,apps/employee/lib/screens/wallet/payout_review_screen.dart,13,Review and submit an associate payout request.,,1
+Sales Associate,SSA-019,Screen,wallet,Commission wallet,WalletScreen,apps/employee/lib/screens/wallet/wallet_screen.dart,19,Presentation for commission wallet.,,1
+Admin,ADM-002,Screen,admin,Admin Dashboard,AdminDashboard,apps/admin/lib/screens/admin/admin_dashboard.dart,19,Administrative operational summary.,/dashboard,1
+Admin,ADM-003,Screen,admin / analytics,Analytics,AnalyticsScreen,apps/admin/lib/screens/admin/analytics/analytics_screen.dart,6,Administrative analytics.,/analytics,3
+Admin,ADM-004,Screen,admin / banners,Banner Management,BannerManagementScreen,apps/admin/lib/screens/admin/banners/banner_management_screen.dart,13,Home/banner administration.,/banners,3
+Admin,ADM-005,Screen,admin / benefit_program,Compliance Control,ComplianceControlScreen,apps/admin/lib/screens/admin/benefit_program/compliance_control_screen.dart,44,Benefit-program compliance controls and audit presentation.,/benefit-program/compliance,1
+Admin,ADM-006,Screen,admin / benefit_program,Feature Flags,FeatureFlagsScreen,apps/admin/lib/screens/admin/benefit_program/feature_flags_screen.dart,89,Benefit-program feature controls.,/benefit-program/feature-flags,1
+Admin,ADM-007,Screen,admin / bestsellers,Bestseller Management,BestsellerManagementScreen,apps/admin/lib/screens/admin/bestsellers/bestseller_management_screen.dart,9,Bestseller slot management.,/bestsellers,1
+Admin,ADM-008,Screen,admin / category_sections,Category Section Management,CategorySectionManagementScreen,apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart,13,Category-section list.,/sections,1
+Admin,ADM-009,Screen,admin / category_sections,Edit Category Section,EditCategorySectionScreen,apps/admin/lib/screens/admin/category_sections/edit_category_section_screen.dart,11,Create/edit category-section composition.,/sections/new; /sections/:id/edit,4
+Admin,ADM-010,Screen,admin / coupon,Coupon Management,CouponManagementScreen,apps/admin/lib/screens/admin/coupon/coupon_management_screen.dart,11,Coupon administration.,/coupons,2
+Admin,ADM-011,Screen,admin / delivery,Delivery Partner Management,DeliveryPartnerManagementScreen,apps/admin/lib/screens/admin/delivery/delivery_partner_management_screen.dart,38,Delivery-partner list and account administration.,/delivery-partners,1
+Admin,ADM-012,Screen,admin / delivery,Delivery Problems,DeliveryProblemsScreen,apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart,17,Delivery-problem queue.,/delivery-problems,1
+Admin,ADM-013,Screen,admin / delivery,Dispatch Queue,DispatchQueueScreen,apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart,20,Dispatch assignment queue.,/delivery-dispatch,1
+Admin,ADM-014,Screen,admin / delivery,Dispatch Detail,DispatchDetailScreen,apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart,320,Single dispatch/order review.,,1
+Admin,ADM-015,Screen,admin / delivery,Order Assignment,OrderAssignmentScreen,apps/admin/lib/screens/admin/delivery/order_assignment_screen.dart,20,Manual delivery assignment and reassignment.,,2
+Admin,ADM-016,Screen,admin / delivery,Rider Cash Ledger,RiderCashLedgerScreen,apps/admin/lib/screens/admin/delivery/rider_cash_ledger_screen.dart,14,Individual rider cash ledger.,,2
+Admin,ADM-017,Screen,admin / delivery,Rider Detail,RiderDetailScreen,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,36,Delivery-partner profile and operational detail.,/delivery-partners/:id,1
+Admin,ADM-018,Screen,admin / delivery,Rider Incidents,RiderIncidentsScreen,apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart,16,Administrative rider-incident review.,/rider-incidents,1
+Admin,ADM-019,Screen,admin / delivery,Rider Payouts,RiderPayoutsScreen,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,22,Administrative rider-payout review.,/rider-payouts,1
+Admin,ADM-020,Screen,admin / delivery,Rider Support,RiderSupportScreen,apps/admin/lib/screens/admin/delivery/rider_support_screen.dart,30,Administrative rider-support review.,/rider-support,1
+Admin,ADM-021,Screen,admin / employees,Add Sales Associate,AddEmployeeScreen,apps/admin/lib/screens/admin/employees/add_employee_screen.dart,5,Presentation for add sales associate.,/add-employee,1
+Admin,ADM-022,Screen,admin / employees,Associate Detail,AssociateDetailScreen,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,36,Associate profile and account review.,/employees/:id,1
+Admin,ADM-023,Screen,admin / employees,Commission Exceptions,CommissionExceptionsScreen,apps/admin/lib/screens/admin/employees/commission_exceptions_screen.dart,20,Commission exceptions and review.,/commission-exceptions,1
+Admin,ADM-024,Screen,admin / employees,Sales Associate management,EmployeeManagementScreen,apps/admin/lib/screens/admin/employees/employee_management_screen.dart,12,Presentation for sales associate management.,/employees,1
+Admin,ADM-025,Screen,admin / employees,Associate payout account review,EmployeePayoutAccountReviewScreen,apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart,86,Presentation for associate payout account review.,/employee-payout-account-review,1
+Admin,ADM-026,Screen,admin / employees,Associate payout detail,EmployeePayoutDetailScreen,apps/admin/lib/screens/admin/employees/employee_payout_detail_screen.dart,25,Presentation for associate payout detail.,/employee-payouts/:id,2
+Admin,ADM-027,Screen,admin / employees,Associate payout requests,EmployeePayoutsScreen,apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart,26,Presentation for associate payout requests.,/employee-payouts,1
+Admin,ADM-028,Screen,admin / finance,Finance Reconciliation,FinanceReconciliationScreen,apps/admin/lib/screens/admin/finance/finance_reconciliation_screen.dart,60,Financial reconciliation findings.,/finance/reconciliation,1
+Admin,ADM-029,Screen,admin / finance,Financial Record Detail,FinancialRecordDetailScreen,apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart,19,Source financial record and associated finding context.,/finance/records/:type/:id,1
+Admin,ADM-030,Screen,admin / home_sections,Home Product Section Management,HomeProductSectionManagementScreen,apps/admin/lib/screens/admin/home_sections/home_product_section_management_screen.dart,13,Home-page product-section administration.,,1
+Admin,ADM-031,Screen,admin / notifications,Send Notification,SendNotificationScreen,apps/admin/lib/screens/admin/notifications/send_notification_screen.dart,12,Administrative notification composer.,/notifications,1
+Admin,ADM-032,Screen,admin / orders,Admin Order Details,AdminOrderDetailsScreen,apps/admin/lib/screens/admin/orders/admin_order_details_screen.dart,128,Administrative order detail and operational actions.,,5
+Admin,ADM-033,Screen,admin / orders,Order Management,OrderManagementScreen,apps/admin/lib/screens/admin/orders/order_management_screen.dart,61,"Administrative order list, search, filters and selection.",/orders,3
+Admin,ADM-034,Screen,admin / products,Category Management,CategoryManagementScreen,apps/admin/lib/screens/admin/products/category_management_screen.dart,17,Product category management.,,1
+Admin,ADM-035,Screen,admin / products,Product Form,ProductFormScreen,apps/admin/lib/screens/admin/products/product_form_screen.dart,19,Create or edit product administration form.,/products/new; /products/:id/edit,4
+Admin,ADM-036,Screen,admin / products,Product Management,ProductManagementScreen,apps/admin/lib/screens/admin/products/product_management_screen.dart,13,Administrative product catalogue.,/products,3
+Admin,ADM-037,Screen,admin / products,Seller Product Approval,SellerProductApprovalScreen,apps/admin/lib/screens/admin/products/seller_product_approval_screen.dart,7,Merchant-product approval queue.,,1
+Admin,ADM-038,Screen,admin / reviews,Review Management,ReviewManagementScreen,apps/admin/lib/screens/admin/reviews/review_management_screen.dart,6,Customer review administration.,/reviews,1
+Admin,ADM-039,Screen,admin / rewards,Rewards Management,RewardsManagementScreen,apps/admin/lib/screens/admin/rewards/rewards_management_screen.dart,6,Rewards administration.,/rewards,1
+Admin,ADM-040,Screen,admin / section_banners,Section Banner Management,SectionBannerManagementScreen,apps/admin/lib/screens/admin/section_banners/section_banner_management_screen.dart,10,Section-banner administration.,/section-banners,1
+Admin,ADM-041,Screen,admin / security,Payment Security Logs,PaymentSecurityLogsScreen,apps/admin/lib/screens/admin/security/payment_security_logs_screen.dart,12,Payment-security event logs.,,1
+Admin,ADM-042,Screen,admin / security,Verified Payment Lookup,VerifiedPaymentLookupScreen,apps/admin/lib/screens/admin/security/verified_payment_lookup_screen.dart,14,Verified-payment record lookup.,,1
+Admin,ADM-043,Screen,admin / sellers,Add Seller,AddSellerScreen,apps/admin/lib/screens/admin/sellers/add_seller_screen.dart,5,Create a merchant account.,/add-seller,1
+Admin,ADM-044,Screen,admin / sellers,Edit Seller,EditSellerScreen,apps/admin/lib/screens/admin/sellers/edit_seller_screen.dart,11,Edit merchant profile and images.,,1
+Admin,ADM-045,Screen,admin / sellers,Manage Sellers,ManageSellersScreen,apps/admin/lib/screens/admin/sellers/manage_sellers_screen.dart,10,Merchant account list.,/manage-sellers,1
+Admin,ADM-046,Screen,admin / sellers,Seller Detail,SellerDetailScreen,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,29,Merchant account detail.,/sellers/:id,1
+Admin,ADM-047,Screen,admin / sellers,Seller Payouts,SellerPayoutsScreen,apps/admin/lib/screens/admin/sellers/seller_payouts_screen.dart,15,Merchant payout administration.,/seller-payouts,1
+Admin,ADM-048,Screen,admin / sellers,Seller Requests Management,SellerRequestsManagementScreen,apps/admin/lib/screens/admin/sellers/seller_requests_management_screen.dart,9,Merchant application/request queue.,/seller-requests,1
+Admin,ADM-049,Screen,admin / settings,Admin Settings,AdminSettingsScreen,apps/admin/lib/screens/admin/settings/admin_settings_screen.dart,66,Administrative configuration and linked tools.,/settings,1
+Admin,ADM-050,Screen,admin / settings,Delivery Time Slots Management,DeliveryTimeSlotsManagementScreen,apps/admin/lib/screens/admin/settings/delivery_time_slots_management_screen.dart,8,Delivery-slot administration.,/delivery-time-slots,1
+Admin,ADM-051,Screen,admin / settings,Home Grocery Strip Settings,HomeGroceryStripSettingsScreen,apps/admin/lib/screens/admin/settings/home_grocery_strip_settings_screen.dart,11,Grocery/kitchen home strip configuration.,,1
+Admin,ADM-052,Screen,admin / settings,Home Section Order Settings,HomeSectionOrderSettingsScreen,apps/admin/lib/screens/admin/settings/home_section_order_settings_screen.dart,20,Mobile/web home section ordering.,,1
+Admin,ADM-053,Screen,admin / settings,Location Settings,LocationSettingsScreen,apps/admin/lib/screens/admin/settings/location_settings_screen.dart,5,Location and hyperlocal configuration.,,1
+Admin,ADM-054,Screen,admin / settings,Wallet Config,WalletConfigScreen,apps/admin/lib/screens/admin/settings/wallet_config_screen.dart,8,Wallet feature and bonus configuration.,,1
+Admin,ADM-055,Screen,admin / sponsored_banners,Sponsored Banner Management,SponsoredBannerManagementScreen,apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_management_screen.dart,12,Sponsored-banner administration.,/sponsored,1
+Admin,ADM-056,Screen,admin / subscriptions,Subscription Management,SubscriptionManagementScreen,apps/admin/lib/screens/admin/subscriptions/subscription_management_screen.dart,6,Subscription administration.,/subscriptions,1
+Admin,ADM-057,Screen,admin / support,Support Case Detail,SupportCaseDetailScreen,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,35,"Case notes, activity, linked records and evidence.",/support/:id,1
+Admin,ADM-058,Screen,admin / support,Support Queue,SupportQueueScreen,apps/admin/lib/screens/admin/support/support_queue_screen.dart,23,Support-case queue and case creation.,/support,1
+Admin,ADM-059,Screen,admin / users,Customer Detail,CustomerDetailScreen,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,25,Customer profile and account detail.,/users/:id,1
+Admin,ADM-060,Screen,admin / users,Edit User,EditUserScreen,apps/admin/lib/screens/admin/users/edit_user_screen.dart,16,Customer/user editing form.,,2
+Admin,ADM-061,Screen,admin / users,User Management,UserManagementScreen,apps/admin/lib/screens/admin/users/user_management_screen.dart,13,Administrative customer/user list.,/users,4
+Admin,ADM-062,Screen,admin / vendors,Vendors List,VendorsListScreen,apps/admin/lib/screens/admin/vendors/vendors_list_screen.dart,14,Vendor administration.,/vendors,1
+Admin,ADM-063,Screen,admin / wallet,Wallet Tracking,WalletTrackingScreen,apps/admin/lib/screens/admin/wallet/wallet_tracking_screen.dart,6,Wallet top-up tracking.,/wallet-topups,1
+Admin,ADM-064,Screen,auth,Auth,AuthScreen,apps/admin/lib/screens/auth/auth_screen.dart,19,Administrator authentication.,/auth,1
+Marketplace,MKP-001,Application shell,user,Customer main shell,MainScreen,apps/marketplace/lib/screens/user/main_screen.dart,23,"Five-tab customer shell: Home, Shop, Categories, Cart, Profile.",/; /main; /home; /shop; /shop/search; /cart; /profile; /category/:id; /categories,12
+Seller,SEL-001,Application shell,shell,Seller Shell,SellerShell,apps/seller/lib/screens/shell/seller_shell.dart,24,"Five-tab merchant shell: Home, Orders, Catalogue, Payments, Account.",,1
+Delivery,DEL-001,Application shell,app,Delivery Shell,DeliveryShell,apps/delivery/lib/app/delivery_shell.dart,28,"Five-tab rider shell: Home, Deliveries, Earnings, Inbox, Profile.",,1
+Sales Associate,SSA-001,Application shell,shell,Sales Associate shell,EmployeeShellScreen,apps/employee/lib/screens/shell/employee_shell_screen.dart,42,"Four-tab associate shell: Home, Orders, Wallet, Profile.",,1
+Admin,ADM-001,Application shell,admin,Admin Shell,AdminShell,apps/admin/lib/screens/admin/admin_shell.dart,13,Sidebar/header host for administrative child routes.,,1
+Marketplace,,Named dialog or sheet,auth,Autofill Number Sheet,_AutofillNumberSheet,apps/marketplace/lib/screens/auth/login_screen.dart,1121,,,0
+Marketplace,,Named dialog or sheet,user / home,Auto Location Sheet,_AutoLocationSheet,apps/marketplace/lib/screens/user/home/mobile_home_screen.dart,750,,,0
+Marketplace,,Named dialog or sheet,user / home / widgets,Address Bottom Sheet,AddressBottomSheet,apps/marketplace/lib/screens/user/home/widgets/address_bottom_sheet.dart,15,,,0
+Marketplace,,Named dialog or sheet,user / profile,Logout Dialog,_LogoutDialog,apps/marketplace/lib/screens/user/profile/profile_screen.dart,1400,,,0
+Marketplace,,Named dialog or sheet,user / profile,AI Connect Form Sheet,_AiConnectFormSheet,apps/marketplace/lib/screens/user/profile/settings_screen.dart,601,,,0
+Marketplace,,Named dialog or sheet,user / rfq / widgets,Request Quote Sheet,RequestQuoteSheet,apps/marketplace/lib/screens/user/rfq/widgets/request_quote_sheet.dart,11,,,0
+Marketplace,,Named dialog or sheet,user / shop / widgets,Add Review Dialog,AddReviewDialog,apps/marketplace/lib/screens/user/shop/widgets/add_review_dialog.dart,18,,,0
+Marketplace,,Named dialog or sheet,user / shop / widgets,Delete Review Dialog,_DeleteReviewDialog,apps/marketplace/lib/screens/user/shop/widgets/review_card.dart,379,,,0
+Marketplace,,Named dialog or sheet,user / shop / widgets,Sort Bottom Sheet,SortBottomSheet,apps/marketplace/lib/screens/user/shop/widgets/sort_bottom_sheet.dart,9,,,0
+Seller,,Named dialog or sheet,account,Store Status Sheet,_StoreStatusSheet,apps/seller/lib/screens/account/store_status.dart,47,,,0
+Seller,,Named dialog or sheet,orders / widgets,Order Reason Sheet,_OrderReasonSheet,apps/seller/lib/screens/orders/widgets/order_reason_sheet.dart,51,,,0
+Seller,,Named dialog or sheet,products,Stock Sheet,_StockSheet,apps/seller/lib/screens/products/seller_products_screen.dart,391,,,0
+Seller,,Named dialog or sheet,products / widgets,Variant Sheet,_VariantSheet,apps/seller/lib/screens/products/widgets/product_variants_section.dart,87,,,0
+Seller,,Named dialog or sheet,profile,Business Details Sheet,BusinessDetailsSheet,apps/seller/lib/screens/profile/business_details_sheet.dart,82,,,0
+Seller,,Named dialog or sheet,reviews,Reply Sheet,_ReplySheet,apps/seller/lib/screens/reviews/reviews_screen.dart,242,,,0
+Seller,,Named dialog or sheet,rfq / widgets,Quote Counter Sheet,QuoteCounterSheet,apps/seller/lib/screens/rfq/widgets/quote_counter_sheet.dart,32,,,0
+Seller,,Named dialog or sheet,rfq / widgets,Quote Decline Sheet,QuoteDeclineSheet,apps/seller/lib/screens/rfq/widgets/quote_decline_sheet.dart,19,,,0
+Delivery,,Named dialog or sheet,navigation,Navigation Failed Sheet,NavigationFailedSheet,apps/delivery/lib/navigation/navigation_launch.dart,92,,,0
+Delivery,,Named dialog or sheet,safety,Emergency Sheet,EmergencySheet,apps/delivery/lib/safety/emergency_sheet.dart,64,,,0
+Delivery,,Named dialog or sheet,history,History Filter Sheet,HistoryFilterSheet,apps/delivery/lib/screens/history/history_filter_sheet.dart,43,,,0
+Delivery,,Named dialog or sheet,orders,Verify Sheet,_VerifySheet,apps/delivery/lib/screens/orders/active_order_screen.dart,1130,,,0
+Delivery,,Named dialog or sheet,orders,Help Sheet,_HelpSheet,apps/delivery/lib/screens/orders/active_order_screen.dart,1289,,,0
+Delivery,,Named dialog or sheet,orders,Problem Report Sheet,ProblemReportSheet,apps/delivery/lib/screens/orders/delivery_problem_panel.dart,197,,,0
+Delivery,,Named dialog or sheet,profile,Contact Edit Sheet,ContactEditSheet,apps/delivery/lib/screens/profile/rider_profile_screen.dart,851,,,0
+Delivery,,Named dialog or sheet,profile,Document Preview Dialog,_DocumentPreviewDialog,apps/delivery/lib/screens/profile/rider_profile_screen.dart,1169,,,0
+Delivery,,Named dialog or sheet,support,Help Sheet,HelpSheet,apps/delivery/lib/screens/support/help_sheet.dart,34,,,0
+Admin,,Named dialog or sheet,admin / banners,Add Edit Banner Dialog,AddEditBannerDialog,apps/admin/lib/screens/admin/banners/add_edit_banner_dialog.dart,14,,,0
+Admin,,Named dialog or sheet,admin / bestsellers,Edit Bestseller Slot Dialog,EditBestsellerSlotDialog,apps/admin/lib/screens/admin/bestsellers/edit_bestseller_slot_dialog.dart,23,,,0
+Admin,,Named dialog or sheet,admin / coupon,Add Edit Coupon Dialog,AddEditCouponDialog,apps/admin/lib/screens/admin/coupon/add_edit_coupon_dialog.dart,11,,,0
+Admin,,Named dialog or sheet,admin / delivery,Add Delivery Partner Dialog,AddDeliveryPartnerDialog,apps/admin/lib/screens/admin/delivery/add_delivery_partner_dialog.dart,9,,,0
+Admin,,Named dialog or sheet,admin / delivery,Rider Review Sheet,RiderReviewSheet,apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart,60,,,0
+Admin,,Named dialog or sheet,admin / finance,Raise Financial Case Dialog,_RaiseFinancialCaseDialog,apps/admin/lib/screens/admin/finance/financial_record_detail_screen.dart,401,,,0
+Admin,,Named dialog or sheet,admin / home_sections,Add Edit Home Product Section Dialog,AddEditHomeProductSectionDialog,apps/admin/lib/screens/admin/home_sections/add_edit_home_product_section_dialog.dart,10,,,0
+Admin,,Named dialog or sheet,admin / products,Category Form Dialog,_CategoryFormDialog,apps/admin/lib/screens/admin/products/category_management_screen.dart,1050,,,0
+Admin,,Named dialog or sheet,admin / section_banners,Add Edit Section Banner Dialog,AddEditSectionBannerDialog,apps/admin/lib/screens/admin/section_banners/add_edit_section_banner_dialog.dart,11,,,0
+Admin,,Named dialog or sheet,admin / settings,Owned Password Dialog,_OwnedPasswordDialog,apps/admin/lib/screens/admin/settings/admin_settings_screen.dart,1131,,,0
+Admin,,Named dialog or sheet,admin / sponsored_banners,Add Edit Sponsored Banner Dialog,AddEditSponsoredBannerDialog,apps/admin/lib/screens/admin/sponsored_banners/add_edit_sponsored_banner_dialog.dart,13,,,0
+Admin,,Named dialog or sheet,admin / support,Pick Admin Dialog,_PickAdminDialog,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,563,,,0
+Admin,,Named dialog or sheet,admin / support,Change Status Dialog,_ChangeStatusDialog,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,648,,,0
+Admin,,Named dialog or sheet,admin / support,Add Link Dialog,_AddLinkDialog,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,835,,,0
+Admin,,Named dialog or sheet,admin / support,Create Case Dialog,_CreateCaseDialog,apps/admin/lib/screens/admin/support/support_queue_screen.dart,204,,,0
+Admin,,Named dialog or sheet,admin / widgets,Raise Order Case Dialog,_RaiseOrderCaseDialog,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,206,,,0
+Admin,,Named dialog or sheet,admin / widgets,Raise Case Dialog,_RaiseCaseDialog,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,325,,,0
+Admin,,Named dialog or sheet,admin / widgets,Create From Source Dialog,_CreateFromSourceDialog,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,473,,,0
+Marketplace,,Private full-page host,auth,Minimal Loading Screen,_MinimalLoadingScreen,apps/marketplace/lib/screens/auth/auth_guard.dart,45,,,0
+Marketplace,,Private full-page host,auth,Splash Loader,_SplashLoader,apps/marketplace/lib/screens/auth/auth_wrapper.dart,90,,,0
+Seller,,Private full-page host,app,Loading Account,_LoadingAccount,apps/seller/lib/app/app.dart,81,,,0
+Seller,,Private full-page host,home,Editor Subscreen,_EditorSubscreen,apps/seller/lib/screens/home/add_product_screen.dart,1324,,,0
+Seller,,Private full-page host,onboarding,Stepper,_Stepper,apps/seller/lib/screens/onboarding/application_screen.dart,34,,,0
+Delivery,,Private full-page host,app,Loading Account,_LoadingAccount,apps/delivery/lib/app/app.dart,138,,,0
+Delivery,,Private full-page host,app,Account Unavailable,_AccountUnavailable,apps/delivery/lib/app/app.dart,166,,,0
+Admin,,Private full-page host,App root,Emulator Wiring Failed App,_EmulatorWiringFailedApp,apps/admin/lib/main.dart,218,,,0
+Marketplace,,Auth gate,auth,Auth Guard,AuthGuard,apps/marketplace/lib/screens/auth/auth_guard.dart,9,,,0
+Marketplace,,Auth gate,auth,Auth Wrapper,AuthWrapper,apps/marketplace/lib/screens/auth/auth_wrapper.dart,39,,,0
+Marketplace,,Auth gate,widgets,Auth Gate,AuthGate,apps/marketplace/lib/widgets/auth_gate.dart,11,,,0
+Seller,,Auth gate,app,Seller Auth Gate,SellerAuthGate,apps/seller/lib/app/app.dart,52,,,0
+Delivery,,Auth gate,app,Rider Session Gate,RiderSessionGate,apps/delivery/lib/app/app.dart,70,,,0
+Sales Associate,,Auth gate,app,Auth Gate,_AuthGate,apps/employee/lib/app/app.dart,52,,,0
+Sales Associate,,Developer tooling,catalogue,Sa Catalogue App,SaCatalogueApp,apps/employee/lib/catalogue/catalogue_app.dart,11,,,0
+Sales Associate,,Developer tooling,catalogue,Catalogue Home Screen,_CatalogueHomeScreen,apps/employee/lib/catalogue/catalogue_app.dart,25,,,0
+Sales Associate,,Developer tooling,catalogue,Tokens Tab,_TokensTab,apps/employee/lib/catalogue/catalogue_app.dart,87,,,0
+Sales Associate,,Developer tooling,catalogue,Typography Tab,_TypographyTab,apps/employee/lib/catalogue/catalogue_app.dart,261,,,0
+Sales Associate,,Developer tooling,catalogue,Icons Tab,_IconsTab,apps/employee/lib/catalogue/catalogue_app.dart,374,,,0
+Sales Associate,,Developer tooling,catalogue,Components Tab,_ComponentsTab,apps/employee/lib/catalogue/catalogue_app.dart,497,,,0
+Sales Associate,,Developer tooling,catalogue,Content Tab,_ContentTab,apps/employee/lib/catalogue/catalogue_app.dart,681,,,0
+Sales Associate,,Developer tooling,catalogue,Section Header,_SectionHeader,apps/employee/lib/catalogue/catalogue_app.dart,760,,,0
+Sales Associate,,Developer tooling,catalogue,Color Swatch,_ColorSwatch,apps/employee/lib/catalogue/catalogue_app.dart,780,,,0
+Sales Associate,,Developer tooling,catalogue,Mini Color Swatch,_MiniColorSwatch,apps/employee/lib/catalogue/catalogue_app.dart,839,,,0
+Sales Associate,,Developer tooling,catalogue,Semantic Pair Card,_SemanticPairCard,apps/employee/lib/catalogue/catalogue_app.dart,890,,,0
+Sales Associate,,Developer tooling,catalogue,Spacing Row,_SpacingRow,apps/employee/lib/catalogue/catalogue_app.dart,939,,,0
+Sales Associate,,Developer tooling,catalogue,Radius Card,_RadiusCard,apps/employee/lib/catalogue/catalogue_app.dart,971,,,0
+Sales Associate,,Developer tooling,catalogue,Type Specimen Card,_TypeSpecimenCard,apps/employee/lib/catalogue/catalogue_app.dart,1020,,,0
+Sales Associate,,Developer tooling,catalogue,Icon Specimen,_IconSpecimen,apps/employee/lib/catalogue/catalogue_app.dart,1070,,,0
+Sales Associate,,Developer tooling,catalogue,Content Convention Row,_ContentConventionRow,apps/employee/lib/catalogue/catalogue_app.dart,1099,,,0
+Sales Associate,,Developer tooling,catalogue,Privacy Field Row,_PrivacyFieldRow,apps/employee/lib/catalogue/catalogue_app.dart,1155,,,0
+Marketplace,,Embedded view,auth,Auth Guard,AuthGuard,apps/marketplace/lib/screens/auth/auth_guard.dart,9,,,0
+Marketplace,,Embedded view,auth,Auth Wrapper,AuthWrapper,apps/marketplace/lib/screens/auth/auth_wrapper.dart,39,,,0
+Marketplace,,Embedded view,auth,Google Logo,_GoogleLogo,apps/marketplace/lib/screens/auth/login_screen.dart,1171,,,0
+Marketplace,,Embedded view,business,Post Card,_PostCard,apps/marketplace/lib/screens/business/business_feed_screen.dart,84,,,0
+Marketplace,,Embedded view,chat,Chat App Bar,_ChatAppBar,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,412,,,0
+Marketplace,,Embedded view,chat,Loading State,_LoadingState,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,437,,,0
+Marketplace,,Embedded view,chat,Guest Mode Banner,_GuestModeBanner,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,457,,,0
+Marketplace,,Embedded view,chat,Session Stats Bar,_SessionStatsBar,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,494,,,0
+Marketplace,,Embedded view,chat,Stat Chip,_StatChip,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,534,,,0
+Marketplace,,Embedded view,chat,Message List,_MessageList,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,565,,,0
+Marketplace,,Embedded view,chat,Replying To Bar,_ReplyingToBar,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,666,,,0
+Marketplace,,Embedded view,chat,Chat Input Area,_ChatInputArea,apps/marketplace/lib/screens/chat/ai_chat_screen.dart,709,,,0
+Marketplace,,Embedded view,chat / widgets,Chat App Bar,ChatAppBar,apps/marketplace/lib/screens/chat/widgets/chat_app_bar.dart,3,,,0
+Marketplace,,Embedded view,chat / widgets,Chat Message Widget,ChatMessageWidget,apps/marketplace/lib/screens/chat/widgets/chat_message_widget.dart,7,,,0
+Marketplace,,Embedded view,chat / widgets,Message Bubble,MessageBubble,apps/marketplace/lib/screens/chat/widgets/message_bubble.dart,12,,,0
+Marketplace,,Embedded view,chat / widgets,Message List View,MessageListView,apps/marketplace/lib/screens/chat/widgets/message_list_view.dart,9,,,0
+Marketplace,,Embedded view,chat / widgets,Order Card Renderer,OrderCardRenderer,apps/marketplace/lib/screens/chat/widgets/order_card_renderer.dart,5,,,0
+Marketplace,,Embedded view,chat / widgets,Product Card Horizontal,ProductCardHorizontal,apps/marketplace/lib/screens/chat/widgets/product_card_horizontal.dart,7,,,0
+Marketplace,,Embedded view,chat / widgets,Product Card Widget,ProductCardWidget,apps/marketplace/lib/screens/chat/widgets/product_card_widget.dart,7,,,0
+Marketplace,,Embedded view,chat / widgets,Quick Reply Chip,QuickReplyChip,apps/marketplace/lib/screens/chat/widgets/quick_reply_chip.dart,5,,,0
+Marketplace,,Embedded view,chat / widgets,Typing Indicator,TypingIndicator,apps/marketplace/lib/screens/chat/widgets/typing_indicator.dart,5,,,0
+Marketplace,,Embedded view,employee / onboarding,Employee State Gate,_EmployeeStateGate,apps/marketplace/lib/screens/employee/onboarding/associate_onboarding_screen.dart,332,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Confirmation Step,OnboardingConfirmationStep,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_confirmation_step.dart,36,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Details Step,OnboardingDetailsStep,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_details_step.dart,12,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Header Section,OnboardingHeaderSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,35,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Why Fee Section,OnboardingWhyFeeSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,96,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Benefit Groups Section,OnboardingBenefitGroupsSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,123,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Earnings Explainer Section,OnboardingEarningsExplainerSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,175,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Flow Chip,_FlowChip,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,244,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Journey Steps Section,OnboardingJourneyStepsSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,262,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Summary Card Section,OnboardingSummaryCardSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,325,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Disclosures Section,OnboardingDisclosuresSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,381,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Support Contact Section,OnboardingSupportContactSection,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,435,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Card,_Card,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_info_sections.dart,490,,,0
+Marketplace,,Embedded view,employee / onboarding / widgets,Onboarding Payment Step,OnboardingPaymentStep,apps/marketplace/lib/screens/employee/onboarding/widgets/onboarding_payment_step.dart,43,,,0
+Marketplace,,Embedded view,user / cart / widgets,Cart Item Card,CartItemCard,apps/marketplace/lib/screens/user/cart/widgets/cart_item_card.dart,11,,,0
+Marketplace,,Embedded view,user / cart / widgets,Cart Summary,CartSummary,apps/marketplace/lib/screens/user/cart/widgets/cart_summary.dart,11,,,0
+Marketplace,,Embedded view,user / cart / widgets,Empty Cart,EmptyCart,apps/marketplace/lib/screens/user/cart/widgets/empty_cart.dart,6,,,0
+Marketplace,,Embedded view,user / cart / widgets,Quantity Selector,QuantitySelector,apps/marketplace/lib/screens/user/cart/widgets/quantity_selector.dart,6,,,0
+Marketplace,,Embedded view,user / categories,Enhanced Category Sidebar,_EnhancedCategorySidebar,apps/marketplace/lib/screens/user/categories/categories_screen.dart,844,,,0
+Marketplace,,Embedded view,user / categories,Enhanced Sidebar Item,_EnhancedSidebarItem,apps/marketplace/lib/screens/user/categories/categories_screen.dart,893,,,0
+Marketplace,,Embedded view,user / categories,Premium Category Header,_PremiumCategoryHeader,apps/marketplace/lib/screens/user/categories/categories_screen.dart,1105,,,0
+Marketplace,,Embedded view,user / categories,Premium Subcategory Grid,_PremiumSubcategoryGrid,apps/marketplace/lib/screens/user/categories/categories_screen.dart,1263,,,0
+Marketplace,,Embedded view,user / categories,Subcategory Image Card,_SubcategoryImageCard,apps/marketplace/lib/screens/user/categories/categories_screen.dart,1331,,,0
+Marketplace,,Embedded view,user / categories,Advanced Product Card,_AdvancedProductCard,apps/marketplace/lib/screens/user/categories/categories_screen.dart,1480,,,0
+Marketplace,,Embedded view,user / categories / widgets,Category Hero Banner,CategoryHeroBanner,apps/marketplace/lib/screens/user/categories/widgets/category_content_sections.dart,13,,,0
+Marketplace,,Embedded view,user / categories / widgets,Category Filter Chips,CategoryFilterChips,apps/marketplace/lib/screens/user/categories/widgets/category_content_sections.dart,199,,,0
+Marketplace,,Embedded view,user / categories / widgets,Popular Picks Section,PopularPicksSection,apps/marketplace/lib/screens/user/categories/widgets/category_content_sections.dart,277,,,0
+Marketplace,,Embedded view,user / checkout,Location Selector,_LocationSelector,apps/marketplace/lib/screens/user/checkout/add_address_screen.dart,2456,,,0
+Marketplace,,Embedded view,user / checkout / widgets,Associate Code Field,AssociateCodeField,apps/marketplace/lib/screens/user/checkout/widgets/associate_code_field.dart,41,,,0
+Marketplace,,Embedded view,user / checkout / widgets,Feedback Chip,_FeedbackChip,apps/marketplace/lib/screens/user/checkout/widgets/associate_code_field.dart,420,,,0
+Marketplace,,Embedded view,user / checkout / widgets,Checkout Steps,CheckoutSteps,apps/marketplace/lib/screens/user/checkout/widgets/checkout_steps.dart,7,,,0
+Marketplace,,Embedded view,user / checkout / widgets,Saved Checkout Card,SavedCheckoutCard,apps/marketplace/lib/screens/user/checkout/widgets/saved_checkout_card.dart,9,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Recent Searches,RecentSearches,apps/marketplace/lib/screens/user/home/search/widgets/recent_searches.dart,8,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Search Bar Widget,SearchBarWidget,apps/marketplace/lib/screens/user/home/search/widgets/search_bar_widget.dart,6,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Search Filters,SearchFilters,apps/marketplace/lib/screens/user/home/search/widgets/search_filters.dart,8,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Search Product Card,SearchProductCard,apps/marketplace/lib/screens/user/home/search/widgets/search_product_card.dart,7,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Search Suggestions,SearchSuggestions,apps/marketplace/lib/screens/user/home/search/widgets/search_suggestions.dart,6,,,0
+Marketplace,,Embedded view,user / home / search / widgets,Trending Searches,TrendingSearches,apps/marketplace/lib/screens/user/home/search/widgets/trending_searches.dart,7,,,0
+Marketplace,,Embedded view,user / home / widgets,All Products Grid,AllProductsGrid,apps/marketplace/lib/screens/user/home/widgets/all_products_grid.dart,11,,,0
+Marketplace,,Embedded view,user / home / widgets,Banner Slider,BannerSlider,apps/marketplace/lib/screens/user/home/widgets/banner_slider.dart,11,,,0
+Marketplace,,Embedded view,user / home / widgets,Deals For You,DealsForYou,apps/marketplace/lib/screens/user/home/widgets/bestsellers.dart,17,,,0
+Marketplace,,Embedded view,user / home / widgets,Bestseller Card,_BestsellerCard,apps/marketplace/lib/screens/user/home/widgets/bestsellers.dart,228,,,0
+Marketplace,,Embedded view,user / home / widgets,Image Tile,_ImageTile,apps/marketplace/lib/screens/user/home/widgets/bestsellers.dart,408,,,0
+Marketplace,,Embedded view,user / home / widgets,Categories Grid,CategoriesGrid,apps/marketplace/lib/screens/user/home/widgets/categories_grid.dart,12,,,0
+Marketplace,,Embedded view,user / home / widgets,Dynamic Category Sections,DynamicCategorySections,apps/marketplace/lib/screens/user/home/widgets/dynamic_category_sections.dart,52,,,0
+Marketplace,,Embedded view,user / home / widgets,Admin Category Section,_AdminCategorySection,apps/marketplace/lib/screens/user/home/widgets/dynamic_category_sections.dart,180,,,0
+Marketplace,,Embedded view,user / home / widgets,Fallback Category Section,_FallbackCategorySection,apps/marketplace/lib/screens/user/home/widgets/dynamic_category_sections.dart,276,,,0
+Marketplace,,Embedded view,user / home / widgets,Enhanced Category Tile,_EnhancedCategoryTile,apps/marketplace/lib/screens/user/home/widgets/dynamic_category_sections.dart,362,,,0
+Marketplace,,Embedded view,user / home / widgets,Featured Products,FeaturedProducts,apps/marketplace/lib/screens/user/home/widgets/featured_products.dart,15,,,0
+Marketplace,,Embedded view,user / home / widgets,Category Tile,_CategoryTile,apps/marketplace/lib/screens/user/home/widgets/featured_products.dart,106,,,0
+Marketplace,,Embedded view,user / home / widgets,Grocery Kitchen Home Strip,GroceryKitchenHomeStrip,apps/marketplace/lib/screens/user/home/widgets/grocery_kitchen_home_strip.dart,20,,,0
+Marketplace,,Embedded view,user / home / widgets,Tile,_Tile,apps/marketplace/lib/screens/user/home/widgets/grocery_kitchen_home_strip.dart,133,,,0
+Marketplace,,Embedded view,user / home / widgets,Home App Bar,HomeAppBar,apps/marketplace/lib/screens/user/home/widgets/home_app_bar.dart,33,,,0
+Marketplace,,Embedded view,user / home / widgets,Home Search Bar,HomeSearchBar,apps/marketplace/lib/screens/user/home/widgets/home_search_bar.dart,7,,,0
+Marketplace,,Embedded view,user / home / widgets,Product Card Compact,ProductCardCompact,apps/marketplace/lib/screens/user/home/widgets/product_card_compact.dart,14,,,0
+Marketplace,,Embedded view,user / home / widgets,Product Section Widget,ProductSectionWidget,apps/marketplace/lib/screens/user/home/widgets/product_section_widget.dart,11,,,0
+Marketplace,,Embedded view,user / home / widgets,Recently Viewed Widget,RecentlyViewedWidget,apps/marketplace/lib/screens/user/home/widgets/recently_viewed_widget.dart,11,,,0
+Marketplace,,Embedded view,user / home / widgets,Section Banner Carousel,SectionBannerCarousel,apps/marketplace/lib/screens/user/home/widgets/section_banner_carousel.dart,13,,,0
+Marketplace,,Embedded view,user / home / widgets,Banner Item,_BannerItem,apps/marketplace/lib/screens/user/home/widgets/section_banner_carousel.dart,157,,,0
+Marketplace,,Embedded view,user / home / widgets,Sponsored Banner Strip,SponsoredBannerStrip,apps/marketplace/lib/screens/user/home/widgets/sponsored_banner_strip.dart,17,,,0
+Marketplace,,Embedded view,user / home / widgets,Sponsored Banner Item,_SponsoredBannerItem,apps/marketplace/lib/screens/user/home/widgets/sponsored_banner_strip.dart,135,,,0
+Marketplace,,Embedded view,user / home / widgets,Trending Products,TrendingProducts,apps/marketplace/lib/screens/user/home/widgets/trending_products.dart,15,,,0
+Marketplace,,Embedded view,user / home / widgets,Category Tile,_CategoryTile,apps/marketplace/lib/screens/user/home/widgets/trending_products.dart,105,,,0
+Marketplace,,Embedded view,user / orders,Product Selection Modal,_ProductSelectionModal,apps/marketplace/lib/screens/user/orders/order_details_screen.dart,2064,,,0
+Marketplace,,Embedded view,user / orders,Product Selection Item,_ProductSelectionItem,apps/marketplace/lib/screens/user/orders/order_details_screen.dart,2391,,,0
+Marketplace,,Embedded view,user / orders,Order Card,_OrderCard,apps/marketplace/lib/screens/user/orders/orders_screen.dart,712,,,0
+Marketplace,,Embedded view,user / orders,Status Badge,_StatusBadge,apps/marketplace/lib/screens/user/orders/orders_screen.dart,1203,,,0
+Marketplace,,Embedded view,user / orders / widgets,Delivered View,DeliveredView,apps/marketplace/lib/screens/user/orders/widgets/delivered_view.dart,11,,,0
+Marketplace,,Embedded view,user / orders / widgets,Empty Orders,EmptyOrders,apps/marketplace/lib/screens/user/orders/widgets/empty_orders.dart,5,,,0
+Marketplace,,Embedded view,user / orders / widgets,Live Eta Text,LiveEtaText,apps/marketplace/lib/screens/user/orders/widgets/live_eta_text.dart,10,,,0
+Marketplace,,Embedded view,user / orders / widgets,Order Card,OrderCard,apps/marketplace/lib/screens/user/orders/widgets/order_card.dart,8,,,0
+Marketplace,,Embedded view,user / orders / widgets,Order Item Card,OrderItemCard,apps/marketplace/lib/screens/user/orders/widgets/order_item_card.dart,5,,,0
+Marketplace,,Embedded view,user / orders / widgets,Order Status Badge,OrderStatusBadge,apps/marketplace/lib/screens/user/orders/widgets/order_status_badge.dart,3,,,0
+Marketplace,,Embedded view,user / orders / widgets,Order Timeline,OrderTimeline,apps/marketplace/lib/screens/user/orders/widgets/order_timeline.dart,6,,,0
+Marketplace,,Embedded view,user / orders / widgets,Tracking Map,TrackingMap,apps/marketplace/lib/screens/user/orders/widgets/tracking_map.dart,4,,,0
+Marketplace,,Embedded view,user / orders / widgets,Tracking Card,TrackingCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,24,,,0
+Marketplace,,Embedded view,user / orders / widgets,Tracking Stepper,TrackingStepper,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,46,,,0
+Marketplace,,Embedded view,user / orders / widgets,Delivery Code Card,DeliveryCodeCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,172,,,0
+Marketplace,,Embedded view,user / orders / widgets,Rider Card,RiderCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,218,,,0
+Marketplace,,Embedded view,user / orders / widgets,Round Action,_RoundAction,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,292,,,0
+Marketplace,,Embedded view,user / orders / widgets,Rider Pending Card,RiderPendingCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,318,,,0
+Marketplace,,Embedded view,user / orders / widgets,Order Summary Card,OrderSummaryCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,345,,,0
+Marketplace,,Embedded view,user / orders / widgets,Help Card,HelpCard,apps/marketplace/lib/screens/user/orders/widgets/tracking_sections.dart,452,,,0
+Marketplace,,Embedded view,user / profile,Disclosure Section,_DisclosureSection,apps/marketplace/lib/screens/user/profile/delete_account_screen.dart,288,,,0
+Marketplace,,Embedded view,user / profile,Message Banner,_MessageBanner,apps/marketplace/lib/screens/user/profile/delete_account_screen.dart,361,,,0
+Marketplace,,Embedded view,user / profile / widgets,Verification Step Header,VerificationStepHeader,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,13,,,0
+Marketplace,,Embedded view,user / profile / widgets,Locked Value Card,LockedValueCard,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,68,,,0
+Marketplace,,Embedded view,user / profile / widgets,Info Callout,InfoCallout,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,137,,,0
+Marketplace,,Embedded view,user / profile / widgets,OTP Boxes Display,OtpBoxesDisplay,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,201,,,0
+Marketplace,,Embedded view,user / profile / widgets,Numeric Keypad,NumericKeypad,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,245,,,0
+Marketplace,,Embedded view,user / profile / widgets,Verification Success View,VerificationSuccessView,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,318,,,0
+Marketplace,,Embedded view,user / profile / widgets,Verification Primary Button,VerificationPrimaryButton,apps/marketplace/lib/screens/user/profile/widgets/verification_flow_widgets.dart,475,,,0
+Marketplace,,Embedded view,user / rfq,Quote Card,_RfqCard,apps/marketplace/lib/screens/user/rfq/my_rfqs_screen.dart,64,,,0
+Marketplace,,Embedded view,user / rfq,History Tile,_HistoryTile,apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart,270,,,0
+Marketplace,,Embedded view,user / rfq,Action Bar,_ActionBar,apps/marketplace/lib/screens/user/rfq/rfq_detail_screen.dart,316,,,0
+Marketplace,,Embedded view,user / shop / widgets,Delivery Info Widget,DeliveryInfoWidget,apps/marketplace/lib/screens/user/shop/widgets/delivery_info_widget.dart,8,,,0
+Marketplace,,Embedded view,user / shop / widgets,Filter Drawer,FilterDrawer,apps/marketplace/lib/screens/user/shop/widgets/filter_drawer.dart,11,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product Card,ProductCard,apps/marketplace/lib/screens/user/shop/widgets/product_card.dart,11,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product Grid,ProductGrid,apps/marketplace/lib/screens/user/shop/widgets/product_grid.dart,5,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product Image Hero,ProductImageHero,apps/marketplace/lib/screens/user/shop/widgets/product_image_hero.dart,18,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product Info Section,ProductInfoSection,apps/marketplace/lib/screens/user/shop/widgets/product_info_section.dart,9,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product List,ProductList,apps/marketplace/lib/screens/user/shop/widgets/product_list.dart,5,,,0
+Marketplace,,Embedded view,user / shop / widgets,Product Share Widget,ProductShareWidget,apps/marketplace/lib/screens/user/shop/widgets/product_share_widget.dart,14,,,0
+Marketplace,,Embedded view,user / shop / widgets,Review Card,ReviewCard,apps/marketplace/lib/screens/user/shop/widgets/review_card.dart,11,,,0
+Marketplace,,Embedded view,user / shop / widgets,Review Feed,ReviewFeed,apps/marketplace/lib/screens/user/shop/widgets/review_feed.dart,7,,,0
+Marketplace,,Embedded view,user / shop / widgets,Reviews Section,ReviewsSection,apps/marketplace/lib/screens/user/shop/widgets/reviews_section.dart,11,,,0
+Marketplace,,Embedded view,user / shop / widgets,Reviews Section Inline,ReviewsSectionInline,apps/marketplace/lib/screens/user/shop/widgets/reviews_section_inline.dart,12,,,0
+Marketplace,,Embedded view,user / shop / widgets,Shop App Bar,ShopAppBar,apps/marketplace/lib/screens/user/shop/widgets/shop_app_bar.dart,17,,,0
+Marketplace,,Embedded view,user / shop / widgets,Specification List,SpecificationList,apps/marketplace/lib/screens/user/shop/widgets/specification_list.dart,7,,,0
+Marketplace,,Embedded view,user / shop / widgets,Variant Selector,VariantSelector,apps/marketplace/lib/screens/user/shop/widgets/variant_selector.dart,11,,,0
+Marketplace,,Embedded view,user / wallet / widgets,Product Credit Card,ProductCreditCard,apps/marketplace/lib/screens/user/wallet/widgets/product_credit_card.dart,11,,,0
+Marketplace,,Embedded view,user / wallet / widgets,Status Row,_StatusRow,apps/marketplace/lib/screens/user/wallet/widgets/product_credit_card.dart,174,,,0
+Marketplace,,Embedded view,user / wallet / widgets,Product Credit Ledger Tile,ProductCreditLedgerTile,apps/marketplace/lib/screens/user/wallet/widgets/product_credit_ledger_tile.dart,25,,,0
+Marketplace,,Embedded view,user / wallet / widgets,Transaction Tile,TransactionTile,apps/marketplace/lib/screens/user/wallet/widgets/transaction_tile.dart,5,,,0
+Marketplace,,Embedded view,user / wallet / widgets,Wallet Balance Card,WalletBalanceCard,apps/marketplace/lib/screens/user/wallet/widgets/wallet_balance_card.dart,4,,,0
+Marketplace,,Embedded view,user / wishlist / widgets,Empty Wishlist,EmptyWishlist,apps/marketplace/lib/screens/user/wishlist/widgets/empty_wishlist.dart,6,,,0
+Marketplace,,Embedded view,user / wishlist / widgets,Wishlist Item Card,WishlistItemCard,apps/marketplace/lib/screens/user/wishlist/widgets/wishlist_item_card.dart,11,,,0
+Seller,,Embedded view,account / widgets,Seller Support Card,SellerSupportCard,apps/seller/lib/screens/account/widgets/support_card.dart,11,,,0
+Seller,,Embedded view,ai,Bubble,_Bubble,apps/seller/lib/screens/ai/seller_ai_chat_screen.dart,168,,,0
+Seller,,Embedded view,ai,Typing Bubble,_TypingBubble,apps/seller/lib/screens/ai/seller_ai_chat_screen.dart,224,,,0
+Seller,,Embedded view,auth,Legal Line,_LegalLine,apps/seller/lib/screens/auth/seller_sign_in_screen.dart,384,,,0
+Seller,,Embedded view,auth,Form Column,_FormColumn,apps/seller/lib/screens/auth/seller_sign_in_screen.dart,429,,,0
+Seller,,Embedded view,auth / widgets,Auth Brand Panel,AuthBrandPanel,apps/seller/lib/screens/auth/widgets/auth_brand_panel.dart,8,,,0
+Seller,,Embedded view,auth / widgets,Auth Error Banner,AuthErrorBanner,apps/seller/lib/screens/auth/widgets/auth_error_banner.dart,11,,,0
+Seller,,Embedded view,auth / widgets,Auth Inline Error,AuthInlineError,apps/seller/lib/screens/auth/widgets/auth_error_banner.dart,35,,,0
+Seller,,Embedded view,home / widgets,Action Queue Card,ActionQueueCard,apps/seller/lib/screens/home/widgets/home_widgets.dart,21,,,0
+Seller,,Embedded view,notifications,Notification Bell,NotificationBell,apps/seller/lib/screens/notifications/notifications_screen.dart,19,,,0
+Seller,,Embedded view,onboarding,Step Body,StepBody,apps/seller/lib/screens/onboarding/application_screen.dart,73,,,0
+Seller,,Embedded view,onboarding / steps,Business Step,BusinessStep,apps/seller/lib/screens/onboarding/steps/business_step.dart,13,,,0
+Seller,,Embedded view,onboarding / steps,Documents Step,DocumentsStep,apps/seller/lib/screens/onboarding/steps/documents_step.dart,15,,,0
+Seller,,Embedded view,onboarding / steps,Document Tile,_DocumentTile,apps/seller/lib/screens/onboarding/steps/documents_step.dart,88,,,0
+Seller,,Embedded view,onboarding / steps,Location Step,LocationStep,apps/seller/lib/screens/onboarding/steps/location_step.dart,14,,,0
+Seller,,Embedded view,onboarding / steps,Payout Step,PayoutStep,apps/seller/lib/screens/onboarding/steps/payout_step.dart,15,,,0
+Seller,,Embedded view,onboarding / steps,Review Step,ReviewStep,apps/seller/lib/screens/onboarding/steps/review_step.dart,16,,,0
+Seller,,Embedded view,onboarding / widgets,Step Footer,StepFooter,apps/seller/lib/screens/onboarding/widgets/step_footer.dart,8,,,0
+Seller,,Embedded view,onboarding / widgets,Application Sign Out,ApplicationSignOut,apps/seller/lib/screens/onboarding/widgets/step_footer.dart,40,,,0
+Seller,,Embedded view,orders,Invoice Body,_InvoiceBody,apps/seller/lib/screens/orders/invoice_screen.dart,40,,,0
+Seller,,Embedded view,orders,Order Stage Pill,OrderStagePill,apps/seller/lib/screens/orders/seller_orders_screen.dart,49,,,0
+Seller,,Embedded view,orders,Order Card,OrderCard,apps/seller/lib/screens/orders/seller_orders_screen.dart,201,,,0
+Seller,,Embedded view,orders / widgets,Order Invoice Card,OrderInvoiceCard,apps/seller/lib/screens/orders/widgets/order_invoice_card.dart,19,,,0
+Seller,,Embedded view,payments,Settlement Row,SettlementRow,apps/seller/lib/screens/payments/payments_screen.dart,169,,,0
+Seller,,Embedded view,payments,Payments Body,PaymentsBody,apps/seller/lib/screens/payments/payments_screen.dart,195,,,0
+Seller,,Embedded view,payments,Wallet Section,WalletSection,apps/seller/lib/screens/payments/wallet.dart,208,,,0
+Seller,,Embedded view,payments,Balance Card,_BalanceCard,apps/seller/lib/screens/payments/wallet.dart,366,,,0
+Seller,,Embedded view,payments,Open Withdrawal Card,_OpenWithdrawalCard,apps/seller/lib/screens/payments/wallet.dart,421,,,0
+Seller,,Embedded view,payments,Account Card,_AccountCard,apps/seller/lib/screens/payments/wallet.dart,455,,,0
+Seller,,Embedded view,payments,Withdrawal Row,_WithdrawalRow,apps/seller/lib/screens/payments/wallet.dart,513,,,0
+Seller,,Embedded view,products,Product Card,_ProductCard,apps/seller/lib/screens/products/seller_products_screen.dart,277,,,0
+Seller,,Embedded view,products / widgets,Product Filter Bar,ProductFilterBar,apps/seller/lib/screens/products/widgets/product_list_controls.dart,18,,,0
+Seller,,Embedded view,products / widgets,Product Bulk Bar,ProductBulkBar,apps/seller/lib/screens/products/widgets/product_list_controls.dart,39,,,0
+Seller,,Embedded view,products / widgets,Product Tax Section,ProductTaxSection,apps/seller/lib/screens/products/widgets/product_tax_section.dart,17,,,0
+Seller,,Embedded view,products / widgets,Product Variants Section,ProductVariantsSection,apps/seller/lib/screens/products/widgets/product_variants_section.dart,14,,,0
+Seller,,Embedded view,reviews,Seller Stars,SellerStars,apps/seller/lib/screens/reviews/reviews_screen.dart,158,,,0
+Seller,,Embedded view,reviews,Review Card,_ReviewCard,apps/seller/lib/screens/reviews/reviews_screen.dart,179,,,0
+Seller,,Embedded view,rfq,Quote Body,_QuoteBody,apps/seller/lib/screens/rfq/seller_rfq_detail_screen.dart,40,,,0
+Seller,,Embedded view,rfq / widgets,Quote Status Pill,QuoteStatusPill,apps/seller/lib/screens/rfq/widgets/quote_copy.dart,49,,,0
+Seller,,Embedded view,rfq / widgets,Quote Expiry Text,QuoteExpiryText,apps/seller/lib/screens/rfq/widgets/quote_copy.dart,72,,,0
+Seller,,Embedded view,rfq / widgets,Quote Tile,QuoteTile,apps/seller/lib/screens/rfq/widgets/quote_tile.dart,10,,,0
+Seller,,Embedded view,storefront,Storefront Preview,StorefrontPreview,apps/seller/lib/screens/storefront/storefront_editor_screen.dart,340,,,0
+Delivery,,Embedded view,history,History Row,_HistoryRow,apps/delivery/lib/screens/history/rider_history_screen.dart,216,,,0
+Delivery,,Embedded view,history,Hint,_Hint,apps/delivery/lib/screens/history/rider_history_screen.dart,248,,,0
+Delivery,,Embedded view,history,Footer,_Footer,apps/delivery/lib/screens/history/rider_history_screen.dart,269,,,0
+Delivery,,Embedded view,history,Empty,_Empty,apps/delivery/lib/screens/history/rider_history_screen.dart,315,,,0
+Delivery,,Embedded view,history,Filters,_Filters,apps/delivery/lib/screens/history/rider_history_screen.dart,328,,,0
+Delivery,,Embedded view,history,Search Result,_SearchResult,apps/delivery/lib/screens/history/rider_history_screen.dart,453,,,0
+Delivery,,Embedded view,history,History Detail,HistoryDetail,apps/delivery/lib/screens/history/rider_history_screen.dart,494,,,0
+Delivery,,Embedded view,history,Section Heading,_SectionHeading,apps/delivery/lib/screens/history/rider_history_screen.dart,721,,,0
+Delivery,,Embedded view,history,Statement Link,_StatementLink,apps/delivery/lib/screens/history/rider_history_screen.dart,738,,,0
+Delivery,,Embedded view,history,Line,_Line,apps/delivery/lib/screens/history/rider_history_screen.dart,833,,,0
+Delivery,,Embedded view,home,Active Work Loading,ActiveWorkLoading,apps/delivery/lib/screens/home/active_work_states.dart,13,,,0
+Delivery,,Embedded view,home,Active Work Error,ActiveWorkError,apps/delivery/lib/screens/home/active_work_states.dart,33,,,0
+Delivery,,Embedded view,home,Multiple Active Orders,MultipleActiveOrders,apps/delivery/lib/screens/home/active_work_states.dart,56,,,0
+Delivery,,Embedded view,home,Active Order Summary Card,ActiveOrderSummaryCard,apps/delivery/lib/screens/home/active_work_states.dart,103,,,0
+Delivery,,Embedded view,home,Stale Data Banner,StaleDataBanner,apps/delivery/lib/screens/home/active_work_states.dart,177,,,0
+Delivery,,Embedded view,home,Stat Card,_StatCard,apps/delivery/lib/screens/home/dashboard_screen.dart,624,,,0
+Delivery,,Embedded view,home,Action Card,_ActionCard,apps/delivery/lib/screens/home/dashboard_screen.dart,663,,,0
+Delivery,,Embedded view,home,Home App Bar,HomeAppBar,apps/delivery/lib/screens/home/home_app_bar.dart,19,,,0
+Delivery,,Embedded view,home,Availability Toggle,_AvailabilityToggle,apps/delivery/lib/screens/home/home_app_bar.dart,90,,,0
+Delivery,,Embedded view,home,Circle Icon Button,_CircleIconButton,apps/delivery/lib/screens/home/home_app_bar.dart,165,,,0
+Delivery,,Embedded view,home,Home Map,HomeMap,apps/delivery/lib/screens/home/home_map.dart,56,,,0
+Delivery,,Embedded view,home,State Banner,_StateBanner,apps/delivery/lib/screens/home/home_map.dart,260,,,0
+Delivery,,Embedded view,home,Recenter Button,_RecenterButton,apps/delivery/lib/screens/home/home_map.dart,312,,,0
+Delivery,,Embedded view,home,Home Operations Panel,HomeOperationsPanel,apps/delivery/lib/screens/home/home_operations_panel.dart,39,,,0
+Delivery,,Embedded view,home,Pending Proof Banner,PendingProofBanner,apps/delivery/lib/screens/home/pending_proof_banner.dart,27,,,0
+Delivery,,Embedded view,inbox,Centered,_Centered,apps/delivery/lib/screens/inbox/inbox_screen.dart,612,,,0
+Delivery,,Embedded view,inbox,Inbox Button,InboxButton,apps/delivery/lib/screens/inbox/inbox_screen.dart,642,,,0
+Delivery,,Embedded view,money,Summary,_Summary,apps/delivery/lib/screens/money/money_screen.dart,175,,,0
+Delivery,,Embedded view,money,Cash Card,_CashCard,apps/delivery/lib/screens/money/money_screen.dart,234,,,0
+Delivery,,Embedded view,money,Earning Tile,EarningTile,apps/delivery/lib/screens/money/money_screen.dart,306,,,0
+Delivery,,Embedded view,money,Payout Tile,_PayoutTile,apps/delivery/lib/screens/money/money_screen.dart,355,,,0
+Delivery,,Embedded view,money,Payout Details,_PayoutDetails,apps/delivery/lib/screens/money/money_screen.dart,435,,,0
+Delivery,,Embedded view,money,Heading,_Heading,apps/delivery/lib/screens/money/money_screen.dart,530,,,0
+Delivery,,Embedded view,money,Muted,_Muted,apps/delivery/lib/screens/money/money_screen.dart,560,,,0
+Delivery,,Embedded view,money,Error Line,_ErrorLine,apps/delivery/lib/screens/money/money_screen.dart,576,,,0
+Delivery,,Embedded view,money,Bank Change Form,BankChangeForm,apps/delivery/lib/screens/money/money_screen.dart,595,,,0
+Delivery,,Embedded view,money,Amount Row,_AmountRow,apps/delivery/lib/screens/money/statement_screen.dart,349,,,0
+Delivery,,Embedded view,money,Stage Block,_StageBlock,apps/delivery/lib/screens/money/statement_screen.dart,380,,,0
+Delivery,,Embedded view,offers,Row,_Row,apps/delivery/lib/screens/offers/incoming_offer_screen.dart,266,,,0
+Delivery,,Embedded view,orders,Section,_Section,apps/delivery/lib/screens/orders/active_order_screen.dart,1245,,,0
+Delivery,,Embedded view,orders,Delivery Problem Panel,DeliveryProblemPanel,apps/delivery/lib/screens/orders/delivery_problem_panel.dart,32,,,0
+Delivery,,Embedded view,orders,Problem State,_ProblemState,apps/delivery/lib/screens/orders/delivery_problem_panel.dart,126,,,0
+Delivery,,Embedded view,orders / widgets,Rider Route Card,RiderRouteCard,apps/delivery/lib/screens/orders/widgets/rider_route_card.dart,51,,,0
+Delivery,,Embedded view,orders / widgets,Stale Location Banner,StaleLocationBanner,apps/delivery/lib/screens/orders/widgets/rider_route_card.dart,792,,,0
+Delivery,,Embedded view,profile,Request Status Card,RequestStatusCard,apps/delivery/lib/screens/profile/identity_change_screen.dart,265,,,0
+Delivery,,Embedded view,profile,Form,_Form,apps/delivery/lib/screens/profile/identity_change_screen.dart,305,,,0
+Delivery,,Embedded view,profile,Document Preview Tile,_DocumentPreviewTile,apps/delivery/lib/screens/profile/rider_profile_screen.dart,989,,,0
+Delivery,,Embedded view,support,Row,_Row,apps/delivery/lib/screens/support/help_sheet.dart,154,,,0
+Delivery,,Embedded view,support,Topic,_Topic,apps/delivery/lib/screens/support/help_support_screen.dart,137,,,0
+Delivery,,Embedded view,support,Ticket Row,_TicketRow,apps/delivery/lib/screens/support/my_support_requests_screen.dart,87,,,0
+Delivery,,Embedded view,support,Message State,_MessageState,apps/delivery/lib/screens/support/my_support_requests_screen.dart,135,,,0
+Delivery,,Embedded view,support,Timeline,_Timeline,apps/delivery/lib/screens/support/support_request_status_screen.dart,67,,,0
+Delivery,,Embedded view,support,Step,_Step,apps/delivery/lib/screens/support/support_request_status_screen.dart,122,,,0
+Sales Associate,,Embedded view,home,Notification Bell Button,_NotificationBellButton,apps/employee/lib/screens/home/dashboard_screen.dart,368,,,0
+Sales Associate,,Embedded view,home,Metric Card,_MetricCard,apps/employee/lib/screens/home/dashboard_screen.dart,423,,,0
+Sales Associate,,Embedded view,home,Associate Code Card,_AssociateCodeCard,apps/employee/lib/screens/home/dashboard_screen.dart,493,,,0
+Sales Associate,,Embedded view,home,Onboarding Fee Status Card,_OnboardingFeeStatusCard,apps/employee/lib/screens/home/dashboard_screen.dart,749,,,0
+Sales Associate,,Embedded view,wallet,Action Tile,_ActionTile,apps/employee/lib/screens/wallet/wallet_screen.dart,458,,,0
+Admin,,Embedded view,admin / banners,Banner Card,BannerCard,apps/admin/lib/screens/admin/banners/banner_card.dart,7,,,0
+Admin,,Embedded view,admin / bestsellers,Slot Card,_SlotCard,apps/admin/lib/screens/admin/bestsellers/bestseller_management_screen.dart,168,,,0
+Admin,,Embedded view,admin / category_sections,Stat Card,_StatCard,apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart,406,,,0
+Admin,,Embedded view,admin / category_sections,Premium Section Card,_PremiumSectionCard,apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart,464,,,0
+Admin,,Embedded view,admin / category_sections,Action Button,_ActionButton,apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart,688,,,0
+Admin,,Embedded view,admin / category_sections,Schedule Status Chip,_ScheduleStatusChip,apps/admin/lib/screens/admin/category_sections/category_section_management_screen.dart,736,,,0
+Admin,,Embedded view,admin / category_sections,Premium Card,_PremiumCard,apps/admin/lib/screens/admin/category_sections/edit_category_section_screen.dart,816,,,0
+Admin,,Embedded view,admin / category_sections,Image Slot,_ImageSlot,apps/admin/lib/screens/admin/category_sections/edit_category_section_screen.dart,883,,,0
+Admin,,Embedded view,admin / coupon,Coupon Card,CouponCard,apps/admin/lib/screens/admin/coupon/coupon_card.dart,8,,,0
+Admin,,Embedded view,admin / delivery,Delivery Flags Card,DeliveryFlagsCard,apps/admin/lib/screens/admin/delivery/delivery_flags.dart,84,,,0
+Admin,,Embedded view,admin / delivery,Partner Card,_PartnerCard,apps/admin/lib/screens/admin/delivery/delivery_partner_management_screen.dart,399,,,0
+Admin,,Embedded view,admin / delivery,Problem List,_ProblemList,apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart,43,,,0
+Admin,,Embedded view,admin / delivery,Problem Card,_ProblemCard,apps/admin/lib/screens/admin/delivery/delivery_problems_screen.dart,93,,,0
+Admin,,Embedded view,admin / delivery,Message,_Message,apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart,167,,,0
+Admin,,Embedded view,admin / delivery,Dispatch Card,_DispatchCard,apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart,216,,,0
+Admin,,Embedded view,admin / delivery,Tag,_Tag,apps/admin/lib/screens/admin/delivery/dispatch_queue_screen.dart,300,,,0
+Admin,,Embedded view,admin / delivery,Ledger Card,_LedgerCard,apps/admin/lib/screens/admin/delivery/rider_cash_ledger_screen.dart,77,,,0
+Admin,,Embedded view,admin / delivery,Header Card,_HeaderCard,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,170,,,0
+Admin,,Embedded view,admin / delivery,Status Chip,_StatusChip,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,235,,,0
+Admin,,Embedded view,admin / delivery,Identity Tab,_IdentityTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,257,,,0
+Admin,,Embedded view,admin / delivery,Assignments Tab,_AssignmentsTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,475,,,0
+Admin,,Embedded view,admin / delivery,Earnings Tab,_EarningsTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,525,,,0
+Admin,,Embedded view,admin / delivery,Earning Tile,_EarningTile,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,559,,,0
+Admin,,Embedded view,admin / delivery,Cod Cash Tab,_CodCashTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,580,,,0
+Admin,,Embedded view,admin / delivery,Metric Card,_MetricCard,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,628,,,0
+Admin,,Embedded view,admin / delivery,Bank Payout Tab,_BankPayoutTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,656,,,0
+Admin,,Embedded view,admin / delivery,Support Tab,_SupportTab,apps/admin/lib/screens/admin/delivery/rider_detail_screen.dart,803,,,0
+Admin,,Embedded view,admin / delivery,Incident List,_IncidentList,apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart,44,,,0
+Admin,,Embedded view,admin / delivery,Incident Card,_IncidentCard,apps/admin/lib/screens/admin/delivery/rider_incidents_screen.dart,99,,,0
+Admin,,Embedded view,admin / delivery,Rider Line,_RiderLine,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,97,,,0
+Admin,,Embedded view,admin / delivery,Statements Tab,_StatementsTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,173,,,0
+Admin,,Embedded view,admin / delivery,Cash Tab,_CashTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,388,,,0
+Admin,,Embedded view,admin / delivery,Bank Changes Tab,_BankChangesTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,541,,,0
+Admin,,Embedded view,admin / delivery,Identity Changes Tab,_IdentityChangesTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,689,,,0
+Admin,,Embedded view,admin / delivery,Staged Document Preview,_StagedDocumentPreview,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,839,,,0
+Admin,,Embedded view,admin / delivery,Document Reviews Tab,_DocumentReviewsTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,885,,,0
+Admin,,Embedded view,admin / delivery,Rates Tab,_RatesTab,apps/admin/lib/screens/admin/delivery/rider_payouts_screen.dart,1010,,,0
+Admin,,Embedded view,admin / delivery,Rider Status Badge,RiderStatusBadge,apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart,36,,,0
+Admin,,Embedded view,admin / delivery,Kyc Tile,_KycTile,apps/admin/lib/screens/admin/delivery/rider_review_sheet.dart,384,,,0
+Admin,,Embedded view,admin / delivery,Ticket List,_TicketList,apps/admin/lib/screens/admin/delivery/rider_support_screen.dart,78,,,0
+Admin,,Embedded view,admin / delivery,Ticket Card,_TicketCard,apps/admin/lib/screens/admin/delivery/rider_support_screen.dart,132,,,0
+Admin,,Embedded view,admin / employees,Header Card,_HeaderCard,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,169,,,0
+Admin,,Embedded view,admin / employees,Status Chip,_StatusChip,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,223,,,0
+Admin,,Embedded view,admin / employees,Profile Tab,_ProfileTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,245,,,0
+Admin,,Embedded view,admin / employees,Info Tile,_InfoTile,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,343,,,0
+Admin,,Embedded view,admin / employees,Attribution Tab,_AttributionTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,380,,,0
+Admin,,Embedded view,admin / employees,Commission Tab,_CommissionTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,430,,,0
+Admin,,Embedded view,admin / employees,Wallet Tab,_WalletTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,475,,,0
+Admin,,Embedded view,admin / employees,Metric Card,_MetricCard,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,545,,,0
+Admin,,Embedded view,admin / employees,Bank Payout Tab,_BankPayoutTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,573,,,0
+Admin,,Embedded view,admin / employees,Support Tab,_SupportTab,apps/admin/lib/screens/admin/employees/associate_detail_screen.dart,717,,,0
+Admin,,Embedded view,admin / employees,Request Card,_RequestCard,apps/admin/lib/screens/admin/employees/employee_payout_account_review_screen.dart,144,,,0
+Admin,,Embedded view,admin / employees,Employee Summary Row,_EmployeeSummaryRow,apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart,425,,,0
+Admin,,Embedded view,admin / employees,Message State,_MessageState,apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart,517,,,0
+Admin,,Embedded view,admin / orders,Delivery Proof Tile,_DeliveryProofTile,apps/admin/lib/screens/admin/orders/admin_order_details_screen.dart,3015,,,0
+Admin,,Embedded view,admin / orders / widgets,Admin Order Card,AdminOrderCard,apps/admin/lib/screens/admin/orders/widgets/admin_order_card.dart,7,,,0
+Admin,,Embedded view,admin / orders / widgets,Order Status Updater,OrderStatusUpdater,apps/admin/lib/screens/admin/orders/widgets/order_status_updater.dart,16,,,0
+Admin,,Embedded view,admin / products / widgets,Admin Product Card,AdminProductCard,apps/admin/lib/screens/admin/products/widgets/admin_product_card.dart,7,,,0
+Admin,,Embedded view,admin / products / widgets,Delivery Info Form,DeliveryInfoForm,apps/admin/lib/screens/admin/products/widgets/delivery_info_form.dart,6,,,0
+Admin,,Embedded view,admin / products / widgets,Image Uploader,ImageUploader,apps/admin/lib/screens/admin/products/widgets/image_uploader.dart,12,,,0
+Admin,,Embedded view,admin / products / widgets,Product Form,ProductForm,apps/admin/lib/screens/admin/products/widgets/product_form.dart,10,,,0
+Admin,,Embedded view,admin / products / widgets,Specification Form,SpecificationForm,apps/admin/lib/screens/admin/products/widgets/specification_form.dart,6,,,0
+Admin,,Embedded view,admin / products / widgets,Stock Manager,StockManager,apps/admin/lib/screens/admin/products/widgets/stock_manager.dart,6,,,0
+Admin,,Embedded view,admin / products / widgets,Variant Form,VariantForm,apps/admin/lib/screens/admin/products/widgets/variant_form.dart,9,,,0
+Admin,,Embedded view,admin / section_banners,Section Banner Card,_SectionBannerCard,apps/admin/lib/screens/admin/section_banners/section_banner_management_screen.dart,238,,,0
+Admin,,Embedded view,admin / security,Log Card,_LogCard,apps/admin/lib/screens/admin/security/payment_security_logs_screen.dart,75,,,0
+Admin,,Embedded view,admin / security,Result Card,_ResultCard,apps/admin/lib/screens/admin/security/verified_payment_lookup_screen.dart,112,,,0
+Admin,,Embedded view,admin / sellers,Header Card,_HeaderCard,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,171,,,0
+Admin,,Embedded view,admin / sellers,Status Chip,_StatusChip,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,232,,,0
+Admin,,Embedded view,admin / sellers,Overview Tab,_OverviewTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,254,,,0
+Admin,,Embedded view,admin / sellers,Section Header,_SectionHeader,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,320,,,0
+Admin,,Embedded view,admin / sellers,Info Tile,_InfoTile,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,334,,,0
+Admin,,Embedded view,admin / sellers,Catalog Tab,_CatalogTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,372,,,0
+Admin,,Embedded view,admin / sellers,Orders Tab,_OrdersTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,414,,,0
+Admin,,Embedded view,admin / sellers,Finance Tab,_FinanceTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,452,,,0
+Admin,,Embedded view,admin / sellers,Metric Card,_MetricCard,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,553,,,0
+Admin,,Embedded view,admin / sellers,Bank Payout Tab,_BankPayoutTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,581,,,0
+Admin,,Embedded view,admin / sellers,Support Tab,_SupportTab,apps/admin/lib/screens/admin/sellers/seller_detail_screen.dart,732,,,0
+Admin,,Embedded view,admin / sellers,Application Details,_ApplicationDetails,apps/admin/lib/screens/admin/sellers/seller_requests_management_screen.dart,250,,,0
+Admin,,Embedded view,admin / sellers,Seller Header,_SellerHeader,apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart,194,,,0
+Admin,,Embedded view,admin / sellers,Seller Withdrawals Tab,SellerWithdrawalsTab,apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart,239,,,0
+Admin,,Embedded view,admin / sellers,Seller Payout Changes Tab,SellerPayoutChangesTab,apps/admin/lib/screens/admin/sellers/seller_wallet_admin.dart,395,,,0
+Admin,,Embedded view,admin / sponsored_banners,Sponsored Banner Card,SponsoredBannerCard,apps/admin/lib/screens/admin/sponsored_banners/sponsored_banner_card.dart,6,,,0
+Admin,,Embedded view,admin / support,Case Header,_CaseHeader,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,327,,,0
+Admin,,Embedded view,admin / support,Notes Tab,_NotesTab,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,441,,,0
+Admin,,Embedded view,admin / support,Activity Tab,_ActivityTab,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,495,,,0
+Admin,,Embedded view,admin / support,Timestamp,_Timestamp,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,550,,,0
+Admin,,Embedded view,admin / support,Linked Records Tab,_LinkedRecordsTab,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,717,,,0
+Admin,,Embedded view,admin / support,Linked Record Tile,_LinkedRecordTile,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,766,,,0
+Admin,,Embedded view,admin / support,Evidence Tab,_EvidenceTab,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,931,,,0
+Admin,,Embedded view,admin / support,Evidence Tile,_EvidenceTile,apps/admin/lib/screens/admin/support/support_case_detail_screen.dart,1124,,,0
+Admin,,Embedded view,admin / support,Case Row,_CaseRow,apps/admin/lib/screens/admin/support/support_queue_screen.dart,128,,,0
+Admin,,Embedded view,admin / support,Status Dot,_StatusDot,apps/admin/lib/screens/admin/support/support_queue_screen.dart,179,,,0
+Admin,,Embedded view,admin / users,Header Card,_HeaderCard,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,187,,,0
+Admin,,Embedded view,admin / users,Status Chip,_StatusChip,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,285,,,0
+Admin,,Embedded view,admin / users,Overview Tab,_OverviewTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,308,,,0
+Admin,,Embedded view,admin / users,Orders Tab,_OrdersTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,365,,,0
+Admin,,Embedded view,admin / users,Wallet Tab,_WalletTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,406,,,0
+Admin,,Embedded view,admin / users,Metric Card,_MetricCard,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,561,,,0
+Admin,,Embedded view,admin / users,Payments Tab,_PaymentsTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,592,,,0
+Admin,,Embedded view,admin / users,Addresses Tab,_AddressesTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,645,,,0
+Admin,,Embedded view,admin / users,Support Tab,_SupportTab,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,701,,,0
+Admin,,Embedded view,admin / users,Section Header,_SectionHeader,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,719,,,0
+Admin,,Embedded view,admin / users,Info Tile,_InfoTile,apps/admin/lib/screens/admin/users/customer_detail_screen.dart,733,,,0
+Admin,,Embedded view,admin / users / widgets,Role Badge,RoleBadge,apps/admin/lib/screens/admin/users/widgets/role_badge.dart,4,,,0
+Admin,,Embedded view,admin / users / widgets,User Card,UserCard,apps/admin/lib/screens/admin/users/widgets/user_card.dart,8,,,0
+Admin,,Embedded view,admin / wallet,Summary Card,_SummaryCard,apps/admin/lib/screens/admin/wallet/wallet_tracking_screen.dart,306,,,0
+Admin,,Embedded view,admin / wallet,Status Pill,_StatusPill,apps/admin/lib/screens/admin/wallet/wallet_tracking_screen.dart,374,,,0
+Admin,,Embedded view,admin / wallet,Message State,_MessageState,apps/admin/lib/screens/admin/wallet/wallet_tracking_screen.dart,399,,,0
+Admin,,Embedded view,admin / widgets,Actor Support Cases Section,ActorSupportCasesSection,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,22,,,0
+Admin,,Embedded view,admin / widgets,Case Tile,_CaseTile,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,100,,,0
+Admin,,Embedded view,admin / widgets,Order Linked Support Cases Section,OrderLinkedSupportCasesSection,apps/admin/lib/screens/admin/widgets/actor_support_cases_section.dart,136,,,0
+Admin,,Embedded view,admin / widgets,Section Message,SectionMessage,apps/admin/lib/screens/admin/widgets/paginated_query_list.dart,13,,,0
+Admin,,Embedded view,admin / widgets,Paginated Query List,PaginatedQueryList,apps/admin/lib/screens/admin/widgets/paginated_query_list.dart,52,,,0

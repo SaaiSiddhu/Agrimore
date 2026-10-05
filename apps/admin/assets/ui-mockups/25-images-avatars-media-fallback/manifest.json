@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "foundation": "C25: Images, avatars and media fallback",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "aed38d713a0c285a75d2cbfcff81a3698ba5dacd",
+  "source_coverage": {
+    "files": 818,
+    "lines": 272187
+  },
+  "domain_style": "Professional-blue content thumbnails and dense evidence frames, cyan crop/attachment guidance with steel/slate fallbacks.",
+  "panels": [
+    {
+      "label": "Content framing",
+      "specimen": "Panel \"Content images\": square synthetic unbranded produce-crate PHOTO \"Product / square\"; wide synthetic farm panorama \"Banner / wide\". Cyan note \"Preserve subject and safe crop areas\". Small \"Synthetic image examples\". No CMS publish success or actual record."
+    },
+    {
+      "label": "Evidence and file fallback",
+      "specimen": "Panel \"Evidence preview\": blank document-outline rectangle \"Image evidence / contain\", separate neutral PDF-outline \"PDF attachment\"; same-size failed-image frame \"Could not load preview\". Secondary outlined \"Try again\". Cyan note \"No preview does not mean no attachment\". No actual document/QR/name/case details or download/export."
+    },
+    {
+      "label": "Per-file upload recovery",
+      "specimen": "Panel \"Upload states\": same-size tiles \"Selected / not saved\", \"Uploading\u2026\" with indeterminate spinner and \"Upload failed\" with secondary \"Retry upload\". Cyan note \"Handle each file; keep the remaining selection\". No fabricated percent/count/all-success/attached label."
+    },
+    {
+      "label": "Avatar and finalize boundary",
+      "specimen": "Panel \"Identity and attachment\": equal circular person-outline and \"AD\" samples labelled \"Default avatar\" and \"Synthetic initials\"; separate status text \"Awaiting attachment confirmation / example state\", outlined \"Retry attachment\". Cyan note \"Storage completion is not record save\"; tiny \"Attachment does not resolve a case\". No verified check/real portrait/admin authority badge."
+    }
+  ],
+  "media_contract": [
+    "Stable reserved frames across loading, missing and failed media; keep record name/status/actions usable when a thumbnail fails.",
+    "Fit is deliberate: cover for catalogue/cover images with safe focal area, contain for detailed inspection/evidence; never stretch or crop identity detail. Ratios/sizes on boards are target examples, not a new crop editor.",
+    "Missing URL, network/decode failure, local preview, loading, permission failure and unsupported format are distinct; sanitized errors and meaningful retry only when the supported handler exists.",
+    "Neutral avatars use owned photo only when the app actually renders it, then initials/generic role fallback; empty names and unicode graphemes need tests. No avatar alone signals verified identity.",
+    "Useful image labels complement surrounding text; decorative repeated media is excluded from semantics. Announce async state change accessibly and keep controls comfortable with focus labels.",
+    "Local selection is not upload; upload is not attached record, parent save, published catalogue, document approval or delivery completion.",
+    "Progress only when measured; otherwise indeterminate. Cancel/retry/resume/offline queues are not invented across apps.",
+    "Maintain selected draft and per-file failure context where supported; preserve owner/generation across late upload/results and authenticated caches; no cross-account stale preview.",
+    "File validation is path/domain-specific; picker extensions/quality/MIME metadata do not prove valid decodable safe bytes. Client feedback must align with backend/storage limits without promising a universal accepted format.",
+    "Public catalogue media is separate from owned avatars/private documents/proof/support evidence. No raw tokens/storage paths or actual IDs in UI; no private-document fake assets.",
+    "Removal from a form, removing a record reference and deleting a Storage object differ; preserve existing asset until replacement/save confirmed and define orphan cleanup later.",
+    "Synthetic photos, monograms and placeholder evidence only; no live person, store, identity document, order, status, upload progress or actual file operation represented."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-images-avatars-media-fallback-light.png",
+      "sha256": "192d80cce757c9d7b484dae3d75722a07475a5942593cffcbf78ca1cdbfa0e81",
+      "bytes": 1564067,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-05f89056-df09-4b22-a436-6ace5ac3aefe.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "b4bad784b37a9415c4c2bef5fdc009592bc818c371fd2b7b6f8b0b5bbbfa7fce",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-05f89056-df09-4b22-a436-6ace5ac3aefe.png",
+          "source_output_sha256": "192d80cce757c9d7b484dae3d75722a07475a5942593cffcbf78ca1cdbfa0e81"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, app-specific synthetic media roles, stable loading/missing/failed frames, labelled independent example states, no real portraits/private documents/identifiers, no fabricated uploaded/approved/published/delivered outcome, no unsupported Associate upload controls, no sidebar and readable dark contrast. Raster values approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-images-avatars-media-fallback-dark.png",
+      "sha256": "680b2f73b1c74d5567aa759d004b8be8f354836bf6caafb73990b71369a8981c",
+      "bytes": 1734603,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-adb50747-da15-49b6-86a6-e6866242dc2e.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "33070165872f900d9b8960858846e73de3862726b84e12ae859c2e5f8e532429",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-05f89056-df09-4b22-a436-6ace5ac3aefe.png",
+              "sha256": "192d80cce757c9d7b484dae3d75722a07475a5942593cffcbf78ca1cdbfa0e81",
+              "reference_kind": "Generated C25 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-c68872b2-c371-4b93-9950-07a45426041d.png",
+          "source_output_sha256": "181ef7ca693eec0ffe71c23156c2e006f4701cfbc79976bd6ec5d2fe056fcbef"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "ac62d6085d5d161b745a65585f50135b5aa1f276e47cf7cea06f99c2516de456",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-c68872b2-c371-4b93-9950-07a45426041d.png",
+              "sha256": "181ef7ca693eec0ffe71c23156c2e006f4701cfbc79976bd6ec5d2fe056fcbef",
+              "reference_kind": "Generated C25 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-adb50747-da15-49b6-86a6-e6866242dc2e.png",
+          "source_output_sha256": "680b2f73b1c74d5567aa759d004b8be8f354836bf6caafb73990b71369a8981c"
+        }
+      ],
+      "review": "Visually reviewed for locked identity, app-specific synthetic media roles, stable loading/missing/failed frames, labelled independent example states, no real portraits/private documents/identifiers, no fabricated uploaded/approved/published/delivered outcome, no unsupported Associate upload controls, no sidebar and readable dark contrast. Raster values approximate."
+    }
+  ],
+  "prompts_file_sha256": "63fd2fe03888010d1cd803df5b825f5da524be61ca18e77e61dc4697e4e58221"
+}

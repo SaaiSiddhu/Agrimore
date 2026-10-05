@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "foundation": "C07: Application shell and navigation",
+  "version": "v1",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "sales-associate",
+  "app_directory": "employee",
+  "display_name": "Agrimore Sales Associate",
+  "identity": "Premium royal blue with muted indigo, pearl and slate support.",
+  "generation_tool": "built-in image_gen",
+  "asset_kind": "Static Storybook-style PNG references",
+  "source_audit_head": "f87ce8cd53b6971650dd0aeb79ee164aa3865ef8",
+  "source_coverage": {
+    "files": 815,
+    "lines": 271458
+  },
+  "shell_frame": "Four-root associate workspace",
+  "root_destinations": [
+    [
+      "Home",
+      "Sales overview"
+    ],
+    [
+      "Orders",
+      "Attributed orders"
+    ],
+    [
+      "Wallet",
+      "Commission & payouts"
+    ],
+    [
+      "Profile",
+      "Account & support"
+    ]
+  ],
+  "selected_destination": "Wallet",
+  "back_behavior": [
+    "Payout detail \u2192 Wallet",
+    "Other root \u2192 Home",
+    "Home \u2192 Platform back"
+  ],
+  "target_entry_flow": [
+    "Payout update",
+    "Associate access",
+    "Wallet",
+    "Payout details"
+  ],
+  "entry_rules": [
+    "Resume only after approval and access checks.",
+    "An update never implies payment completion."
+  ],
+  "interaction_target_minimum_px": 48,
+  "implementation_status": "Documentary target proposal only; no runtime navigation, app-link registration or pubspec changes.",
+  "limits": "Exact color/identity and navigation-contract targets; approximate raster illustration. No device link, history, accessibility or pixel-exact certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-sales-associate-application-shell-navigation-light.png",
+      "sha256": "dff0daca028a3bfddf78d5d17af7a6062fad2dee13e0c814de2227c5a8ea5c6c",
+      "bytes": 1576401,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-90bc5d37-44d5-401c-a57c-59e6c5bd89bb.png",
+      "palette": {
+        "primary": "#2D56C4",
+        "onPrimary": "#FFFFFF",
+        "support": "#6950A2",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#F7F8FC",
+        "surface": "#FFFFFF",
+        "raised": "#FBFCFF",
+        "text": "#192840",
+        "muted": "#61708B",
+        "border": "#DDE3F0",
+        "strongBorder": "#94A0B7",
+        "selected": "#EAF0FE",
+        "focus": "#2D56C4"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#EDF1FB",
+          "text": "#31549E"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+        "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "fa18ff735d5fd48ad65902ec20f1aab073ccb94c5a299217fba3a7ce1766a2da",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+              "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7ad9cd23-2ec2-4d56-875a-45a1537d0458.png",
+          "source_output_sha256": "6676ebd5d0c2a325e3162f905f4490d91daed92dd61b1513ca06ce4a60d8cd74"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "94117bc48e2da873c87e39015611531c4bc25f9494d2e16fbba995aceecbadbb",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-7ad9cd23-2ec2-4d56-875a-45a1537d0458.png",
+              "sha256": "6676ebd5d0c2a325e3162f905f4490d91daed92dd61b1513ca06ce4a60d8cd74",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png",
+              "sha256": "5e40ab35853e74ff50cc1256d4445976f72d232fa3941b4393c073100e739e19",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-90bc5d37-44d5-401c-a57c-59e6c5bd89bb.png",
+          "source_output_sha256": "dff0daca028a3bfddf78d5d17af7a6062fad2dee13e0c814de2227c5a8ea5c6c"
+        }
+      ],
+      "review": "Selected output inspected for identity, root count/order, selected destination, back rules, ordered target entry flow and readable theme contrast."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-sales-associate-application-shell-navigation-dark.png",
+      "sha256": "7b4a2be97bd9251c35f724abbf5c258d84d28761d31bd05e643a8c6b596645db",
+      "bytes": 1494342,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-dad5abe0-edab-4ec2-a084-52c8b744c6a6.png",
+      "palette": {
+        "primary": "#96B4FF",
+        "onPrimary": "#142241",
+        "support": "#C0ADE7",
+        "supportLabel": "Supporting indigo",
+        "canvas": "#090B11",
+        "surface": "#131722",
+        "raised": "#1E2533",
+        "text": "#F2F5FC",
+        "muted": "#B9C5DD",
+        "border": "#354259",
+        "strongBorder": "#8393B2",
+        "selected": "#1B2C50",
+        "focus": "#96B4FF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#1A2B4C",
+          "text": "#B2C8FF"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 12,
+        "Card": 18,
+        "Sheet / dialog": 24
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+        "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "13e96a1e7f521cf58fea58717e312261f03ec258b194fd957276aaa2adeefc41",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-90bc5d37-44d5-401c-a57c-59e6c5bd89bb.png",
+              "sha256": "dff0daca028a3bfddf78d5d17af7a6062fad2dee13e0c814de2227c5a8ea5c6c",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png",
+              "sha256": "579b82781b7cac9f889ec36a11448bab868333024ad3f7c037e14d1c3997ec62",
+              "repository_path": "apps/employee/assets/ui-mockups/01-color-roles-theme-identity/agrimore-sales-associate-design-tokens-dark.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-dad5abe0-edab-4ec2-a084-52c8b744c6a6.png",
+          "source_output_sha256": "7b4a2be97bd9251c35f724abbf5c258d84d28761d31bd05e643a8c6b596645db"
+        }
+      ],
+      "review": "Selected output inspected for identity, root count/order, selected destination, back rules, ordered target entry flow and readable theme contrast."
+    }
+  ],
+  "prompts_file_sha256": "c8ba564ebf6dafb6c08b345599a588c2cf520196e1f282124836ffcdb6d01551"
+}

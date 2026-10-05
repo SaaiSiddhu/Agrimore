@@ -2320,13 +2320,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feeDistanceRate => 'Rate per kilometre (₹)';
 
   @override
-  String get feeDistanceHelp => 'Base fee plus the road-distance rate. Customers see the server-calculated amount before payment.';
+  String get feeDistanceHelp =>
+      'Base fee plus the road-distance rate. Customers see the server-calculated amount before payment.';
 
   @override
-  String feeDistanceLocationReady(String radius) => 'Shop location is set. Delivery radius: $radius km.';
+  String feeDistanceLocationReady(Object radius) {
+    return 'Shop location is set. Delivery radius: $radius km.';
+  }
 
   @override
-  String get feeDistanceLocationMissing => 'Set a shop location before choosing road-distance pricing.';
+  String get feeDistanceLocationMissing =>
+      'Set a shop location before choosing road-distance pricing.';
 
   @override
   String get feeSetLocation => 'Use current shop location';
@@ -2335,7 +2339,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feeLocationSaved => 'Shop location saved';
 
   @override
-  String get feeLocationFailed => 'Couldn\'t set the shop location. Check location permission and try again.';
+  String get feeLocationFailed =>
+      'Couldn\'t set the shop location. Check location permission and try again.';
 
   @override
   String get feeAmount => 'Delivery fee (₹)';
@@ -2385,7 +2390,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String feeSummaryDistance(String base, String rate) => 'Road distance: base $base + $rate/km';
+  String feeSummaryDistance(String base, String rate) {
+    return 'Road distance: base $base + $rate/km';
+  }
 
   @override
   String get postHint => 'What\'s new? Tell your followers about it';
@@ -3128,6 +3135,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get productStockUnknown => 'Stock count not configured';
+
+  @override
+  String get productStockBackfillHelp =>
+      'Count the units physically on hand and enter that number. Unknown stock is never filled with a guessed default.';
+
+  @override
   String get productStockSaveFailed => 'Couldn\'t update stock. Try again.';
 
   @override
@@ -3488,13 +3502,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feeErrDistanceBase => 'Enter a base fee from ₹0 to ₹1,000.';
 
   @override
-  String get feeErrDistanceRate => 'Enter a per-kilometre rate above ₹0 and up to ₹1,000.';
+  String get feeErrDistanceRate =>
+      'Enter a per-kilometre rate above ₹0 and up to ₹1,000.';
 
   @override
   String get feeErrPaisePrecision => 'Use no more than two decimal places.';
 
   @override
-  String get feeErrShopLocation => 'Set a valid shop location and delivery radius before saving this schedule.';
+  String get feeErrShopLocation =>
+      'Set a valid shop location and delivery radius before saving this schedule.';
 
   @override
   String feeErrTooHigh(String max) {

@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "foundation": "C06: Mobile layout, safe areas and keyboard",
+  "version": "v1",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "asset_kind": "Static Storybook-style PNG references",
+  "source_audit_head": "f87ce8cd53b6971650dd0aeb79ee164aa3865ef8",
+  "source_coverage": {
+    "files": 815,
+    "lines": 271458
+  },
+  "frame": "Compact mobile editor",
+  "layout_roles_px": {
+    "Page inset": 16,
+    "Field gap": 12,
+    "Section gap": 24,
+    "Footer inset": 16,
+    "Footer vertical": 12,
+    "Action minimum": 48
+  },
+  "specimen": {
+    "title": "Edit product",
+    "fields": [
+      [
+        "Product name",
+        "Fresh tomatoes"
+      ],
+      [
+        "Category",
+        "Vegetables"
+      ],
+      [
+        "Description",
+        "Packed daily."
+      ]
+    ],
+    "focused_field": "Description",
+    "primary_action": "Save changes",
+    "secondary_action": "Cancel"
+  },
+  "keyboard_scroll_rules": [
+    "Keep editor sections inside one flexible scroll.",
+    "Reserve Save changes and Cancel below the form.",
+    "Stack actions when labels or text need more room.",
+    "Keep the focused field above the action footer."
+  ],
+  "inset_policy": "System measured; one keyboard clearance owner; footer outside scroll; keyboard-open bottom safe padding recomputed.",
+  "implementation_status": "Documentary target proposal only; runtime and asset registration unchanged.",
+  "limits": "Exact color/role targets; raster illustration. No runtime keyboard, scroll, accessibility or pixel-exact color certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-mobile-layout-safe-areas-keyboard-light.png",
+      "sha256": "005f181668813ef61dc7043ef1e4f15ba2d1f8afb34be63995bb504f6819b1fa",
+      "bytes": 1297680,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-a868dfb8-60e1-45cb-b62f-bda56394b097.png",
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "0fa123a957814e9d5d7ad362972d3cd375699b3832b0eb895db7df4642dcd8b5",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-a6f33f0a-0439-49f4-8616-83e262698541.png",
+          "source_output_sha256": "18aee88246d35ed42009b06ba49c0693b8de4cbea8c628f5a78a369690128bac"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "1a2d93529ecb0b792b285f6a91b16ce6e6afc305a6dac8642101af86a768f7bf",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-a6f33f0a-0439-49f4-8616-83e262698541.png",
+              "sha256": "18aee88246d35ed42009b06ba49c0693b8de4cbea8c628f5a78a369690128bac",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-a868dfb8-60e1-45cb-b62f-bda56394b097.png",
+          "source_output_sha256": "005f181668813ef61dc7043ef1e4f15ba2d1f8afb34be63995bb504f6819b1fa"
+        }
+      ],
+      "review": "Selected output inspected for app identity, layout roles, focus visibility, scroll/action boundaries, keyboard placement and readable dark action text."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-mobile-layout-safe-areas-keyboard-dark.png",
+      "sha256": "526db21ffe0c0baf2cd7bb447b2c61ac40ebba49fbfaffd21be9b28b257c9a95",
+      "bytes": 1419301,
+      "width": 1536,
+      "height": 1024,
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-573b7384-113c-4020-9c98-795b766caf2f.png",
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "227d2e4c48ac9cda7d9594cad5f71ede038d47314817e50ab67eeef4df46d45b",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "original_source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-a868dfb8-60e1-45cb-b62f-bda56394b097.png",
+              "sha256": "005f181668813ef61dc7043ef1e4f15ba2d1f8afb34be63995bb504f6819b1fa",
+              "reference_kind": "Historical generated reference; original retained outside repository"
+            },
+            {
+              "original_source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-573b7384-113c-4020-9c98-795b766caf2f.png",
+          "source_output_sha256": "526db21ffe0c0baf2cd7bb447b2c61ac40ebba49fbfaffd21be9b28b257c9a95"
+        }
+      ],
+      "review": "Selected output inspected for app identity, layout roles, focus visibility, scroll/action boundaries, keyboard placement and readable dark action text."
+    }
+  ],
+  "prompts_file_sha256": "7d8a365409e05a682d20fcf6ad9b7d9ca396c2e785e7a924d6b587172c0968c5"
+}

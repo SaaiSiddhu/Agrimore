@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "foundation": "C17: Dialogs, sheets and discard protection",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "seller",
+  "app_directory": "seller",
+  "display_name": "Agrimore Seller",
+  "identity": "Blue-teal with warm copper and cool neutral support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "Compact blue-teal merchant confirmations, copper consequences, cool-neutral stock sheets and operational sticky footers.",
+  "panels": [
+    {
+      "label": "Confirmation",
+      "specimen": "Centered modal \"Pause ordering?\". Body \"Customers cannot place orders while your store is paused.\" OUTLINED \"Keep store open\" in blue-teal and PRIMARY \"Pause ordering\" in blue-teal. Copper board note \"Separate store-status example\" and \"Confirm before updating\". No dates, pause durations, inventory change or already-paused success."
+    },
+    {
+      "label": "Editable sheet",
+      "specimen": "Compact bottom sheet titled \"Update stock\", labelled close X, neutral product context \"Sample product\", field \"Stock quantity\" with no numeric value and small \"Values omitted in this specimen\". OUTLINED \"Cancel\" and blue-teal PRIMARY \"Save stock\". Scrolling body plus sticky actions with a labelled keyboard-clearance strip. No price, counts or quantity chips."
+    },
+    {
+      "label": "Discard protection",
+      "specimen": "Dialog \"Discard stock edit?\", body \"Your unsaved stock edit will be removed.\" OUTLINED blue-teal \"Keep editing\" and OUTLINED danger \"Discard edit\". Copper board note \"Extend the existing discard guard\". Do not invent product deletion or remote Undo."
+    },
+    {
+      "label": "Submission recovery",
+      "specimen": "Separate \"Pending variant\" with disabled outlined spinner control \"Saving stock\" and \"Failed variant\" notice \"Stock couldn\u2019t be saved\" with helper \"Keep the entered value\". Copper note \"Close only after confirmed save\". No stock numbers, optimistic saved tick or additional Retry mutation. Any failed-variant action is secondary \"Keep editing\", returning to retained editor input, never server retry or discard."
+    }
+  ],
+  "modal_contract": [
+    "Modal consent is explicit: true authorizes the named action; false/null/back/scrim never authorizes deletion, cancellation or draft reset.",
+    "One focused task per sheet, accurate title/context/consequence, a safe labelled alternative and distinct destructive wording. No generic Yes/No for consequential actions.",
+    "Track dirty state against the confirmed initial baseline, including reverted edits and optional fields. Unchanged idle editors exit directly; dirty editors ask once.",
+    "Back, close, keyboard escape, scrim, drag and navigation through the editor use one serialized guard; repeated attempts do not stack dialogs.",
+    "Keep editing restores the editor and appropriate focus. Discard affects only that unsent local payload, not existing remote records, pending requests or recovery journals.",
+    "Draft persistence is domain-specific: only Delivery registration has evidenced resumable draft storage here. No invented Save draft or sensitive payout-value persistence.",
+    "Freeze captured payload and block duplicate submission while pending. Leaving UI is not canceling an in-flight server operation; use a bounded lifecycle and reconcile outcome.",
+    "Known failure keeps safe editor input and inline reason; unknown outcome checks authoritative state before retry. Reuse supported request identity/version checks according to the action.",
+    "Close/clear dirty only after the applicable authoritative success; modal pop itself is not saved, approved, paid, delivered or order placed.",
+    "Scroll body and sticky footer fit safe areas/keyboard/text scaling; actions remain reachable. Show modal focus containment, labelled close/dismiss and opener focus restoration in runtime verification.",
+    "Use existing DialogHelper/Seller/Delivery equivalents and C01 locked per-app tokens; extend canonical lifecycle instead of duplicating helpers.",
+    "Cancellation defaults to the least destructive path. Reduced motion, route semantics, native modal accessibility and contrast need rendered/AT checks; raster proposals do not certify them."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime/accessibility certification or pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-seller-dialogs-sheets-discard-protection-light.png",
+      "sha256": "eb840242ae98029dbe258e86162ec8a84a21994e24fcc4e49ec1a9bce3e56052",
+      "bytes": 1550063,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#0B6A80",
+        "onPrimary": "#FFFFFF",
+        "support": "#9B5E3D",
+        "supportLabel": "Warm copper",
+        "canvas": "#F5F8F9",
+        "surface": "#FFFFFF",
+        "raised": "#F9FCFD",
+        "text": "#142A34",
+        "muted": "#56717E",
+        "border": "#D5E3E8",
+        "strongBorder": "#879EAA",
+        "selected": "#E5F2F5",
+        "focus": "#0B6A80"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E6F3F7",
+          "text": "#17647B"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+        "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-11863157-3a11-40e7-8f9d-ffc94a74ff30.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "ef084faac2119a42dd3b57144a469a898e6d7f546b09651bbf7c72f2bf5040b2",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png",
+              "sha256": "04d17f7ec077a040e8689bea57f1cc678d3b24ee0bd4a7f9be4717b5a848185c",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-28cc3d8e-4aae-4a96-9a61-20f042030e5b.png",
+          "source_output_sha256": "2e96cd0a9c6ec70af5343fd0734d7ceb98531d8115bb6e1fba9cf81b7c0bec77"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "7ef444f906cddaf52a2c6842692ee539613c8fabc4023dfe4f2047d9ceb10781",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-28cc3d8e-4aae-4a96-9a61-20f042030e5b.png",
+              "sha256": "2e96cd0a9c6ec70af5343fd0734d7ceb98531d8115bb6e1fba9cf81b7c0bec77",
+              "reference_kind": "Generated C17 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-11863157-3a11-40e7-8f9d-ffc94a74ff30.png",
+          "source_output_sha256": "eb840242ae98029dbe258e86162ec8a84a21994e24fcc4e49ec1a9bce3e56052"
+        }
+      ],
+      "review": "Visually reviewed for app identity, exact consequence scope, explicit safe/danger actions, editor excerpts, unsent-edit discard boundaries, separate pending/failure states, honest proposed layout labels, no fabricated values/PII, no sidebar and neutral dark modals. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-seller-dialogs-sheets-discard-protection-dark.png",
+      "sha256": "759af90b12685b0a4ba2a0c8c711f8c2d1bc342e53ce88012052c8d8ab1ea2ca",
+      "bytes": 1486080,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#70D0DF",
+        "onPrimary": "#0B2831",
+        "support": "#DAAE8C",
+        "supportLabel": "Warm copper",
+        "canvas": "#080C0F",
+        "surface": "#11191E",
+        "raised": "#1B262D",
+        "text": "#F1F7FA",
+        "muted": "#B5C9D1",
+        "border": "#33464F",
+        "strongBorder": "#7895A2",
+        "selected": "#14313A",
+        "focus": "#70D0DF"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#142D37",
+          "text": "#9BD9E9"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 10,
+        "Card": 14,
+        "Sheet / dialog": 20
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          10,
+          14,
+          20
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+        "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ed9f2461-6d7d-4eb4-9ad4-fc1bd6da2288.png",
+      "failed_attempts_without_output": [],
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "f67960749dfae428c897a6f6e7171a746ae4c2398ea624d6b37c162684a76aef",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png",
+              "sha256": "2608e9115e73f8ff7bf1a06e5921757fd488f0c4f3e0b6a219271b0e5d01de90",
+              "repository_path": "apps/seller/assets/ui-mockups/01-color-roles-theme-identity/agrimore-seller-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-11863157-3a11-40e7-8f9d-ffc94a74ff30.png",
+              "sha256": "eb840242ae98029dbe258e86162ec8a84a21994e24fcc4e49ec1a9bce3e56052",
+              "reference_kind": "Generated C17 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-ed9f2461-6d7d-4eb4-9ad4-fc1bd6da2288.png",
+          "source_output_sha256": "759af90b12685b0a4ba2a0c8c711f8c2d1bc342e53ce88012052c8d8ab1ea2ca"
+        }
+      ],
+      "review": "Visually reviewed for app identity, exact consequence scope, explicit safe/danger actions, editor excerpts, unsent-edit discard boundaries, separate pending/failure states, honest proposed layout labels, no fabricated values/PII, no sidebar and neutral dark modals. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "4efea10579ce63283b9aa63bb65729a33513d40d8a05082c2f07c1ee2bb3ffe2"
+}

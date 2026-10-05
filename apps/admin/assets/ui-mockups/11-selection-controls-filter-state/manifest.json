@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "foundation": "C11: Selection controls and filter state",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "version": "v1",
+  "owner_approved": false,
+  "created_on": "2026-10-03",
+  "app": "admin",
+  "app_directory": "admin",
+  "display_name": "Agrimore Admin",
+  "identity": "Professional institutional blue with cyan and steel/slate support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "selection_panels": [
+    {
+      "label": "Visible-row selection",
+      "specimen": "Proposed pattern: Select visible checkbox MIXED dash; two synthetic rows Record A checked, Record B unchecked. Caption Only visible eligible rows. Separate switch Product active ON, helper Editor draft \u2014 Save to commit. Do not show fake bulk actions or user data."
+    },
+    {
+      "label": "Exclusive filters and radios",
+      "specimen": "User-filter chips All selected, Active unselected, Inactive unselected. Separate radio group Payout status: Pending / Requested selected, Paid unselected, Rejected unselected. One choice per group; not a mutation."
+    },
+    {
+      "label": "Structured category picker",
+      "specimen": "Product category field Choose a category; open compact picker with Search categories and radio options Category A selected, Category B unselected. Synthetic labels. Caption Stable option IDs; preserve current value on cancel. No sidebar."
+    },
+    {
+      "label": "Filter scope and selection",
+      "specimen": "Diagram Filter visible records \u2192 Review selected rows \u2192 Explicit action. Callout Mixed means some visible rows selected. Text Changing filters must reconcile selection. Clear selection text action. Separate editor Save / Cancel action specimens. No success message, permissions claims or real record counts."
+    }
+  ],
+  "domain_style": "Professional-blue dense review controls with cyan grouping, explicit row selection scope and mixed parent checkboxes.",
+  "selection_contract": {
+    "cardinality": "One choice for radios/choice groups; independent booleans for checkboxes/toggle chips",
+    "selected_cue": "Symbol/border plus color; selected is not success",
+    "mixed": "Derived parent state from explicit selection scope; dash means some selected",
+    "commit_policy": "Per domain: immediate filters versus staged draft explicitly documented",
+    "cancel": "Discard staged edits and preserve saved/applied state",
+    "reset": "Declare draft-clear versus immediate applied reset per workflow",
+    "interaction_target_min_px": 48,
+    "privacy": "Synthetic labels, no personal data or invented query counts"
+  },
+  "implementation_status": "Static assets/docs only; no runtime selection controls, filter queries, routes, backend, pubspec or shared exports changed by this task.",
+  "limits": "Approximate raster proposals, not screenshots, pixel-exact measurements or accessibility certification.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-admin-selection-controls-filter-state-light.png",
+      "sha256": "1151f6da5121b3a7f8c9f66df47e27188ccfe23d63138e937b3a6086010409a1",
+      "bytes": 1400343,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#1D4F91",
+        "onPrimary": "#FFFFFF",
+        "support": "#087E8B",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#F5F7FB",
+        "surface": "#FFFFFF",
+        "raised": "#F9FBFE",
+        "text": "#14243B",
+        "muted": "#5B6B82",
+        "border": "#D8E1EF",
+        "strongBorder": "#8C9DB5",
+        "selected": "#E8EFF8",
+        "focus": "#1D4F91"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FFF4D6",
+          "text": "#805400"
+        },
+        {
+          "role": "Error",
+          "container": "#FDECEA",
+          "text": "#B42318"
+        },
+        {
+          "role": "Info",
+          "container": "#E8F0FA",
+          "text": "#24528C"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+        "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-c4292e04-fdb8-4f8b-a121-a852d7efb119.png",
+      "generation_recovery_note": "Input prompts reconstructed from this chat's exact tool calls; completed outputs recovered from generated image files after interruption and visually inspected.",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "a5ebf3e623cb8bff35ed974684fbbb2b388859302f93737c1ccc651da649d3a5",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1d412449-5c02-4ac0-b8dc-311aed99fae2.png",
+          "source_output_sha256": "7ed78a270da343c34ceb101255bb7ba052a0306abe597553d83659a6848b40bc"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "70904b265ffc9132e5044cb535065cbc58ad7f761ac90f2a79afe7fd9c1ba788",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-1d412449-5c02-4ac0-b8dc-311aed99fae2.png",
+              "sha256": "7ed78a270da343c34ceb101255bb7ba052a0306abe597553d83659a6848b40bc",
+              "reference_kind": "Generated image outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png",
+              "sha256": "fca2bb37fc479e39d3bdc3da8c45e5968af3840edf4ad66312e18a6860d4c1a4",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-c4292e04-fdb8-4f8b-a121-a852d7efb119.png",
+          "source_output_sha256": "1151f6da5121b3a7f8c9f66df47e27188ccfe23d63138e937b3a6086010409a1"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, selection cardinality, switch/checkbox/radio state cues, draft/applied policy annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-admin-selection-controls-filter-state-dark.png",
+      "sha256": "43ce1793ae730034c6c30420af6a201e0d07f48add9ce98a7137caa01f3e91e6",
+      "bytes": 1678228,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#93B3EC",
+        "onPrimary": "#0D203E",
+        "support": "#7BCBD5",
+        "supportLabel": "Supporting cyan",
+        "canvas": "#080B10",
+        "surface": "#121922",
+        "raised": "#1D2837",
+        "text": "#F2F6FC",
+        "muted": "#B5C3D6",
+        "border": "#314157",
+        "strongBorder": "#74869E",
+        "selected": "#192E4A",
+        "focus": "#93B3EC"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#302612",
+          "text": "#F1CE7B"
+        },
+        {
+          "role": "Error",
+          "container": "#341B1B",
+          "text": "#FFA39C"
+        },
+        {
+          "role": "Info",
+          "container": "#172A42",
+          "text": "#AFCCF6"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 16
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          600,
+          500,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          18,
+          16,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          16
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+        "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-27ba6320-7985-458b-b4c1-69962efc8794.png",
+      "generation_recovery_note": "Input prompts reconstructed from this chat's exact tool calls; completed outputs recovered from generated image files after interruption and visually inspected.",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "b9296e790e412360f9a77949a73925054844436aefa34a0cc9c2c01196a2d7d5",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-c4292e04-fdb8-4f8b-a121-a852d7efb119.png",
+              "sha256": "1151f6da5121b3a7f8c9f66df47e27188ccfe23d63138e937b3a6086010409a1",
+              "reference_kind": "Generated image outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-e68bada0-406b-42be-b05c-09992231caee.png",
+          "source_output_sha256": "a00e26a2d452d1d53f3dfd7be75bbee937381efca23a11fb98da2a78d3bc260c"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "0ed0558bf42f1072e2f86113a632aeb1dbf0ff533e0e0fbba988e2f64eec9af0",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-e68bada0-406b-42be-b05c-09992231caee.png",
+              "sha256": "a00e26a2d452d1d53f3dfd7be75bbee937381efca23a11fb98da2a78d3bc260c",
+              "reference_kind": "Generated image outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png",
+              "sha256": "d232ad575ce49311efa785e4dfc2fc781c81d297184215e8f66979536f67041b",
+              "repository_path": "apps/admin/assets/ui-mockups/01-color-roles-theme-identity/agrimore-admin-design-tokens-dark.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-27ba6320-7985-458b-b4c1-69962efc8794.png",
+          "source_output_sha256": "43ce1793ae730034c6c30420af6a201e0d07f48add9ce98a7137caa01f3e91e6"
+        }
+      ],
+      "review": "Selected board visually inspected for app identity, domain relevance, selection cardinality, switch/checkbox/radio state cues, draft/applied policy annotations, privacy and dark neutral surfaces. Geometry and palette rendering approximate."
+    }
+  ],
+  "prompts_file_sha256": "14dee048bda04efa66065b2c0489cf26e142193fe7b06c5c2515191c463b1952"
+}

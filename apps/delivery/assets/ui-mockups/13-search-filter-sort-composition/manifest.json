@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "foundation": "C13: Search, filter and sort composition",
+  "status": "PROVISIONAL_DIRECTION",
+  "classification": "TARGET_IMPLEMENTATION",
+  "owner_approved": false,
+  "version": "v1",
+  "created_on": "2026-10-03",
+  "app": "delivery",
+  "app_directory": "delivery",
+  "display_name": "Agrimore Delivery",
+  "identity": "Black/white with burgundy and burnt orange support.",
+  "generation_tool": "built-in image_gen",
+  "source_audit_head": "97f171f00f8330f1ae7c831845e4dd94a8ae2c33",
+  "source_coverage": {
+    "files": 817,
+    "lines": 271604
+  },
+  "domain_style": "High-contrast black/white history discovery, burgundy history context and burnt-orange mode/scope guidance; simple controls for field use.",
+  "panels": [
+    {
+      "label": "History list composition",
+      "specimen": "Heading History list. Single-choice chips All unselected and Delivered selected with check, applied Date: This week chip and Filters button. Read-only line Order: Newest first with no dropdown chevron. Caption Illustrative history controls; no record counts."
+    },
+    {
+      "label": "Exact lookup scope",
+      "specimen": "Separate mini surface heading Exact order lookup with empty field labelled Order ID, placeholder Enter exact order ID. No ID values or fake order. Burnt-orange guidance ID lookup ignores history filters. Small return control Clear lookup with helper Returns to saved history filters. This is a separate mode specimen, never a combined search+history query."
+    },
+    {
+      "label": "Staged history filters",
+      "specimen": "Inset sheet Filters / Draft changes. Status radio Delivered selected, All unselected. Date range This week selected, All time unselected. Apply filters and Cancel actions; helper Apply commits; Cancel discards edits. Read-only Newest first note; no sort dropdown or Apply-count."
+    },
+    {
+      "label": "Reset and lookup feedback",
+      "specimen": "Reset history filters button, helper Immediately sets All status + All time; keeps lookup separate. Small independent state cards Looking up order, No matching order, Lookup unavailable with Retry. Exact failure is not not-found. No future tracking promise, ETA, address, handover code or fake numeric values."
+    }
+  ],
+  "discovery_contract": [
+    "Compose one canonical discovery state from query, applied domain filters and selected sort. Apply query/filter predicates before sorting the same source set; submission, clear, retry and reload must not silently bypass applied filters.",
+    "Name the search scope: loaded products, loaded attributed orders, owned exact order lookup or another verified domain scope. A bounded/local no-match is not proof of a global no-match. Expose Load more when appropriate and avoid claims of exhaustive results.",
+    "Persistent search label names the searchable fields. Clear query removes text only and preserves applied filters/sort in the target; typing/submit behavior is explicit. Decide debounce or explicit submission deliberately and protect against stale asynchronous responses.",
+    "Single-choice status/mode tabs replace the previous selection. Category multi-select remains independent. Active chips mirror committed state and remove only their named predicate; selection is not a server mutation, approval, publication, task completion or settlement.",
+    "Staged sheets copy applied state. Apply commits; Cancel/back/scrim discards draft. Clear draft changes staged controls only. Current Marketplace shop and Delivery sheet Reset are immediate committed resets, so preserve and label that behavior or migrate deliberately.",
+    "Name reset scope. Reset filters returns the relevant defaults while preserving query and sort where specified. Clear lookup is independent of history status/date reset. A reset-all control must explicitly list every state it clears; it is not inferred from Clear query.",
+    "Sort is single-choice and independent of query/filter. A fixed server order is read-only, without radio/dropdown affordance. Provider sorting capability does not prove screen adoption; Admin's selector is proposed. Define default sort, tie behavior and placement of unknown values.",
+    "Delivery exact order lookup is ownership scoped and independent of history status/date filters. Clearing lookup restores saved history state; filter reset does not clear lookup. Do not invent a combined Firestore query or an additional history sort selector.",
+    "Keep calendar semantics explicit: Delivery week bounds use IST; inclusive custom dates map to exclusive query bounds. Canonical filter keys/category IDs, defaults and persistence require domain implementation, not visual equivalence.",
+    "Loading, genuine no-match and unavailable/error are different states. Retry uses the same canonical discovery state. Display counts only from verified data and name population/query/page scope; boards deliberately omit fabricated counts.",
+    "Use labelled clear/remove/reset actions, meaningful group semantics, selected symbols, 48px targets and focus independent of selected. Restore focus after dismiss/clear, keep search keyboard clearance and active chips readable, reflow toolbars at narrow widths and 100\u2013200% text scaling.",
+    "Preserve each C01 identity and role-correct dark inverse text. Extend SellerSearchField, ProductFilterBar and DeliverySearchField/history composition; reuse associate/shared themes/responsive/feedback patterns rather than duplicate generic controls. Runtime shared-package changes require five-app verification."
+  ],
+  "implementation_status": "Design assets/docs only. No app/package runtime source, pubspec, navigation or backend changed by this task.",
+  "limits": "Raster proposals; no runtime or accessibility certification and no pixel-exact color/geometry claim.",
+  "prompts_file": "prompts.md",
+  "images": [
+    {
+      "theme": "light",
+      "file": "agrimore-delivery-search-filter-sort-composition-light.png",
+      "sha256": "cca9f6c815e66ed844a2d94c1170704ed1e4ecbfe4db8f62540b9c2fc489914d",
+      "bytes": 1467942,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#191919",
+        "onPrimary": "#FFFFFF",
+        "support": "#A94D24",
+        "supportLabel": "Burnt orange",
+        "canvas": "#F8F7F6",
+        "surface": "#FFFFFF",
+        "raised": "#FAF9F8",
+        "text": "#1C1C1C",
+        "muted": "#686260",
+        "border": "#DDD7D4",
+        "strongBorder": "#A49993",
+        "selected": "#F5E7EC",
+        "focus": "#A94D24",
+        "burgundy": "#7A2840"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#E7F5ED",
+          "text": "#146C43"
+        },
+        {
+          "role": "Warning",
+          "container": "#FBEDE3",
+          "text": "#88451E"
+        },
+        {
+          "role": "Error",
+          "container": "#F5E7EC",
+          "text": "#7A2840"
+        },
+        {
+          "role": "Info",
+          "container": "#ECEAE8",
+          "text": "#59534F"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+        "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-06ed2ae0-5ef4-4441-ba56-6428a7573711.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "71fe8483be602ff579c2461c89a9a1c3a8e8a3a92282ba19f1391f5c5483e156",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-65344a15-8762-4491-87a0-b57e49d3b91a.png",
+          "source_output_sha256": "fa922b389aaba8c544b1b221930a45be4a39385e158d1cb55a2194ce6aefd4ac"
+        },
+        {
+          "stage": "refinement 1",
+          "prompt_sha256": "160134a2a6b3d76eec9aa8750afd5c0b83b09c03f967e8406a496239c27fdd7b",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-65344a15-8762-4491-87a0-b57e49d3b91a.png",
+              "sha256": "fa922b389aaba8c544b1b221930a45be4a39385e158d1cb55a2194ce6aefd4ac",
+              "reference_kind": "Generated C13 composition reference outside repository"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png",
+              "sha256": "2384d327a37606012a2f3dc2d9427b63447ce9be1ae6b121d1294cc62872e383",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-light.png"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-06ed2ae0-5ef4-4441-ba56-6428a7573711.png",
+          "source_output_sha256": "cca9f6c815e66ed844a2d94c1170704ed1e4ecbfe4db8f62540b9c2fc489914d"
+        }
+      ],
+      "review": "Visually reviewed for app identity, search scope, staged/immediate filter semantics, applied chips, explicit reset, single-choice or read-only order, truthful query feedback, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    },
+    {
+      "theme": "dark",
+      "file": "agrimore-delivery-search-filter-sort-composition-dark.png",
+      "sha256": "d0dda0392fad789b016666421af86ba064c0b75857be50567b8fa7b3dd74d993",
+      "bytes": 1382360,
+      "width": 1536,
+      "height": 1024,
+      "palette": {
+        "primary": "#F4F4F4",
+        "onPrimary": "#151515",
+        "support": "#ECA06D",
+        "supportLabel": "Burnt orange",
+        "canvas": "#090909",
+        "surface": "#151515",
+        "raised": "#222222",
+        "text": "#F5F3F2",
+        "muted": "#C3BAB7",
+        "border": "#3C3633",
+        "strongBorder": "#91857E",
+        "selected": "#3B2029",
+        "focus": "#ECA06D",
+        "burgundy": "#DCA0B1"
+      },
+      "status_colors": [
+        {
+          "role": "Success",
+          "container": "#102C20",
+          "text": "#8DE0B0"
+        },
+        {
+          "role": "Warning",
+          "container": "#342418",
+          "text": "#F0BE98"
+        },
+        {
+          "role": "Error",
+          "container": "#3B2029",
+          "text": "#E3A8B9"
+        },
+        {
+          "role": "Info",
+          "container": "#282523",
+          "text": "#D3C8C1"
+        }
+      ],
+      "spacing_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32
+      ],
+      "radius_roles": {
+        "Control": 8,
+        "Card": 12,
+        "Sheet / dialog": 18
+      },
+      "border_width_px": {
+        "default": 1,
+        "strong": 1,
+        "focus": 2
+      },
+      "typography_reference": {
+        "font_family_reference": "Inter",
+        "font_weights": [
+          700,
+          600,
+          400
+        ],
+        "type_scale_px": [
+          32,
+          24,
+          20,
+          17,
+          14,
+          12
+        ],
+        "spacing_px": [
+          4,
+          8,
+          12,
+          16,
+          24,
+          32
+        ],
+        "radius_px": [
+          8,
+          12,
+          18
+        ],
+        "border_width_px": {
+          "default": 1,
+          "strong": 1,
+          "focus": 2
+        },
+        "shadow_reference": "Flat / Soft / Raised as shown in the approved board; no numeric shadow implementation is specified here."
+      },
+      "c01_identity_reference": {
+        "file": "../01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+        "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+        "status": "APPROVED_LOCKED"
+      },
+      "selected_source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-06c3fb5d-d686-48e5-825f-8cdb0718db5e.png",
+      "generation_history": [
+        {
+          "stage": "initial generation",
+          "prompt_sha256": "8d6ccb3fbaa5bf2aa1eea7da2ba197f58cbbb7fcc8772c21e88a762b84097c91",
+          "prompt_ends_with_newline": false,
+          "inputs": [
+            {
+              "source_path": "/Users/saai_siddharth/Projects/Clients/Agrimore/apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png",
+              "sha256": "745bda063c678184a1c0dc206bab60f45c659f08e0a5824a95fc19e4171385c4",
+              "repository_path": "apps/delivery/assets/ui-mockups/01-color-roles-theme-identity/agrimore-delivery-design-tokens-dark.png"
+            },
+            {
+              "source_path": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-06ed2ae0-5ef4-4441-ba56-6428a7573711.png",
+              "sha256": "cca9f6c815e66ed844a2d94c1170704ed1e4ecbfe4db8f62540b9c2fc489914d",
+              "reference_kind": "Generated C13 composition reference outside repository"
+            }
+          ],
+          "source_output": "/Users/saai_siddharth/.codex/generated_images/01a0fa3d-dc7c-79e3-9b9f-7818d175628b/exec-06c3fb5d-d686-48e5-825f-8cdb0718db5e.png",
+          "source_output_sha256": "d0dda0392fad789b016666421af86ba064c0b75857be50567b8fa7b3dd74d993"
+        }
+      ],
+      "review": "Visually reviewed for app identity, search scope, staged/immediate filter semantics, applied chips, explicit reset, single-choice or read-only order, truthful query feedback, no sidebar and neutral dark surfaces. Raster measurements approximate."
+    }
+  ],
+  "prompts_file_sha256": "5d17bd028200808eb7dd6a17220caf376d3ccfbfe81b7c7bf70287f723288c16"
+}
