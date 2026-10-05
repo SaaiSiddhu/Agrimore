@@ -33,8 +33,8 @@ wins and this Skill needs a fix. Documentation starts at `docs/README.md`
    Execution mode: SINGLE AGENT · Subagents invoked: NO · Agent/Task delegation: NO
    Background agents: NO · Parallel worktree agents: NO · Workflow orchestration: NO
    ```
-2. **Commit identity is fixed.** Author AND committer `Agrimore <agrimorein@gmail.com>`
-   (OWNER_DECISION D-ID, 2026-09-04). **No `Co-Authored-By` trailer, ever.** Verify with
+2. **Commit identity is fixed.** Author AND committer `SaaiSiddhu <saaisiddu@gmail.com>`
+   (OWNER_DECISION 2026-10-05; supersedes D-ID, 2026-09-04). **No `Co-Authored-By` trailer, ever.** Verify with
    `git log -1 --format='%an <%ae> | %cn <%ce>'` after the first commit in any new worktree; the
    repo-local `git config user.*` is the source (there is no global one — an unset config silently
    produced `saai_siddharth@Saais-MacBook-Pro.local` for 69 commits).
@@ -83,7 +83,7 @@ wins and this Skill needs a fix. Documentation starts at `docs/README.md`
 **Routing step 0, every request:** confirm which Agrimore. `pwd` → `git rev-parse --show-toplevel`
 must print `/Users/saai_siddharth/Projects/Clients/Agrimore` (the only worktree since 2026-09-20) or,
 if you created one for the current phase, a sibling `Agrimore-<slug>` worktree,
-and `git remote get-url origin` must contain `SRIESWARAN01/Agrimore-Full-Project`. Anything under
+and `git remote get-url origin` must contain `SaaiSiddhu/Agrimore`. Anything under
 `Projects/Ecommerce/LetBuyy/`, `Projects/Clients/Clone/`, or a Supabase/Cloudflare tree → **stop and say
 so**; never carry a finding, gate or decision across.
 
@@ -210,7 +210,14 @@ permissions: `references/run.md`.
 
 ---
 
-## 5. Repository facts every mode needs (measured 2026-09-04 at `main` = `c8f6f30`; re-measure)
+## 5. Repository facts every mode needs (historical snapshot; re-measure)
+
+Current owner decision, 2026-10-05: origin is private `SaaiSiddhu/Agrimore`; identity is
+`SaaiSiddhu <saaisiddu@gmail.com>`. All 2,613 prior commit identities were rewritten with trees,
+dates and merge relationships preserved. Historical SHAs below can be translated using
+`docs/active/GIT_COMMIT_MAP_2026_10_05.json`; the original history backup is inside
+`.git/identity-rewrite-backups/2026-10-05-original.git`. The old remote/credential facts below
+are historical, not current routing or authorization.
 
 ```
 Root       /Users/saai_siddharth/Projects/Clients/Agrimore   (flat since c8f6f30; since 2026-09-20 the ONLY worktree,

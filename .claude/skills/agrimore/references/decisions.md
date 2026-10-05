@@ -354,3 +354,13 @@ seller's "system itself" (canon_check skips it, like `lib/l10n/`).
 | D-ASSOCIATE-SETTINGS | create `settings/associate_onboarding`, `settings/commission.employeeRetailRate`, and the Razorpay webhook URL for `razorpayOnboardingWebhook` | the flow fails closed; nothing pays |
 | D-DASHBOARD-SPEC | the "25-item associate dashboard spec" exists nowhere — supply it or drop it | do not invent it |
 | D-UNDEPLOYED-16 | when to deploy the 16 source-only functions (benefit program, `setUserRole`, `changeEmail/PhoneNumber`, quote/hold/reversal) | none are needed while the flags are off; `setUserRole` is the only admin tool for roles |
+
+
+## Owner Git history and remote decision — 2026-10-05
+
+Supersedes the former D-ID and active remote routing: author and committer are
+`SaaiSiddhu <saaisiddu@gmail.com>`, no co-author trailers. Publish every preserved
+individual commit to new private `SaaiSiddhu/Agrimore`; preserve original history
+in the local self-contained backup. This explicit request authorizes the identity
+rewrite and initial push of develop/staging/main, without Firebase deployment or
+release-phase promotion. Historical IDs resolve through the committed migration map.

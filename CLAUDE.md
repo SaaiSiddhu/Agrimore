@@ -22,7 +22,7 @@ every AI coding tool that opens this repository reads and follows it.
   Cloud Functions in `functions/`, `firestore.rules` / `storage.rules` / `firestore.indexes.json`
   at the root. Firebase project `agrimore-66a4e` is **live with real users**.
 - Two unrelated products are named Agrimore. This repository is the standalone Firebase one
-  (remote `SRIESWARAN01/Agrimore-Full-Project`). The Supabase/Cloudflare one under
+  (remote `SaaiSiddhu/Agrimore`, private; original history archived locally). The Supabase/Cloudflare one under
   `Projects/Ecommerce/LetBuyy/` belongs to `/letbuyy` — never carry a fact or gate across.
 
 ## 2. Absolute rules
@@ -41,8 +41,8 @@ every AI coding tool that opens this repository reads and follows it.
    ahead of a machine move. A phase worktree is still supported and still the cleanest way to
    isolate a build — create it per phase and remove it at merge — but it is no longer mandatory.
    Never build or gate while `main` or `staging` is checked out; `gate.sh` enforces this.
-4. **Commit identity: `Agrimore <agrimorein@gmail.com>`, author and committer, no
-   `Co-Authored-By` trailer** (OWNER_DECISION D-ID, 2026-09-04). Repo-local `git config`; verify
+4. **Commit identity: `SaaiSiddhu <saaisiddu@gmail.com>`, author and committer, no
+   `Co-Authored-By` trailer** (OWNER_DECISION 2026-10-05; supersedes D-ID, 2026-09-04). Repo-local `git config`; verify
    after the first commit in any new worktree.
 5. **Claim before you build:** a row in `docs/active/BRANCH_DISPOSITIONS.md` is the first commit
    of every phase branch.

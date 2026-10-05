@@ -20,7 +20,7 @@ and show it; a described problem without a request to change is `status`, not `w
    `cd functions && npm ci --no-audit --no-fund` · `flutter pub get` in `packages/agrimore_core`,
    `agrimore_services`, `agrimore_ui`, `apps/marketplace`, `admin`, `seller`, `delivery`, `employee`.
    Afterwards `git status --porcelain` must still be 0 (a changed `pubspec.lock` is a finding).
-5. **Identity**: `git config user.name` = `Agrimore`, `user.email` = `agrimorein@gmail.com`
+5. **Identity**: `git config user.name` = `SaaiSiddhu`, `user.email` = `saaisiddu@gmail.com`
    (repo-local; shared by every worktree).
 6. **Claim row = first commit** (`merge.md` §3): `Status` = `ACTIVE`, `Why` names the files you expect
    to touch and the collision check you ran, `Merged into` = `N/A — pending`. Commit as

@@ -40,9 +40,9 @@ the only gate, and it runs only when someone runs it.
 ## 3. Reading a red run, when there is one
 
 ```bash
-gh run list --repo SRIESWARAN01/Agrimore-Full-Project --limit 20 --json name,headBranch,headSha,conclusion,createdAt,event
-gh run view <run-id> --repo SRIESWARAN01/Agrimore-Full-Project --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'
-gh run view <run-id> --repo SRIESWARAN01/Agrimore-Full-Project --log-failed | sed 's/\x1b\[[0-9;]*m//g' | grep -B8 '##\[error\]'
+gh run list --repo SaaiSiddhu/Agrimore --limit 20 --json name,headBranch,headSha,conclusion,createdAt,event
+gh run view <run-id> --repo SaaiSiddhu/Agrimore --json jobs --jq '.jobs[] | "\(.conclusion)\t\(.name)"'
+gh run view <run-id> --repo SaaiSiddhu/Agrimore --log-failed | sed 's/\x1b\[[0-9;]*m//g' | grep -B8 '##\[error\]'
 ```
 A red run is evidence, not a verdict. Attribute each failing job to: code defect · a check that
 misreads `flutter analyze`'s exit code · missing fixture (`functions/.env`) · missing toolchain
